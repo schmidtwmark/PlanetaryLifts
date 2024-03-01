@@ -12,11 +12,11 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     var body: some View {
         TabView {
-            WorkoutListView().tabItem {
-                Label("Workouts", systemImage: "figure.strengthtraining.traditional")
-            }
             LiftListView().tabItem {
                 Label("Lifts", systemImage: "dumbbell")
+            }
+            StatsView().tabItem {
+                Label("Stats", systemImage: "chart.xyaxis.line")
             }
             SettingsView().tabItem {
                 Label("Settings", systemImage: "gear")
@@ -28,5 +28,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Workout.self, Lift.self, LiftSet.self], inMemory: true)
+        .modelContainer(for: [Workout.self, Lift.self], inMemory: true)
 }

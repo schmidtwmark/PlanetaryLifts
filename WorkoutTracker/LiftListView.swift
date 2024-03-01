@@ -33,13 +33,21 @@ struct LiftListView: View {
                 })
             }
             .navigationDestination(for: Lift.self) { lift in
-                AddLiftView(lift: lift)
+                AddLiftView(lift: lift).onAppear {
+                    modelContext.insert(lift)
+                }
             }
         }
     }
 }
 
 #Preview {
-    LiftListView()
-        .modelContainer(for: [Workout.self, Lift.self, LiftSet.self], inMemory: true)
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, LiftSet.self, configurations: config)
+    
+    let lift = Lift(type: "Bench Press", sets: [], timestamp: Date.now)
+    container.mainContext.insert(lift)
+
+    return LiftListView()
+        .modelContainer(container)
 }
