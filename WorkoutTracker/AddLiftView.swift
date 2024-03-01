@@ -34,6 +34,9 @@ struct AddLiftView: View {
         return $lift.sets.first(where: {$0.id == id})!
     }
     
+    @State var linkedReps = 0
+    @State var linkedWeight = 0.0
+    
     var body: some View {
         List {
             Section {
@@ -50,14 +53,14 @@ struct AddLiftView: View {
                     Toggle(isOn: $lift.weighted.animation(), label: {
                         Text("Weighted Sets")
                     })
-                    if lift.weighted {
-                        Toggle(isOn: $lift.equalWeight, label: {
-                            Text("Same Weight Across Sets")
-                        })
-                    }
-                        Toggle(isOn: $lift.equalReps, label: {
-                            Text("Same Repetition Count")
-                        })
+//                    if lift.weighted {
+//                        Toggle(isOn: $lift.equalWeight, label: {
+//                            Text("Same Weight Across Sets")
+//                        })
+//                    }
+//                    Toggle(isOn: $lift.equalReps, label: {
+//                        Text("Same Repetition Count")
+//                    })
                 }
                 ForEach(lift.orderedSets) { liftSet in
                     HStack {
@@ -74,7 +77,7 @@ struct AddLiftView: View {
                                     Text("\(candidate.clean)").tag(Optional(candidate))
                                 }
                             }
-                            Text(liftSet.reps == 1 ? " pound" : " pounds")
+                            Text(liftSet.weight == 1 ? " pound" : " pounds")
                         }
                     }
                 }.onDelete(perform: { indexSet in
@@ -119,10 +122,28 @@ struct AddLiftView: View {
                     .background(Color(UIColor.secondarySystemGroupedBackground))
                     .clipShape(Capsule())
                     Spacer()
-                }
+                }.padding()
             }
-            Section("Notes") {
+            Section {
                 TextEditor(text: $lift.notes)
+            } header: {
+                Text("Workout Notes")
+            } footer: {
+                HStack {
+                    Spacer()
+                    Button {
+                    } label: {
+                        HStack {
+                            Image(systemName: "square.and.arrow.down")
+                            Text("Save")
+                        }
+                    }
+                    .font(.headline)
+                    .padding(15)
+                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                    .clipShape(Capsule())
+                    Spacer()
+                }.padding()
             }
         }
         .navigationTitle("Add Lift")
