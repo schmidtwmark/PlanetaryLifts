@@ -9,20 +9,28 @@
 /* Begin PBXBuildFile section */
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
-		EDA682F82B90E9F4002015CA /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F72B90E9F4002015CA /* Item.swift */; };
 		EDA682FA2B90E9F5002015CA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EDA682F92B90E9F5002015CA /* Assets.xcassets */; };
 		EDA682FD2B90E9F5002015CA /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EDA682FC2B90E9F5002015CA /* Preview Assets.xcassets */; };
+		EDA683062B91346D002015CA /* WorkoutListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA683052B91346D002015CA /* WorkoutListView.swift */; };
+		EDA683082B91347A002015CA /* LiftListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA683072B91347A002015CA /* LiftListView.swift */; };
+		EDA6830A2B913492002015CA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA683092B913492002015CA /* SettingsView.swift */; };
+		EDA6830C2B91469D002015CA /* DataModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA6830B2B91469D002015CA /* DataModel.swift */; };
+		EDA6830E2B915190002015CA /* AddLiftView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA6830D2B915190002015CA /* AddLiftView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		EDA682F02B90E9F4002015CA /* WorkoutTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTrackerApp.swift; sourceTree = "<group>"; };
 		EDA682F52B90E9F4002015CA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		EDA682F72B90E9F4002015CA /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		EDA682F92B90E9F5002015CA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EDA682FC2B90E9F5002015CA /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		EDA682FE2B90E9F5002015CA /* WorkoutTracker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WorkoutTracker.entitlements; sourceTree = "<group>"; };
 		EDA682FF2B90E9F5002015CA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		EDA683052B91346D002015CA /* WorkoutListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutListView.swift; sourceTree = "<group>"; };
+		EDA683072B91347A002015CA /* LiftListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftListView.swift; sourceTree = "<group>"; };
+		EDA683092B913492002015CA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		EDA6830B2B91469D002015CA /* DataModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataModel.swift; sourceTree = "<group>"; };
+		EDA6830D2B915190002015CA /* AddLiftView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddLiftView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,7 +65,11 @@
 			children = (
 				EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */,
 				EDA682F52B90E9F4002015CA /* ContentView.swift */,
-				EDA682F72B90E9F4002015CA /* Item.swift */,
+				EDA6830B2B91469D002015CA /* DataModel.swift */,
+				EDA683052B91346D002015CA /* WorkoutListView.swift */,
+				EDA683072B91347A002015CA /* LiftListView.swift */,
+				EDA6830D2B915190002015CA /* AddLiftView.swift */,
+				EDA683092B913492002015CA /* SettingsView.swift */,
 				EDA682F92B90E9F5002015CA /* Assets.xcassets */,
 				EDA682FE2B90E9F5002015CA /* WorkoutTracker.entitlements */,
 				EDA682FF2B90E9F5002015CA /* Info.plist */,
@@ -144,9 +156,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EDA6830E2B915190002015CA /* AddLiftView.swift in Sources */,
+				EDA6830C2B91469D002015CA /* DataModel.swift in Sources */,
 				EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */,
-				EDA682F82B90E9F4002015CA /* Item.swift in Sources */,
+				EDA683062B91346D002015CA /* WorkoutListView.swift in Sources */,
+				EDA6830A2B913492002015CA /* SettingsView.swift in Sources */,
 				EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */,
+				EDA683082B91347A002015CA /* LiftListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
