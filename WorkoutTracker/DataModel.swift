@@ -44,6 +44,17 @@ final class Lift {
         self.timestamp = timestamp
         self.workout = workout
     }
+    
+    func addSet(_ reps: Int, weight: Double? = nil) {
+        let order = if let lastSet = orderedSets.last {
+            lastSet.order + 1
+        } else {
+            0
+        }
+        
+        let set = LiftSet(reps: reps, weight: weight, lift: self, order: order)
+        sets.append(set)
+    }
 }
 
 @Model

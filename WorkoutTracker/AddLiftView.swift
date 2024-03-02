@@ -105,9 +105,10 @@ struct AddLiftView: View {
                     Button {
                         if let lastSet = lift.orderedSets.last {
                             print("Appending last set")
-                            lift.sets.append(LiftSet(reps: lastSet.reps, weight: lastSet.weight, lift: lift, order: lastSet.order + 1))
+                            lift.addSet(lastSet.reps, weight: lastSet.weight)
                         } else {
                             print("Appending original set")
+                            lift.addSet(10, weight: 50.0)
                             lift.sets.append(LiftSet(reps: 10, weight: 50.0, lift: lift, order: 0))
                         }
                         // TODO: read from global last time this lift was performed
