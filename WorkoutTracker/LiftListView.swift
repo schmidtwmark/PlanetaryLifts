@@ -101,7 +101,7 @@ struct LiftListView: View {
                     ForEach(lifts) { lift in
                         VStack {
                             HStack {
-                                Text(lift.type)
+                                Text(lift.type.string)
                                     .font(.title)
 //                                    .fontWeight(.bold)
                                 Spacer()

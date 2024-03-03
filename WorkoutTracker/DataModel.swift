@@ -23,8 +23,7 @@ final class Workout {
 
 @Model
 final class Lift {
-    var type: String
-    var category: LiftCategory
+    var type: LiftType
     
     var sets: [LiftSet]
     
@@ -36,8 +35,7 @@ final class Lift {
     var notes: String = ""
     
     init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date, workout: Workout? = nil) {
-        self.type = liftType.string
-        self.category = liftType.category
+        self.type = liftType
         self.sets = sets
         self.timestamp = timestamp
         self.workout = workout

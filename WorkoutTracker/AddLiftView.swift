@@ -14,7 +14,6 @@ extension Double{
     }
 }
 
-
 struct AddLiftView: View {
     @Bindable var lift: Lift
     @Environment(\.modelContext) private var modelContext
@@ -32,13 +31,23 @@ struct AddLiftView: View {
     
     @State var linkedReps = 0
     @State var linkedWeight = 0.0
+    @Environment(\.dismiss) var dismiss
+
     
     var body: some View {
         List {
             Section {
-                Picker("Type", selection: $lift.type, content: {
-                    Text("Bench Press").tag("Bench Press")
-                    Text("Back Squat").tag("Back Squat")
+//                Picker("Type", selection: $lift.type, content: {
+//                    Text("Bench Press").tag("Bench Press")
+//                    Text("Back Squat").tag("Back Squat")
+//                })
+                NavigationLink(destination: { LiftTypeSelector(selectedLiftType: $lift.type)
+                }, label: {
+                    HStack {
+                        Text("Lift Type")
+                        Spacer()
+                        Text(lift.type.string)
+                    }
                 })
                 DatePicker(selection: $lift.timestamp, label: {
                     Text("Time")
@@ -96,10 +105,8 @@ struct AddLiftView: View {
                     Spacer()
                     Button {
                         if let lastSet = lift.sets.last {
-                            print("Appending last set")
                             lift.addSet(lastSet.reps, weight: lastSet.weight)
                         } else {
-                            print("Appending original set")
                             lift.addSet(10, weight: 50.0)
                         }
                         // TODO: read from global last time this lift was performed
@@ -124,6 +131,7 @@ struct AddLiftView: View {
                 HStack {
                     Spacer()
                     Button {
+                        dismiss()
                     } label: {
                         HStack {
                             Image(systemName: "square.and.arrow.down")
@@ -150,6 +158,9 @@ struct AddLiftView: View {
     let lift = Lift(liftType: .benchPress, timestamp: Date.now)
     container.mainContext.insert(lift)
 
-    return AddLiftView(lift: lift)
-        .modelContainer(container)
+    return NavigationStack {
+        AddLiftView(lift: lift)
+            .modelContainer(container)
+    }
+    
 }
