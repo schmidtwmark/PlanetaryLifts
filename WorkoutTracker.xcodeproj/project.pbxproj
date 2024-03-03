@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		ED320A362B92A0BF003A6628 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A352B92A0BF003A6628 /* Date.swift */; };
+		ED320A382B94DB5E003A6628 /* LiftType.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A372B94DB5E003A6628 /* LiftType.swift */; };
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
 		EDA682FA2B90E9F5002015CA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EDA682F92B90E9F5002015CA /* Assets.xcassets */; };
@@ -21,6 +22,7 @@
 
 /* Begin PBXFileReference section */
 		ED320A352B92A0BF003A6628 /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
+		ED320A372B94DB5E003A6628 /* LiftType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftType.swift; sourceTree = "<group>"; };
 		EDA682F02B90E9F4002015CA /* WorkoutTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTrackerApp.swift; sourceTree = "<group>"; };
 		EDA682F52B90E9F4002015CA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -70,6 +72,7 @@
 				EDA6830F2B9186DE002015CA /* StatsView.swift */,
 				EDA6830B2B91469D002015CA /* DataModel.swift */,
 				EDA683072B91347A002015CA /* LiftListView.swift */,
+				ED320A372B94DB5E003A6628 /* LiftType.swift */,
 				ED320A352B92A0BF003A6628 /* Date.swift */,
 				EDA6830D2B915190002015CA /* AddLiftView.swift */,
 				EDA683092B913492002015CA /* SettingsView.swift */,
@@ -167,6 +170,7 @@
 				EDA6830A2B913492002015CA /* SettingsView.swift in Sources */,
 				EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */,
 				EDA683082B91347A002015CA /* LiftListView.swift in Sources */,
+				ED320A382B94DB5E003A6628 /* LiftType.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

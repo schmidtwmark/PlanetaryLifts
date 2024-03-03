@@ -24,13 +24,10 @@ final class Workout {
 @Model
 final class Lift {
     var type: String
+    var category: LiftCategory
     
-    @Relationship(deleteRule: .cascade, inverse: \LiftSet.lift)
     var sets: [LiftSet]
     
-    var orderedSets : [LiftSet] {
-        return sets.sorted(by:  {$0.order < $1.order })
-    }
     var timestamp: Date
     var workout: Workout?
     var equalWeight: Bool = true
@@ -38,37 +35,36 @@ final class Lift {
     var weighted: Bool = true
     var notes: String = ""
     
-    init(type: String, sets: [LiftSet], timestamp: Date, workout: Workout? = nil) {
-        self.type = type
+    init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date, workout: Workout? = nil) {
+        self.type = liftType.string
+        self.category = liftType.category
         self.sets = sets
         self.timestamp = timestamp
         self.workout = workout
     }
     
-    func addSet(_ reps: Int, weight: Double? = nil) {
-        let order = if let lastSet = orderedSets.last {
-            lastSet.order + 1
-        } else {
-            0
-        }
-        
-        let set = LiftSet(reps: reps, weight: weight, lift: self, order: order)
+    func addSet(_ reps: Int, weight: Double = 0) {
+        let set = LiftSet(reps: reps, weight: weight)
         sets.append(set)
+    }
+    
+    func allSetsSame() -> Bool {
+        if let first = sets.first {
+            return sets.count >= 2 && sets.allSatisfy({ $0.reps == first.reps && $0.weight == first.weight})
+        } else {
+            return false
+        }
     }
 }
 
-@Model
-final class LiftSet {
+final class LiftSet : Codable, Identifiable {
     var reps: Int
-    var weight: Double?
-    var lift: Lift?
-    var order = 0
+    var weight: Double
+    var id: UUID = UUID()
     
-    init(reps: Int, weight: Double? = nil, lift: Lift? = nil, order: Int = 0) {
+    init(reps: Int, weight: Double) {
         self.reps = reps
         self.weight = weight
-        self.lift = lift
-        self.order = order
     }
 }
 

@@ -30,10 +30,6 @@ struct AddLiftView: View {
         return Array([small, medium, large, extraLarge].joined())
     }
     
-    func getLiftSetBinding(_ id: PersistentIdentifier) -> Binding<LiftSet> {
-        return $lift.sets.first(where: {$0.id == id})!
-    }
-    
     @State var linkedReps = 0
     @State var linkedWeight = 0.0
     
@@ -62,9 +58,9 @@ struct AddLiftView: View {
 //                        Text("Same Repetition Count")
 //                    })
                 }
-                ForEach(lift.orderedSets) { liftSet in
+                ForEach($lift.sets) { $liftSet in
                     HStack {
-                        Picker("", selection: getLiftSetBinding(liftSet.id).reps) {
+                        Picker("", selection: $liftSet.reps) {
                             ForEach(1..<101) { candidate in
                                 Text("\(candidate)").tag(candidate)
                             }
@@ -72,7 +68,7 @@ struct AddLiftView: View {
                         Text(liftSet.reps == 1 ? " rep" : " reps")
                         Spacer()
                         if lift.weighted {
-                            Picker("", selection: getLiftSetBinding(liftSet.id).weight) {
+                            Picker("", selection: $liftSet.weight) {
                                 ForEach(getWeights(), id: \.self) { candidate in
                                     Text("\(candidate.clean)").tag(Optional(candidate))
                                 }
@@ -81,11 +77,7 @@ struct AddLiftView: View {
                         }
                     }
                 }.onDelete(perform: { indexSet in
-                    for idx in indexSet {
-                        let liftSet = lift.orderedSets[idx]
-                        let id = liftSet.id
-                        lift.sets.removeAll(where: {$0.id == id})
-                    }
+                    lift.sets.remove(atOffsets: indexSet)
                 })
             } header: {
                 HStack {
@@ -103,13 +95,12 @@ struct AddLiftView: View {
                 HStack {
                     Spacer()
                     Button {
-                        if let lastSet = lift.orderedSets.last {
+                        if let lastSet = lift.sets.last {
                             print("Appending last set")
                             lift.addSet(lastSet.reps, weight: lastSet.weight)
                         } else {
                             print("Appending original set")
                             lift.addSet(10, weight: 50.0)
-                            lift.sets.append(LiftSet(reps: 10, weight: 50.0, lift: lift, order: 0))
                         }
                         // TODO: read from global last time this lift was performed
                     } label: {
@@ -154,9 +145,9 @@ struct AddLiftView: View {
 #Preview {
     
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, LiftSet.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, configurations: config)
     
-    let lift = Lift(type: "Bench Press", sets: [], timestamp: Date.now)
+    let lift = Lift(liftType: .benchPress, timestamp: Date.now)
     container.mainContext.insert(lift)
 
     return AddLiftView(lift: lift)
