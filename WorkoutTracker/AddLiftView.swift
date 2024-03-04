@@ -14,12 +14,71 @@ extension Double{
     }
 }
 
+struct NumberPicker<T: Numeric> : View {
+    @Binding var number: T
+    
+    var toString: ((T) -> String)
+    
+    enum NumberType {
+        case weight
+        case reps
+        
+        func getSingleUnitString() -> String {
+            return switch self {
+            case .weight: "pound"
+            case .reps: "rep"
+            }
+        }
+    }
+    
+    var type: NumberType
+    var id: UUID
+    
+    @EnvironmentObject var editState: EditState
+    var body: some View {
+        HStack {
+            Spacer()
+            Text(number == 1 ? "**1** singleUnitLabel" : "**\(toString(number))** \(type.getSingleUnitString())s")
+            Spacer()
+        }.onTapGesture {
+            editState.setEditMode = switch type {
+                case .weight: .weight(id)
+                case .reps: .reps(id)
+            }
+        }
+    }
+}
+
+class EditState : ObservableObject {
+    enum SetEditMode : Equatable {
+        case none
+        case reps(UUID)
+        case weight(UUID)
+    }
+    
+    @Published var setEditMode: SetEditMode = .none
+   
+}
+
+
+
 struct AddLiftView: View {
-    @Bindable var lift: Lift
+    enum ViewMode {
+        case add
+        case edit
+    }
+    
+    let viewMode : ViewMode
+    
+    @State var lift: Lift
     @Environment(\.modelContext) private var modelContext
     @State var showSetSettings = false
     
-    func getWeights() -> [Double] {
+    
+    
+    @StateObject var editState: EditState = EditState()
+    
+    var weights: [Double] {
         let small = stride(from: 1.0, to: 12.5, by: 0.5)
         let medium = stride(from: 15, to: 100, by: 2.5)
         let large = stride(from: 100, to: 250, by: 5.0)
@@ -32,6 +91,13 @@ struct AddLiftView: View {
     @State var linkedReps = 0
     @State var linkedWeight = 0.0
     @Environment(\.dismiss) var dismiss
+    
+    var navigationTitle : String {
+        return switch viewMode {
+        case .add: "Add Lift"
+        case .edit: "Edit Lift"
+        }
+    }
 
     
     var body: some View {
@@ -67,27 +133,24 @@ struct AddLiftView: View {
 //                        Text("Same Repetition Count")
 //                    })
                 }
-                ForEach($lift.sets) { $liftSet in
-                    HStack {
-                        Picker("", selection: $liftSet.reps) {
-                            ForEach(1..<101) { candidate in
-                                Text("\(candidate)").tag(candidate)
+                    
+                    ForEach($lift.sets) { $liftSet in
+                        HStack {
+                            if editState.setEditMode == .none || editState.setEditMode == .reps(liftSet.id) {
+                                NumberPicker(number: $liftSet.reps, toString: {"\($0)"}, type: .reps, id: liftSet.id)
                             }
-                        }
-                        Text(liftSet.reps == 1 ? " rep" : " reps")
-                        Spacer()
-                        if lift.weighted {
-                            Picker("", selection: $liftSet.weight) {
-                                ForEach(getWeights(), id: \.self) { candidate in
-                                    Text("\(candidate.clean)").tag(Optional(candidate))
+                            if lift.weighted {
+                                if editState.setEditMode == .none {
+                                    Divider()
+                                }
+                                if editState.setEditMode == .none || editState.setEditMode == .weight(liftSet.id) {
+                                    NumberPicker(number: $liftSet.weight, toString: { "\($0.clean)"}, type: .weight, id: liftSet.id)
                                 }
                             }
-                            Text(liftSet.weight == 1 ? " pound" : " pounds")
                         }
-                    }
-                }.onDelete(perform: { indexSet in
-                    lift.sets.remove(atOffsets: indexSet)
-                })
+                    }.onDelete(perform: { indexSet in
+                        lift.sets.remove(atOffsets: indexSet)
+                    })
             } header: {
                 HStack {
                     Text("Sets")
@@ -104,10 +167,12 @@ struct AddLiftView: View {
                 HStack {
                     Spacer()
                     Button {
-                        if let lastSet = lift.sets.last {
-                            lift.addSet(lastSet.reps, weight: lastSet.weight)
-                        } else {
-                            lift.addSet(10, weight: 50.0)
+                        withAnimation {
+                            if let lastSet = lift.sets.last {
+                                lift.addSet(lastSet.reps, weight: lastSet.weight)
+                            } else {
+                                lift.addSet(10, weight: 50.0)
+                            }
                         }
                         // TODO: read from global last time this lift was performed
                     } label: {
@@ -146,7 +211,8 @@ struct AddLiftView: View {
                 }.padding()
             }
         }
-        .navigationTitle("Add Lift")
+        .environmentObject(editState)
+        .navigationTitle(navigationTitle)
     }
 }
 
@@ -159,7 +225,7 @@ struct AddLiftView: View {
     container.mainContext.insert(lift)
 
     return NavigationStack {
-        AddLiftView(lift: lift)
+        AddLiftView(viewMode: .add, lift: lift)
             .modelContainer(container)
     }
     

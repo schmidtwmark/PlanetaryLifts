@@ -36,10 +36,10 @@ struct SetsView: View {
                 if lift.allSetsSame() {
                     Text("\(lift.sets.count)x").font(.title)
                     LiftSetView(liftSet: lift.sets.first!, lift: lift)
-                    .font(.title3)
-                    .padding()
-                    .background(Color(uiColor: UIColor.systemGroupedBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                        .font(.title3)
+                        .padding()
+                        .background(Color(uiColor: UIColor.systemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
                 } else {
                     VStack {
                         ForEach(lift.sets) { liftSet in
@@ -96,38 +96,51 @@ struct LiftListView: View {
     
     var body: some View {
         NavigationStack {
-            List(liftsByDate, id: \.0.hashValue) { (date, lifts) in
+            List(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
                 Section("\(date.format())") {
-                    ForEach(lifts) { lift in
-                        VStack {
-                            HStack {
-                                Text(lift.type.string)
-                                    .font(.title)
-//                                    .fontWeight(.bold)
-                                Spacer()
-                                Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
-                                    .font(.caption)
-                                
+                    ForEach(liftsForDate) { lift in
+                        Menu {
+                            NavigationLink(destination: AddLiftView(viewMode: .edit, lift: lift), label: {
+                                Text("Edit Lift")
+                            })
+                        } label: {
+
+                            VStack {
+                                HStack {
+                                    Text(lift.type.string)
+                                        .font(.title)
+                                    Spacer()
+                                    Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
+                                        .font(.caption)
+                                    
+                                }
+                                SetsView(lift: lift)
                             }
-                            SetsView(lift: lift)
-//                            HStack {
-//                                Spacer()
-//                                Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))").font(.caption)
-//                            }
-                        }.padding([.top, .bottom], 5.0)
+                            .padding([.top, .bottom], 5.0)
+                            .foregroundStyle(Color.black)
+                        }
+                    }
+                    .onDelete { indexSet in
+                        let liftsToRemove = indexSet.map({idx in liftsForDate[idx]})
+                        for lift in liftsToRemove {
+                            modelContext.delete(lift)
+                        }
                     }
                 }
             }
             .navigationTitle("Lifts")
             .toolbar() {
-                ToolbarItem(placement: .primaryAction, content: {
+                ToolbarItemGroup(placement: .primaryAction, content: {
                     NavigationLink(value: Lift(liftType: .benchPress, timestamp: Date.now), label: {
                         Label("Add Lift", systemImage: "plus")
-                    })
+                   })
+                    if lifts.count > 0 {
+                        EditButton()
+                    }
                 })
             }
             .navigationDestination(for: Lift.self) { lift in
-                AddLiftView(lift: lift).onAppear {
+                AddLiftView(viewMode: .add, lift: lift).onAppear {
                     modelContext.insert(lift)
                 }
             }
