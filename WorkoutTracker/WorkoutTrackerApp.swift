@@ -13,8 +13,7 @@ struct WorkoutTrackerApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Lift.self,
-            Workout.self
-            
+            UserGeneratedLiftType.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

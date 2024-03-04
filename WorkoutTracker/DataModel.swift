@@ -9,36 +9,21 @@ import Foundation
 import SwiftData
 
 @Model
-final class Workout {
-    var name: String?
-    
-    @Relationship(deleteRule: .cascade, inverse: \Lift.workout)
-    var lifts: [Lift]
-    
-    init(name: String? = nil, lifts: [Lift]) {
-        self.name = name
-        self.lifts = lifts
-    }
-}
-
-@Model
 final class Lift {
     var type: LiftType
     
     var sets: [LiftSet]
     
     var timestamp: Date
-    var workout: Workout?
     var equalWeight: Bool = true
     var equalReps: Bool = true
     var weighted: Bool = true
     var notes: String = ""
     
-    init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date, workout: Workout? = nil) {
+    init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date) {
         self.type = liftType
         self.sets = sets
         self.timestamp = timestamp
-        self.workout = workout
     }
     
     func addSet(_ reps: Int, weight: Double = 0) {
@@ -66,3 +51,14 @@ final class LiftSet : Codable, Identifiable {
     }
 }
 
+@Model
+final class UserGeneratedLiftType  {
+    var name: String
+    var category: LiftCategory
+    var id: UUID = UUID()
+    
+    init(name: String, category: LiftCategory) {
+        self.name = name
+        self.category = category
+    }
+}

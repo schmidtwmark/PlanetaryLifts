@@ -18,8 +18,7 @@ enum LiftCategory: String, Codable, CaseIterable {
     case other = "Other"
 }
 
-enum LiftType: Hashable, Codable {
-    
+enum LiftType: Hashable, Codable{
     
     // MARK: back
     case latPullDown
@@ -49,7 +48,7 @@ enum LiftType: Hashable, Codable {
     
     
     // MARK: user specified
-    case other(name: String, category: LiftCategory)
+    case other(name: String, category: LiftCategory, id: UUID)
     
     static var allCases: [LiftType] = [
         .latPullDown,
@@ -100,7 +99,7 @@ enum LiftType: Hashable, Codable {
         // MARK: core
         case .sitUp: "Sit Ups"
             
-        case .other(let name, _): name
+        case .other(let name, _, _): name
         }
     }
     
@@ -130,7 +129,14 @@ enum LiftType: Hashable, Codable {
         case .sitUp: .core
             
             
-        case .other(_, let category): category
+        case .other(_, let category, _): category
+        }
+    }
+    
+    var deletable: Bool {
+        return switch self {
+            case .other(_, _, _): true
+            default: false
         }
     }
     
