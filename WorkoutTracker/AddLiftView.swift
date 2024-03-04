@@ -19,6 +19,9 @@ struct NumberPicker<T: Numeric> : View {
     
     var toString: ((T) -> String)
     
+    var onIncrement: ((T) -> T)
+    var onDecrement: ((T) -> T)
+    
     enum NumberType {
         case weight
         case reps
@@ -34,16 +37,78 @@ struct NumberPicker<T: Numeric> : View {
     var type: NumberType
     var id: UUID
     
+    var selected : Bool {
+        switch type {
+        case .weight: editState.setEditMode == .weight(id)
+        case .reps: editState.setEditMode == .reps(id)
+        }
+    }
+    
+    var formatter: NumberFormatter {
+            let formatter = NumberFormatter()
+            if type == .weight {
+                formatter.numberStyle = .decimal
+            }
+            return formatter
+    }
+    
     @EnvironmentObject var editState: EditState
     var body: some View {
         HStack {
-            Spacer()
-            Text(number == 1 ? "**1** singleUnitLabel" : "**\(toString(number))** \(type.getSingleUnitString())s")
-            Spacer()
-        }.onTapGesture {
-            editState.setEditMode = switch type {
-                case .weight: .weight(id)
-                case .reps: .reps(id)
+            if selected {
+                Button {
+                    withAnimation {
+                        editState.setEditMode = .none
+                    }
+                } label: {
+                    Label("Done", systemImage: "checkmark").labelStyle(.iconOnly)
+                }
+//                .border(.green)
+            }
+            
+            Group {
+                Spacer()
+                if selected {
+                    HStack(alignment: .firstTextBaseline, spacing: 5.0) {
+                        TextField("", value: $number, formatter: formatter)
+                            .keyboardType(.numbersAndPunctuation)
+                            .multilineTextAlignment(.center)
+                            .padding(EdgeInsets(top: 4.0, leading: 0.0, bottom: 4.0, trailing: 0.0))
+                            .fontWeight(.bold)
+                            .background(Color(uiColor: UIColor.secondarySystemFill))
+                            .clipShape(RoundedRectangle(cornerRadius: 5.0))
+                        //                        .border(.blue)
+                        Text("\(type.getSingleUnitString())\(number != 1 ? "s" : "")")
+//                            .multilineTextAlignment(.left)
+                    }
+                    .padding(EdgeInsets(top: 0.0, leading: 10.0, bottom: 0.0, trailing: 30.0))
+                } else {
+                    Group {
+                        Text("\(toString(number))")
+                            .fontWeight(.bold)
+                        Text("\(type.getSingleUnitString())\(number != 1 ? "s" : "")")
+                    }
+                    .onTapGesture {
+                        withAnimation {
+                            editState.setEditMode = switch type {
+                            case .weight: .weight(id)
+                            case .reps: .reps(id)
+                            }
+                        }
+                    }
+                }
+                Spacer()
+            }
+//            .border(.blue)
+            
+            if selected {
+                Stepper("", onIncrement: {
+                    number = onIncrement(number)
+                }, onDecrement: {
+                    number = onDecrement(number)
+                })
+                .labelsHidden()
+//                .border(.red)
             }
         }
     }
@@ -136,18 +201,29 @@ struct AddLiftView: View {
                     
                     ForEach($lift.sets) { $liftSet in
                         HStack {
-                            if editState.setEditMode == .none || editState.setEditMode == .reps(liftSet.id) {
-                                NumberPicker(number: $liftSet.reps, toString: {"\($0)"}, type: .reps, id: liftSet.id)
+                            if editState.setEditMode == .none || editState.setEditMode != .weight(liftSet.id) {
+                                NumberPicker(number: $liftSet.reps, 
+                                             toString: {"\($0)"},
+                                             onIncrement: { return $0 + 1},
+                                             onDecrement: { return max(1, $0 - 1)},
+                                             type: .reps,
+                                             id: liftSet.id)
                             }
                             if lift.weighted {
-                                if editState.setEditMode == .none {
-                                    Divider()
-                                }
-                                if editState.setEditMode == .none || editState.setEditMode == .weight(liftSet.id) {
-                                    NumberPicker(number: $liftSet.weight, toString: { "\($0.clean)"}, type: .weight, id: liftSet.id)
+                                if editState.setEditMode == .none || editState.setEditMode != .reps(liftSet.id) {
+                                    if editState.setEditMode != .weight(liftSet.id) {
+                                        Divider()
+                                    }
+                                    NumberPicker(number: $liftSet.weight, 
+                                                 toString: { "\($0.clean)"},
+                                                 onIncrement: {return $0 + 1.0},
+                                                 onDecrement: {return max(1.0, $0 - 1.0)},
+                                                 type: .weight,
+                                                 id: liftSet.id)
                                 }
                             }
                         }
+//                        .listRowInsets(EdgeInsets(top: 0.0, leading: 0.0, bottom: 0.0, trailing: 10.0))
                     }.onDelete(perform: { indexSet in
                         lift.sets.remove(atOffsets: indexSet)
                     })
@@ -168,6 +244,7 @@ struct AddLiftView: View {
                     Spacer()
                     Button {
                         withAnimation {
+                            editState.setEditMode = .none
                             if let lastSet = lift.sets.last {
                                 lift.addSet(lastSet.reps, weight: lastSet.weight)
                             } else {
