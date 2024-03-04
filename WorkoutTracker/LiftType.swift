@@ -124,8 +124,8 @@ enum LiftType: Hashable, Codable {
         case .frontSquat: .legs
         
         // MARK: shoulders
-        case .shoulderPress: .legs
-       
+        case .shoulderPress: .shoulders
+            
         // MARK: core
         case .sitUp: .core
             

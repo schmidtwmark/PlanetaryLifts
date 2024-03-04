@@ -9,8 +9,7 @@ import SwiftUI
 
 extension String {
     func containsIgnoringCase(_ target: String) -> Bool {
-        self.range(of: target, options: .caseInsensitive) != nil
-        
+        return self.range(of: target, options: .caseInsensitive) != nil
     }
 }
 
@@ -23,7 +22,9 @@ struct LiftTypeSelector: View {
     
     var filteredCategories : [LiftCategory] {
         LiftCategory.allCases.filter({ category in
-            searchText == "" || category.rawValue.containsIgnoringCase(searchText) || LiftType.liftsByCategory[category]!.contains(where: { liftType in
+            searchText == "" || 
+            category.rawValue.containsIgnoringCase(searchText) || 
+            LiftType.liftsByCategory[category]!.contains(where: { liftType in
                 liftType.string.containsIgnoringCase(searchText)
             })
         })
@@ -34,7 +35,9 @@ struct LiftTypeSelector: View {
             ForEach(filteredCategories, id: \.rawValue) { category in
                 Section(category.rawValue) {
                     ForEach(LiftType.liftsByCategory[category]!, id: \.string) { lift in
-                        if searchText == "" || category.rawValue.containsIgnoringCase(searchText) || lift.string.contains(searchText) {
+                        if searchText == "" || 
+                            category.rawValue.containsIgnoringCase(searchText) || 
+                            lift.string.containsIgnoringCase(searchText) {
                             HStack {
                                 Text(lift.string)
                                 Spacer()

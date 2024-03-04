@@ -52,6 +52,13 @@ struct NumberPicker<T: Numeric> : View {
             return formatter
     }
     
+    var keyboardType: UIKeyboardType {
+        return switch type {
+            case .weight: .decimalPad
+            case .reps: .numberPad
+        }
+    }
+    
     @EnvironmentObject var editState: EditState
     var body: some View {
         HStack {
@@ -63,7 +70,6 @@ struct NumberPicker<T: Numeric> : View {
                 } label: {
                     Label("Done", systemImage: "checkmark").labelStyle(.iconOnly)
                 }
-//                .border(.green)
             }
             
             Group {
@@ -71,15 +77,13 @@ struct NumberPicker<T: Numeric> : View {
                 if selected {
                     HStack(alignment: .firstTextBaseline, spacing: 5.0) {
                         TextField("", value: $number, formatter: formatter)
-                            .keyboardType(.numbersAndPunctuation)
+                            .keyboardType(.decimalPad)
                             .multilineTextAlignment(.center)
                             .padding(EdgeInsets(top: 4.0, leading: 0.0, bottom: 4.0, trailing: 0.0))
                             .fontWeight(.bold)
                             .background(Color(uiColor: UIColor.secondarySystemFill))
                             .clipShape(RoundedRectangle(cornerRadius: 5.0))
-                        //                        .border(.blue)
                         Text("\(type.getSingleUnitString())\(number != 1 ? "s" : "")")
-//                            .multilineTextAlignment(.left)
                     }
                     .padding(EdgeInsets(top: 0.0, leading: 10.0, bottom: 0.0, trailing: 30.0))
                 } else {
@@ -99,7 +103,6 @@ struct NumberPicker<T: Numeric> : View {
                 }
                 Spacer()
             }
-//            .border(.blue)
             
             if selected {
                 Stepper("", onIncrement: {
@@ -108,8 +111,10 @@ struct NumberPicker<T: Numeric> : View {
                     number = onDecrement(number)
                 })
                 .labelsHidden()
-//                .border(.red)
             }
+        }
+        .alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
+            return 0
         }
     }
 }
@@ -125,6 +130,50 @@ class EditState : ObservableObject {
    
 }
 
+func weightGranularityIncrement(_ current: Double) -> Double {
+    return if current < 12.5 {
+        0.5
+    } else if current < 100.0 {
+        2.5
+    } else if current < 250.0 {
+        5.0
+    } else {
+        10.0
+    }
+}
+
+func weightGranularityDecrement(_ current: Double) -> Double {
+    return if current <= 12.5 {
+        0.5
+    } else if current <= 100.0 {
+        2.5
+    } else if current <= 250.0 {
+        5.0
+    } else {
+        10.0
+    }
+    
+}
+
+func roundGranularIncrement(_ current: Double) -> Double {
+    let granularity = weightGranularityIncrement(current)
+    return round(current / granularity) * granularity
+}
+
+func roundedIncrement(_ current: Double) -> Double {
+    let granularity = weightGranularityIncrement(current)
+    return roundGranularIncrement(current + granularity)
+}
+func roundGranularDecrement(_ current: Double) -> Double {
+    let granularity = weightGranularityDecrement(current)
+    return round(current / granularity) * granularity
+}
+
+
+func roundedDecrement(_ current: Double) -> Double {
+    let granularity = weightGranularityDecrement(current)
+    return roundGranularDecrement(current - granularity)
+}
 
 
 struct AddLiftView: View {
@@ -142,6 +191,7 @@ struct AddLiftView: View {
     
     
     @StateObject var editState: EditState = EditState()
+    
     
     var weights: [Double] {
         let small = stride(from: 1.0, to: 12.5, by: 0.5)
@@ -216,8 +266,8 @@ struct AddLiftView: View {
                                     }
                                     NumberPicker(number: $liftSet.weight, 
                                                  toString: { "\($0.clean)"},
-                                                 onIncrement: {return $0 + 1.0},
-                                                 onDecrement: {return max(1.0, $0 - 1.0)},
+                                                 onIncrement: {return roundedIncrement($0)},
+                                                 onDecrement: {return max(1.0, roundedDecrement($0))},
                                                  type: .weight,
                                                  id: liftSet.id)
                                 }
@@ -266,7 +316,7 @@ struct AddLiftView: View {
                 }.padding()
             }
             Section {
-                TextEditor(text: $lift.notes)
+                TextEditor(text: $lift.notes).frame(minHeight: 100)
             } header: {
                 Text("Workout Notes")
             } footer: {

@@ -99,26 +99,26 @@ struct LiftListView: View {
             List(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
                 Section("\(date.format())") {
                     ForEach(liftsForDate) { lift in
-                        Menu {
+                        VStack {
+                            HStack {
+                                Text(lift.type.string)
+                                    .font(.title)
+                                Spacer()
+                                Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
+                                    .font(.caption)
+                                
+                            }
+                            SetsView(lift: lift)
+                        }                        
+                        .contextMenu(menuItems: {
                             NavigationLink(destination: AddLiftView(viewMode: .edit, lift: lift), label: {
                                 Text("Edit Lift")
                             })
-                        } label: {
+                        })
 
-                            VStack {
-                                HStack {
-                                    Text(lift.type.string)
-                                        .font(.title)
-                                    Spacer()
-                                    Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
-                                        .font(.caption)
-                                    
-                                }
-                                SetsView(lift: lift)
-                            }
-                            .padding([.top, .bottom], 5.0)
-                            .foregroundStyle(Color.black)
-                        }
+                        .padding([.top, .bottom], 5.0)
+                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0))
+                        .buttonStyle(.plain)
                     }
                     .onDelete { indexSet in
                         let liftsToRemove = indexSet.map({idx in liftsForDate[idx]})
