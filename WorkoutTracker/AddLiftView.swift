@@ -267,7 +267,7 @@ struct AddLiftView: View {
                                         Divider()
                                     }
                                     NumberPicker(number: $liftSet.weight.weight,
-                                                 toString: { _ in "\(liftSet.weight.convert(to: weightUnits).weight.clean)"},
+                                                 toString: { _ in "\(liftSet.weight.weight.clean)"},
                                                  onIncrement: {return roundedIncrement($0)},
                                                  onDecrement: {return max(1.0, roundedDecrement($0))},
                                                  type: .weight,

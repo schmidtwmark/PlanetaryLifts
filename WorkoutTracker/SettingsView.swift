@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-enum WeightUnits : String, Codable {
+enum WeightUnits : String, Codable, Equatable{
     case pounds = "Pounds"
     case kilograms = "Kilograms"
     
@@ -43,7 +43,22 @@ struct SettingsView: View {
                 Picker("Weight", selection: $weight, content:  {
                     Text("Pounds").tag(WeightUnits.pounds)
                     Text("Kilograms").tag(WeightUnits.kilograms)
-                })//.pickerStyle(.segmented)
+                })
+                .onChange(of: weight, { (old, new) in
+                    print("Weight changed")
+                    let lifts = try! modelContext.fetch(FetchDescriptor<Lift>())
+                    for lift in lifts {
+                        for liftSet in lift.sets {
+                            if liftSet.weight.units != new {
+                                print("Converting set, old weight: \(liftSet.weight.weight) \(liftSet.weight.units.rawValue)")
+                                liftSet.weight = liftSet.weight.convert(to: new)
+                                print("new weight: \(liftSet.weight.weight) \(liftSet.weight.units.rawValue)")
+                            }
+                        }
+                    }
+                    print("Model context has unsaved changes \(modelContext.hasChanges)")
+                    try! modelContext.save()
+                })
             }
             
             
