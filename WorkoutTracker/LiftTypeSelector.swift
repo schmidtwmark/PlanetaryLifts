@@ -92,7 +92,7 @@ struct LiftTypeSelector: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: UserGeneratedLiftType.self, configurations: config)
     
-//    container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms))
+    container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms))
 
     return NavigationStack {
         LiftTypeSelector(selectedLiftType: .constant(.backSquat))

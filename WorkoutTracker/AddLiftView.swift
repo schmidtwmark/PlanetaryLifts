@@ -16,6 +16,7 @@ extension Double{
 
 struct NumberPicker<T: Numeric> : View {
     @Binding var number: T
+    @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
     
     var toString: ((T) -> String)
     
@@ -26,9 +27,9 @@ struct NumberPicker<T: Numeric> : View {
         case weight
         case reps
         
-        func getSingleUnitString() -> String {
+        func getSingleUnitString(_ weightUnits: WeightUnits) -> String {
             return switch self {
-            case .weight: "pound"
+            case .weight: weightUnits.singleUnit
             case .reps: "rep"
             }
         }
@@ -83,14 +84,14 @@ struct NumberPicker<T: Numeric> : View {
                             .fontWeight(.bold)
                             .background(Color(uiColor: UIColor.secondarySystemFill))
                             .clipShape(RoundedRectangle(cornerRadius: 5.0))
-                        Text("\(type.getSingleUnitString())\(number != 1 ? "s" : "")")
+                        Text("\(type.getSingleUnitString(weightUnits))\(number != 1 ? "s" : "")")
                     }
                     .padding(EdgeInsets(top: 0.0, leading: 10.0, bottom: 0.0, trailing: 30.0))
                 } else {
                     Group {
                         Text("\(toString(number))")
                             .fontWeight(.bold)
-                        Text("\(type.getSingleUnitString())\(number != 1 ? "s" : "")")
+                        Text("\(type.getSingleUnitString(weightUnits))\(number != 1 ? "s" : "")")
                     }
                     .onTapGesture {
                         withAnimation {
@@ -206,6 +207,7 @@ struct AddLiftView: View {
     @State var linkedReps = 0
     @State var linkedWeight = 0.0
     @Environment(\.dismiss) var dismiss
+    @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
     
     var navigationTitle : String {
         return switch viewMode {
@@ -264,8 +266,8 @@ struct AddLiftView: View {
                                     if editState.setEditMode != .weight(liftSet.id) {
                                         Divider()
                                     }
-                                    NumberPicker(number: $liftSet.weight, 
-                                                 toString: { "\($0.clean)"},
+                                    NumberPicker(number: $liftSet.weight.weight,
+                                                 toString: { _ in "\(liftSet.weight.convert(to: weightUnits).weight.clean)"},
                                                  onIncrement: {return roundedIncrement($0)},
                                                  onDecrement: {return max(1.0, roundedDecrement($0))},
                                                  type: .weight,
@@ -298,7 +300,7 @@ struct AddLiftView: View {
                             if let lastSet = lift.sets.last {
                                 lift.addSet(lastSet.reps, weight: lastSet.weight)
                             } else {
-                                lift.addSet(10, weight: 50.0)
+                                lift.addSet(10, weight: Weight(weight: 50.0, units: weightUnits))
                             }
                         }
                         // TODO: read from global last time this lift was performed

@@ -18,7 +18,7 @@ struct LiftSetView: View {
                 Text(liftSet.reps == 1 ? "**1** rep" : "**\(liftSet.reps)** reps")
                 Spacer()
                 if lift.weighted {
-                    Text(liftSet.weight == 1 ? "**1** pound" : "**\(liftSet.weight.clean)** pounds")
+                    Text(try! AttributedString(markdown: "\(liftSet.weight.string)"))
                 }
             }
     }
@@ -154,22 +154,22 @@ struct LiftListView: View {
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now)
     container.mainContext.insert(lift)
-    lift.addSet(10, weight: 100.0)
-    lift.addSet(10, weight: 120.0)
-    lift.addSet(10, weight: 130.0)
+    lift.addSet(10, weight: Weight(weight: 100.0, units: .pounds))
+    lift.addSet(10, weight: Weight(weight: 120.0, units: .pounds))
+    lift.addSet(10, weight: Weight(weight: 130.0, units: .pounds))
     
     let secondLift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*10))
     container.mainContext.insert(secondLift)
-    secondLift.addSet(10, weight: 250.0)
-    secondLift.addSet(10, weight: 250.0)
-    secondLift.addSet(10, weight: 250.0)
+    secondLift.addSet(10, weight: Weight(weight: 250.0, units: .pounds))
+    secondLift.addSet(10, weight: Weight(weight: 250.0, units: .pounds))
+    secondLift.addSet(10, weight: Weight(weight: 250.0, units: .pounds))
     
     
     let thirdLift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*60*24 - 10*60))
     container.mainContext.insert(thirdLift)
-    thirdLift.addSet(10, weight: 250.0)
-    thirdLift.addSet(10, weight: 250.0)
-    thirdLift.addSet(10, weight: 250.0)
+    thirdLift.addSet(10, weight: Weight(weight: 250.0, units: .pounds))
+    thirdLift.addSet(10, weight: Weight(weight: 250.0, units: .pounds))
+    thirdLift.addSet(10, weight: Weight(weight: 250.0, units: .pounds))
     
 
     return LiftListView()

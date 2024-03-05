@@ -26,14 +26,14 @@ final class Lift {
         self.timestamp = timestamp
     }
     
-    func addSet(_ reps: Int, weight: Double = 0) {
+    func addSet(_ reps: Int, weight: Weight) {
         let set = LiftSet(reps: reps, weight: weight)
         sets.append(set)
     }
     
     func allSetsSame() -> Bool {
         if let first = sets.first {
-            return sets.count >= 2 && sets.allSatisfy({ $0.reps == first.reps && $0.weight == first.weight})
+            return sets.count >= 2 && sets.allSatisfy({ $0.reps == first.reps && $0.weight.weight == first.weight.weight && $0.weight.units == first.weight.units})
         } else {
             return false
         }
@@ -42,12 +42,34 @@ final class Lift {
 
 final class LiftSet : Codable, Identifiable {
     var reps: Int
-    var weight: Double
+    var weight: Weight
     var id: UUID = UUID()
     
-    init(reps: Int, weight: Double) {
+    init(reps: Int, weight: Weight) {
         self.reps = reps
         self.weight = weight
+    }
+}
+
+final class Weight : Codable {
+    var weight: Double
+    var units: WeightUnits
+    
+    init(weight: Double, units: WeightUnits) {
+        self.weight = weight
+        self.units = units
+    }
+    
+    func convert(to: WeightUnits) -> Weight{
+        return switch (units, to) {
+        case (.pounds, .kilograms): Weight(weight: 0.453592 * weight, units: .kilograms)
+        case (.kilograms, .pounds): Weight(weight: 2.20462 * weight, units: .pounds)
+        default: self
+        }
+    }
+    
+    var string: String {
+        weight == 1.0 ? "**1** \(units.singleUnit)" : "**\(weight.clean)** \(units.singleUnit)s"
     }
 }
 
