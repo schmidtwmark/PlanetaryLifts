@@ -194,16 +194,6 @@ struct AddLiftView: View {
     @StateObject var editState: EditState = EditState()
     
     
-    var weights: [Double] {
-        let small = stride(from: 1.0, to: 12.5, by: 0.5)
-        let medium = stride(from: 15, to: 100, by: 2.5)
-        let large = stride(from: 100, to: 250, by: 5.0)
-        let extraLarge = stride(from: 250, to: 1000, by: 10.0)
-        
-        
-        return Array([small, medium, large, extraLarge].joined())
-    }
-    
     @State var linkedReps = 0
     @State var linkedWeight = 0.0
     @Environment(\.dismiss) var dismiss
@@ -266,8 +256,8 @@ struct AddLiftView: View {
                                     if editState.setEditMode != .weight(liftSet.id) {
                                         Divider()
                                     }
-                                    NumberPicker(number: $liftSet.weight.weight,
-                                                 toString: { _ in "\(liftSet.weight.weight.clean)"},
+                                    NumberPicker(number: $liftSet.weight,
+                                                 toString: { _ in "\(liftSet.roundedWeight.clean)"},
                                                  onIncrement: {return roundedIncrement($0)},
                                                  onDecrement: {return max(1.0, roundedDecrement($0))},
                                                  type: .weight,
@@ -298,9 +288,9 @@ struct AddLiftView: View {
                         withAnimation {
                             editState.setEditMode = .none
                             if let lastSet = lift.sets.last {
-                                lift.addSet(lastSet.reps, weight: lastSet.weight)
+                                lift.addSet(lastSet.reps, weight: lastSet.weight, units: lastSet.units)
                             } else {
-                                lift.addSet(10, weight: Weight(weight: 50.0, units: weightUnits))
+                                lift.addSet(10, weight: 50.0, units: weightUnits)
                             }
                         }
                         // TODO: read from global last time this lift was performed

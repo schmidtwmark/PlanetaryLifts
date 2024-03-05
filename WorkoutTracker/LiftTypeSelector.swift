@@ -81,8 +81,57 @@ struct LiftTypeSelector: View {
                     })
                 }
             }
+            
+            Section("Custom Lift Type") {
+               NavigationLink(destination: {
+                   CreateNewTypeView()
+               }, label: {
+                   Label("New Lift Type", systemImage: "square.and.pencil")
+               })
+            }
         }
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+    }
+}
+
+struct CreateNewTypeView : View {
+    @State var name: String = ""
+    @State var category: LiftCategory = .other
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        
+        List {
+            Section {
+                TextField("Type Name", text: $name)
+                Picker("Category", selection: $category) {
+                    ForEach(LiftCategory.allCases, id: \.rawValue) { category in
+                        Text(category.rawValue).tag(category)
+                    }
+                }
+            } footer: {
+                HStack {
+                    Spacer()
+                    Button {
+                        modelContext.insert(UserGeneratedLiftType(name: name, category: category))
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Image(systemName: "square.and.arrow.down")
+                            Text("Save")
+                        }
+                    }
+                    .font(.headline)
+                    .padding(15)
+                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                    .clipShape(Capsule())
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle("New Lift Type")
+            }
+        }
     }
 }
 

@@ -38,57 +38,59 @@ struct SettingsView: View {
     @AppStorage("weightUnits") var weight: WeightUnits = .pounds
     
     var body: some View {
-        List {
-            Section("Units") {
-                Picker("Weight", selection: $weight, content:  {
-                    Text("Pounds").tag(WeightUnits.pounds)
-                    Text("Kilograms").tag(WeightUnits.kilograms)
-                })
-                .onChange(of: weight, { (old, new) in
-                    print("Weight changed")
-                    let lifts = try! modelContext.fetch(FetchDescriptor<Lift>())
-                    for lift in lifts {
-                        for liftSet in lift.sets {
-                            if liftSet.weight.units != new {
-                                print("Converting set, old weight: \(liftSet.weight.weight) \(liftSet.weight.units.rawValue)")
-                                liftSet.weight = liftSet.weight.convert(to: new)
-                                print("new weight: \(liftSet.weight.weight) \(liftSet.weight.units.rawValue)")
+        NavigationStack {
+            List {
+                Section("Units") {
+                    Picker("Weight", selection: $weight, content:  {
+                        Text("Pounds").tag(WeightUnits.pounds)
+                        Text("Kilograms").tag(WeightUnits.kilograms)
+                    })
+                    .onChange(of: weight, { (old, new) in
+                        // TODO: figure out how to do this in the background and show progress
+                        print("Weight changed")
+                        let lifts = try! modelContext.fetch(FetchDescriptor<Lift>())
+                        for lift in lifts {
+                            let newSets = lift.sets.map({$0.convert(to: new)})
+                            lift.sets = newSets
+                        }
+                        //                    for lift in lifts {
+                        //                        print("Type: \(lift.type.string)")
+                        //                        for liftSet in lift.sets {
+                        //                            print("new weight: \(liftSet.weight) \(liftSet.units.rawValue)")
+                        //                        }
+                        //                    }
+                    })
+                }
+                
+                
+                if categorizedUserGeneratedTypes.contains(where: {(_, types) in !types.isEmpty
+                }) {
+                    Section("Custom Lift Types"){
+                        ForEach(categorizedUserGeneratedTypes.sorted(by: {$0.key.rawValue < $1.key.rawValue}), id: \.key.rawValue) { category, types in
+                            
+                            if !types.isEmpty {
+                                ForEach(types)  { type in
+                                    HStack {
+                                        Text(type.name)
+                                        Spacer()
+                                        Text(type.category.rawValue).fontWeight(.light)
+                                    }
+                                }.onDelete(perform: { indexSet in
+                                    let liftsToDelete = indexSet.map({index in categorizedUserGeneratedTypes[category]![index]})
+                                    for liftToDelete in liftsToDelete {
+                                        modelContext.delete(liftToDelete)
+                                        
+                                    }
+                                    
+                                })
                             }
                         }
-                    }
-                    print("Model context has unsaved changes \(modelContext.hasChanges)")
-                    try! modelContext.save()
-                })
-            }
-            
-            
-            if categorizedUserGeneratedTypes.contains(where: {(_, types) in !types.isEmpty
-            }) {
-                Section("Custom Lift Types"){
-                    ForEach(categorizedUserGeneratedTypes.sorted(by: {$0.key.rawValue < $1.key.rawValue}), id: \.key.rawValue) { category, types in
                         
-                        if !types.isEmpty {
-                            ForEach(types)  { type in
-                                HStack {
-                                    Text(type.name)
-                                    Spacer()
-                                    Text(type.category.rawValue).fontWeight(.light)
-                                }
-                            }.onDelete(perform: { indexSet in
-                                let liftsToDelete = indexSet.map({index in categorizedUserGeneratedTypes[category]![index]})
-                                for liftToDelete in liftsToDelete {
-                                    modelContext.delete(liftToDelete)
-                                    
-                                }
-                                
-                            })
-                        }
                     }
-                    
                 }
             }
+            .navigationTitle("Settings")
         }
-        .navigationTitle("Settings")
     }
 }
 
@@ -98,7 +100,6 @@ struct SettingsView: View {
     
     container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms))
     container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type 2", category: .legs))
-    return NavigationStack {
+    return
         SettingsView().modelContainer(container)
-    }
 }
