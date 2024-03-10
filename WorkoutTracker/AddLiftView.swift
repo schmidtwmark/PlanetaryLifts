@@ -18,8 +18,8 @@ struct StepperButtonStyle: ButtonStyle {
     func makeBody(configuration: Self.Configuration) -> some View {
         configuration.label
             .frame(width: 50, height: 50)
-            .foregroundColor(Color.black)
-            .background(Color(uiColor: UIColor.tertiarySystemFill))
+            .foregroundColor(Color(uiColor: UIColor.label))
+            .background(Color(uiColor: UIColor.secondarySystemFill))
             .cornerRadius(10.0)
     }
 }
@@ -60,6 +60,7 @@ struct NumberPicker<T: Numeric> : View {
             if type == .weight {
                 formatter.numberStyle = .decimal
             }
+            formatter.zeroSymbol = ""
             return formatter
     }
     
@@ -71,6 +72,8 @@ struct NumberPicker<T: Numeric> : View {
     }
     
     @EnvironmentObject var editState: EditState
+    @FocusState var isInputActive: Bool
+
     
     var body: some View {
         HStack {
@@ -83,29 +86,40 @@ struct NumberPicker<T: Numeric> : View {
                         } label: {
                             Image(systemName: "minus")
                         }.buttonStyle(StepperButtonStyle())
-                        
-                            .buttonStyle(.bordered)
                         TextField("", value: $number, formatter: formatter)
                             .keyboardType(.decimalPad)
+                            .focused($isInputActive)
                             .multilineTextAlignment(.center)
-                            .frame(height: 50)
+                            .frame(width: 100, height: 50 )
                             .fontWeight(.bold)
                             .background(Color(uiColor: UIColor.secondarySystemFill))
-                            .clipShape(RoundedRectangle(cornerRadius: 5.0))
+                            .clipShape(RoundedRectangle(cornerRadius: 10.0))
                         Button {
                             number = onIncrement(number)
                         } label: {
                             Image(systemName: "plus")
                         }.buttonStyle(StepperButtonStyle())
-                            .controlSize(.large)
-                            .foregroundStyle(Color.black)
-                            .buttonStyle(.bordered)
+                        Spacer()
                         Text("\(type.getSingleUnitString(weightUnits))\(number != 1 ? "s" : "")")
                             .onTapGesture {
                                 withAnimation {
+                                    isInputActive = false
                                     editState.setEditMode = .none
                                 }
                         }
+                        Spacer()
+                    }
+                    .toolbar { ToolbarItemGroup(placement: .keyboard, content: {
+                        Spacer()
+                        Button {
+                            withAnimation {
+                                isInputActive = false
+                                editState.setEditMode = .none
+                            }
+                        } label: {
+                            Label("Done", systemImage: "checkmark").labelStyle(.titleOnly)
+                        }
+                        })
                     }
 
                 } else {
@@ -292,19 +306,27 @@ struct AddLiftView: View {
                 HStack {
                     Spacer()
                     Button {
+                        
                         withAnimation {
-                            editState.setEditMode = .none
-                            if let lastSet = lift.sets.last {
-                                lift.addSet(lastSet.reps, weight: lastSet.weight, units: lastSet.units)
+                            if editState.setEditMode == .none {
+                                if let lastSet = lift.sets.last {
+                                    lift.addSet(lastSet.reps, weight: lastSet.weight, units: lastSet.units)
+                                } else {
+                                    lift.addSet(10, weight: 50.0, units: weightUnits)
+                                }
+                                // TODO: read from global last time this lift was performed
+
                             } else {
-                                lift.addSet(10, weight: 50.0, units: weightUnits)
+                                editState.setEditMode = .none
                             }
                         }
-                        // TODO: read from global last time this lift was performed
                     } label: {
                         HStack {
-                            Image(systemName: "plus")
-                            Text("Add Set")
+                            if editState.setEditMode == .none {
+                              Label("Add Set", systemImage: "plus")
+                            } else {
+                                Label("Done", systemImage: "checkmark")
+                            }
                         }
                     }
                     .font(.headline)
@@ -344,8 +366,7 @@ struct AddLiftView: View {
                         dismiss()
                     } label: {
                         HStack {
-                            Image(systemName: "square.and.arrow.down")
-                            Text("Save")
+                            Label("Save", systemImage: "square.and.arrow.down")
                         }
                     }
                     .font(.headline)
