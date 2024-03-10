@@ -53,18 +53,11 @@ struct SettingsView: View {
                             let newSets = lift.sets.map({$0.convert(to: new)})
                             lift.sets = newSets
                         }
-                        //                    for lift in lifts {
-                        //                        print("Type: \(lift.type.string)")
-                        //                        for liftSet in lift.sets {
-                        //                            print("new weight: \(liftSet.weight) \(liftSet.units.rawValue)")
-                        //                        }
-                        //                    }
                     })
                 }
                 
                 
-                if categorizedUserGeneratedTypes.contains(where: {(_, types) in !types.isEmpty
-                }) {
+                if categorizedUserGeneratedTypes.contains(where: {(_, types) in !types.isEmpty }) {
                     Section("Custom Lift Types"){
                         ForEach(categorizedUserGeneratedTypes.sorted(by: {$0.key.rawValue < $1.key.rawValue}), id: \.key.rawValue) { category, types in
                             

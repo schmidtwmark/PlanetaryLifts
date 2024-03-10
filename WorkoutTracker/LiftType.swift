@@ -15,11 +15,35 @@ enum LiftCategory: String, Codable, CaseIterable {
     case legs = "Legs"
     case shoulders = "Shoulders"
     case core = "Core"
+    case glutes = "Glutes"
     case other = "Other"
 }
 
-enum LiftType: Hashable, Codable{
+
+enum LiftModifier: String, Codable, CaseIterable {
+    case incline = "Incline"
+    case decline = "Decline"
+    case narrowGrip = "Narrow Grip"
+    case wideGrip = "Wide Grip"
+    case oneArm = "One Arm"
+    case reverse = "Reverse"
+    case barbell = "Barbell"
+    case dumbbell = "Dumbbell"
     
+    // For any given modifier, returns the set of modifiers that cannot also be set
+    // You can't do Incline Decline Bench
+    var exclusions: Set<LiftModifier> {
+        return switch self {
+        case .incline: Set([.decline])
+        case .decline: Set([.incline])
+        case .narrowGrip: Set([.wideGrip])
+        case .wideGrip: Set([.narrowGrip])
+        default: Set()
+        }
+    }
+}
+
+enum LiftType: Hashable, Codable{
     // MARK: back
     case latPullDown
     
@@ -28,9 +52,7 @@ enum LiftType: Hashable, Codable{
     
     // MARK: arms
     case dumbbellCurl
-    case reverseDumbbellCurl
     case weightedBarCurl
-    case reverseWeightedBarCurl
     
     // MARK: legs
     case deadlift
@@ -43,6 +65,8 @@ enum LiftType: Hashable, Codable{
     // MARK: core
     case sitUp
     
+    // MARK: glutes
+    
     // MARK: other
     
     
@@ -54,9 +78,7 @@ enum LiftType: Hashable, Codable{
         .latPullDown,
         .benchPress,
         .dumbbellCurl,
-        .reverseDumbbellCurl,
         .weightedBarCurl,
-        .reverseWeightedBarCurl,
         .deadlift,
         .backSquat,
         .frontSquat,
@@ -84,9 +106,7 @@ enum LiftType: Hashable, Codable{
         
         // MARK: arms
         case .dumbbellCurl: "Dumbbell Curl"
-        case .reverseDumbbellCurl: "Reverse Dumbbell Curl"
         case .weightedBarCurl: "Weighted Bar Curl"
-        case .reverseWeightedBarCurl: "Reverse Weighted Bar Curl"
         
         // MARK: legs
         case .deadlift: "Deadlift"
@@ -113,9 +133,7 @@ enum LiftType: Hashable, Codable{
         
         // MARK: arms
         case .dumbbellCurl: .arms
-        case .reverseDumbbellCurl: .arms
         case .weightedBarCurl: .arms
-        case .reverseWeightedBarCurl: .arms
         
         // MARK: legs
         case .deadlift: .legs
@@ -140,4 +158,10 @@ enum LiftType: Hashable, Codable{
         }
     }
     
+    var modifiers: [LiftModifier] {
+        return switch self {
+        case .benchPress: [.incline, .decline]
+        default: []
+        }
+    }
 }

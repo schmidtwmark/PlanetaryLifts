@@ -14,6 +14,16 @@ extension Double{
     }
 }
 
+struct StepperButtonStyle: ButtonStyle {
+    func makeBody(configuration: Self.Configuration) -> some View {
+        configuration.label
+            .frame(width: 50, height: 50)
+            .foregroundColor(Color.black)
+            .background(Color(uiColor: UIColor.tertiarySystemFill))
+            .cornerRadius(10.0)
+    }
+}
+
 struct NumberPicker<T: Numeric> : View {
     @Binding var number: T
     @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
@@ -61,33 +71,46 @@ struct NumberPicker<T: Numeric> : View {
     }
     
     @EnvironmentObject var editState: EditState
+    
     var body: some View {
         HStack {
-            if selected {
-                Button {
-                    withAnimation {
-                        editState.setEditMode = .none
-                    }
-                } label: {
-                    Label("Done", systemImage: "checkmark").labelStyle(.iconOnly)
-                }
-            }
-            
             Group {
-                Spacer()
                 if selected {
+                        
                     HStack(alignment: .firstTextBaseline, spacing: 5.0) {
+                        Button {
+                            number = onDecrement(number)
+                        } label: {
+                            Image(systemName: "minus")
+                        }.buttonStyle(StepperButtonStyle())
+                        
+                            .buttonStyle(.bordered)
                         TextField("", value: $number, formatter: formatter)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.center)
-                            .padding(EdgeInsets(top: 4.0, leading: 0.0, bottom: 4.0, trailing: 0.0))
+                            .frame(height: 50)
                             .fontWeight(.bold)
                             .background(Color(uiColor: UIColor.secondarySystemFill))
                             .clipShape(RoundedRectangle(cornerRadius: 5.0))
+                        Button {
+                            number = onIncrement(number)
+                        } label: {
+                            Image(systemName: "plus")
+                        }.buttonStyle(StepperButtonStyle())
+                            .controlSize(.large)
+                            .foregroundStyle(Color.black)
+                            .buttonStyle(.bordered)
                         Text("\(type.getSingleUnitString(weightUnits))\(number != 1 ? "s" : "")")
+                            .onTapGesture {
+                                withAnimation {
+                                    editState.setEditMode = .none
+                                }
+                        }
                     }
-                    .padding(EdgeInsets(top: 0.0, leading: 10.0, bottom: 0.0, trailing: 30.0))
+
                 } else {
+                    Spacer()
+                    
                     Group {
                         Text("\(toString(number))")
                             .fontWeight(.bold)
@@ -101,17 +124,13 @@ struct NumberPicker<T: Numeric> : View {
                             }
                         }
                     }
+                    Spacer()
                 }
-                Spacer()
-            }
+                if selected {
+                }
             
-            if selected {
-                Stepper("", onIncrement: {
-                    number = onIncrement(number)
-                }, onDecrement: {
-                    number = onDecrement(number)
-                })
-                .labelsHidden()
+
+                
             }
         }
         .alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
@@ -210,10 +229,6 @@ struct AddLiftView: View {
     var body: some View {
         List {
             Section {
-//                Picker("Type", selection: $lift.type, content: {
-//                    Text("Bench Press").tag("Bench Press")
-//                    Text("Back Squat").tag("Back Squat")
-//                })
                 NavigationLink(destination: { LiftTypeSelector(selectedLiftType: $lift.type)
                 }, label: {
                     HStack {
@@ -231,14 +246,6 @@ struct AddLiftView: View {
                     Toggle(isOn: $lift.weighted.animation(), label: {
                         Text("Weighted Sets")
                     })
-//                    if lift.weighted {
-//                        Toggle(isOn: $lift.equalWeight, label: {
-//                            Text("Same Weight Across Sets")
-//                        })
-//                    }
-//                    Toggle(isOn: $lift.equalReps, label: {
-//                        Text("Same Repetition Count")
-//                    })
                 }
                     
                     ForEach($lift.sets) { $liftSet in
@@ -306,6 +313,25 @@ struct AddLiftView: View {
                     .clipShape(Capsule())
                     Spacer()
                 }.padding()
+            }
+            if lift.type.modifiers.count > 0 {
+                Section("Modifiers") {
+                    ForEach(lift.type.modifiers, id: \.rawValue) { modifier in
+                        Label(modifier.rawValue, systemImage: lift.modifiers.contains(modifier) ? "checkmark.circle" : "circle").onTapGesture(perform: {
+                            withAnimation {
+                                if lift.modifiers.contains(modifier) {
+                                    lift.modifiers.remove(modifier)
+                                } else {
+                                    let exclusions = modifier.exclusions
+                                    for exclusion in exclusions {
+                                        lift.modifiers.remove(exclusion)
+                                    }
+                                    lift.modifiers.insert(modifier)
+                                }
+                            }
+                        })
+                    }
+                }
             }
             Section {
                 TextEditor(text: $lift.notes).frame(minHeight: 100)

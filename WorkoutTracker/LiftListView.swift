@@ -108,6 +108,19 @@ struct LiftListView: View {
                                     .font(.caption)
                                 
                             }
+                            if lift.modifiers.count > 0 {
+                                HStack {
+                                    ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
+                                        Text(modifier.rawValue)
+                                         .padding(10)
+                                         .background(Color.accentColor)
+                                            .clipShape(Capsule())
+                                           
+                                        
+                                    }
+                                    Spacer()
+                                }
+                            }
                             SetsView(lift: lift)
                         }                        
                         .contextMenu(menuItems: {
@@ -152,7 +165,7 @@ struct LiftListView: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, configurations: config)
     
-    let lift = Lift(liftType: .benchPress, timestamp: Date.now)
+    let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline])
     container.mainContext.insert(lift)
     lift.addSet(10, weight: 100.0, units: .pounds)
     lift.addSet(10, weight: 120.0, units: .pounds)

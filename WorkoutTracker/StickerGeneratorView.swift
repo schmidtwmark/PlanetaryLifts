@@ -1,5 +1,5 @@
 //
-//  SwiftUIView.swift
+//  StickerGeneratorView.swift
 //  WorkoutTracker
 //
 //  Created by Mark Schmidt on 3/5/24.
@@ -7,12 +7,18 @@
 
 import SwiftUI
 
-struct SwiftUIView: View {
+struct StickerGeneratorView: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ZStack {
+            Circle().foregroundStyle(Color.red)
+            
+            
+        }.padding()
     }
 }
 
 #Preview {
-    SwiftUIView()
+    NavigationStack {
+        StickerGeneratorView()
+    }
 }
