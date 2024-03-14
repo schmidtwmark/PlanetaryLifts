@@ -56,6 +56,14 @@ struct SettingsView: View {
                     })
                 }
                 
+                #if DEBUG
+                Section("Debug Stuff") {
+                    NavigationLink("Sticker Generator") {
+                        StickerGeneratorView()
+                    }
+                }
+                #endif
+                
                 
                 if categorizedUserGeneratedTypes.contains(where: {(_, types) in !types.isEmpty }) {
                     Section("Custom Lift Types"){

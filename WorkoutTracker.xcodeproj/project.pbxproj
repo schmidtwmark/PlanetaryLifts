@@ -11,6 +11,8 @@
 		ED320A382B94DB5E003A6628 /* LiftType.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A372B94DB5E003A6628 /* LiftType.swift */; };
 		ED320A3A2B950AF5003A6628 /* LiftTypeSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */; };
 		ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */; };
+		ED50D4D62B9E20CC00BD3F77 /* CrookedText in Frameworks */ = {isa = PBXBuildFile; productRef = ED50D4D52B9E20CC00BD3F77 /* CrookedText */; };
+		ED65CC512B9F523E0029FF5A /* Shiny in Frameworks */ = {isa = PBXBuildFile; productRef = ED65CC502B9F523E0029FF5A /* Shiny */; };
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
 		EDA682FA2B90E9F5002015CA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EDA682F92B90E9F5002015CA /* Assets.xcassets */; };
@@ -46,6 +48,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ED65CC512B9F523E0029FF5A /* Shiny in Frameworks */,
+				ED50D4D62B9E20CC00BD3F77 /* CrookedText in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -114,6 +118,10 @@
 			dependencies = (
 			);
 			name = WorkoutTracker;
+			packageProductDependencies = (
+				ED50D4D52B9E20CC00BD3F77 /* CrookedText */,
+				ED65CC502B9F523E0029FF5A /* Shiny */,
+			);
 			productName = WorkoutTracker;
 			productReference = EDA682F02B90E9F4002015CA /* WorkoutTracker.app */;
 			productType = "com.apple.product-type.application";
@@ -142,6 +150,10 @@
 				Base,
 			);
 			mainGroup = EDA682E72B90E9F4002015CA;
+			packageReferences = (
+				ED50D4D42B9E20CC00BD3F77 /* XCRemoteSwiftPackageReference "CrookedText" */,
+				ED65CC4F2B9F523E0029FF5A /* XCRemoteSwiftPackageReference "shiny" */,
+			);
 			productRefGroup = EDA682F12B90E9F4002015CA /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -388,6 +400,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		ED50D4D42B9E20CC00BD3F77 /* XCRemoteSwiftPackageReference "CrookedText" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/duemunk/CrookedText";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.1;
+			};
+		};
+		ED65CC4F2B9F523E0029FF5A /* XCRemoteSwiftPackageReference "shiny" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/maustinstar/shiny";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ED50D4D52B9E20CC00BD3F77 /* CrookedText */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ED50D4D42B9E20CC00BD3F77 /* XCRemoteSwiftPackageReference "CrookedText" */;
+			productName = CrookedText;
+		};
+		ED65CC502B9F523E0029FF5A /* Shiny */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ED65CC4F2B9F523E0029FF5A /* XCRemoteSwiftPackageReference "shiny" */;
+			productName = Shiny;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = EDA682E82B90E9F4002015CA /* Project object */;
 }

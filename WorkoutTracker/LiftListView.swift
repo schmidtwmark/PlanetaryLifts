@@ -65,7 +65,10 @@ struct LiftListView: View {
     @Environment(\.modelContext) private var modelContext
     
     @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
-    
+    var awardMap : AwardMap {
+        return generateAwardMap(lifts)
+    }
+
     private var liftsByDate: [(TimelessDate, [Lift])] {
         var maybeLastDate : TimelessDate? = nil
         var todayLifts : [Lift] = []
@@ -124,7 +127,7 @@ struct LiftListView: View {
                             SetsView(lift: lift)
                         }                        
                         .contextMenu(menuItems: {
-                            NavigationLink(destination: AddLiftView(viewMode: .edit, lift: lift), label: {
+                            NavigationLink(destination: AddLiftView(viewMode: .edit, lift: lift, awardMap: awardMap), label: {
                                 Text("Edit Lift")
                             })
                         })
@@ -153,7 +156,7 @@ struct LiftListView: View {
                 })
             }
             .navigationDestination(for: Lift.self) { lift in
-                AddLiftView(viewMode: .add, lift: lift).onAppear {
+                AddLiftView(viewMode: .add, lift: lift, awardMap: awardMap).onAppear {
                     modelContext.insert(lift)
                 }
             }

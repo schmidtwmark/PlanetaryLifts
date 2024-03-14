@@ -232,6 +232,8 @@ struct AddLiftView: View {
     @Environment(\.dismiss) var dismiss
     @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
     
+    var awardMap : AwardMap
+
     var navigationTitle : String {
         return switch viewMode {
         case .add: "Add Lift"
@@ -261,7 +263,6 @@ struct AddLiftView: View {
                         Text("Weighted Sets")
                     })
                 }
-                    
                     ForEach($lift.sets) { $liftSet in
                         HStack {
                             if editState.setEditMode == .none || editState.setEditMode != .weight(liftSet.id) {
@@ -286,7 +287,6 @@ struct AddLiftView: View {
                                 }
                             }
                         }
-//                        .listRowInsets(EdgeInsets(top: 0.0, leading: 0.0, bottom: 0.0, trailing: 10.0))
                     }.onDelete(perform: { indexSet in
                         lift.sets.remove(atOffsets: indexSet)
                     })
@@ -329,10 +329,6 @@ struct AddLiftView: View {
                             }
                         }
                     }
-                    .font(.headline)
-                    .padding(15)
-                    .background(Color(UIColor.secondarySystemGroupedBackground))
-                    .clipShape(Capsule())
                     Spacer()
                 }.padding()
             }
@@ -355,43 +351,70 @@ struct AddLiftView: View {
                     }
                 }
             }
-            Section {
-                TextEditor(text: $lift.notes).frame(minHeight: 100)
-            } header: {
-                Text("Workout Notes")
-            } footer: {
-                HStack {
-                    Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Label("Save", systemImage: "square.and.arrow.down")
+            if lift.stickers.count > 0 {
+                Section("Awards") {
+                    ScrollView(.horizontal) {
+                        ForEach(lift.stickers, id: \.id) { sticker in
+                            StickerView(config: sticker).scaleEffect(0.2).frame(width: 100, height: 100)
                         }
                     }
-                    .font(.headline)
-                    .padding(15)
-                    .background(Color(UIColor.secondarySystemGroupedBackground))
-                    .clipShape(Capsule())
-                    Spacer()
-                }.padding()
+                }
+            }
+            Section("Workout Notes") {
+                TextEditor(text: $lift.notes).frame(minHeight: 100)
             }
         }
+        .onDisappear {
+            // Check stickers
+            for liftSet in lift.sets {
+                liftSet.checkSticker(awardMap: awardMap, lift: lift)
+            }
+            // TODO: show toast signifying new sticker earned, or pass message back to main view
+        }
+        .toolbar {ToolbarItemGroup(placement: .topBarTrailing) {
+            Button {
+                dismiss()
+            } label: {
+                HStack(alignment: .lastTextBaseline) {
+                    Image(systemName: "square.and.arrow.down")
+                    Text("Save")
+                }
+//                Label("Save", systemImage: "square.and.arrow.down")
+            }
+            
+        }}
         .environmentObject(editState)
         .navigationTitle(navigationTitle)
     }
 }
 
-#Preview {
+#Preview("Filled") {
     
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, configurations: config)
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now)
     container.mainContext.insert(lift)
+    lift.addSet(10, weight: 100.0, units: .pounds)
+    lift.addSet(10, weight: 120.0, units: .pounds)
+    lift.addSet(10, weight: 130.0, units: .pounds, sticker: StickerConfig(id: UUID(), timestamp: Date.now, type: .benchPress, reps: 10, weight: 130.0, units: .pounds, colorHex: UIColor.blue.toHex()))
 
     return NavigationStack {
-        AddLiftView(viewMode: .add, lift: lift)
+        AddLiftView(viewMode: .add, lift: lift, awardMap: [:])
+            .modelContainer(container)
+    }
+    
+}
+#Preview("Empty") {
+    
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, configurations: config)
+    
+    let lift = Lift(liftType: .benchPress, timestamp: Date.now)
+    container.mainContext.insert(lift)
+    
+    return NavigationStack {
+        AddLiftView(viewMode: .add, lift: lift, awardMap: [:])
             .modelContainer(container)
     }
     
