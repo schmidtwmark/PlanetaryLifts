@@ -60,14 +60,57 @@ struct SetsView: View {
     }
 }
 
+struct LiftListItem: View {
+    @State var lift: Lift
+    @Binding var editingLift: Lift?
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Text(lift.type.string)
+                    .font(.title)
+                Spacer()
+                Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
+                    .font(.caption)
+                
+            }
+            if lift.modifiers.count > 0 {
+                HStack {
+                    ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
+                        Text(modifier.rawValue)
+                            .padding(10)
+                            .background(Color.accentColor)
+                            .clipShape(Capsule())
+                        
+                        
+                    }
+                    Spacer()
+                }
+            }
+            SetsView(lift: lift)
+        }
+        .contextMenu(menuItems: {
+            Button {
+                editingLift = lift
+            } label: {
+                Text("Edit Lift")
+            }
+        })
+        
+        .padding([.top, .bottom], 5.0)
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0))
+        .buttonStyle(.plain)
+    }
+}
+
 struct LiftListView: View {
     
     @Environment(\.modelContext) private var modelContext
     
     @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
-    var awardMap : AwardMap {
-        return generateAwardMap(lifts)
-    }
+
+    @State var editingLift: Lift? = nil
+    @State var addingLift: Bool = false
 
     private var liftsByDate: [(TimelessDate, [Lift])] {
         var maybeLastDate : TimelessDate? = nil
@@ -102,39 +145,7 @@ struct LiftListView: View {
             List(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
                 Section("\(date.format())") {
                     ForEach(liftsForDate) { lift in
-                        VStack {
-                            HStack {
-                                Text(lift.type.string)
-                                    .font(.title)
-                                Spacer()
-                                Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
-                                    .font(.caption)
-                                
-                            }
-                            if lift.modifiers.count > 0 {
-                                HStack {
-                                    ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
-                                        Text(modifier.rawValue)
-                                         .padding(10)
-                                         .background(Color.accentColor)
-                                            .clipShape(Capsule())
-                                           
-                                        
-                                    }
-                                    Spacer()
-                                }
-                            }
-                            SetsView(lift: lift)
-                        }                        
-                        .contextMenu(menuItems: {
-                            NavigationLink(destination: AddLiftView(viewMode: .edit, lift: lift, awardMap: awardMap), label: {
-                                Text("Edit Lift")
-                            })
-                        })
-
-                        .padding([.top, .bottom], 5.0)
-                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0))
-                        .buttonStyle(.plain)
+                        LiftListItem(lift: lift, editingLift: $editingLift)
                     }
                     .onDelete { indexSet in
                         let liftsToRemove = indexSet.map({idx in liftsForDate[idx]})
@@ -146,19 +157,22 @@ struct LiftListView: View {
             }
             .navigationTitle("Lifts")
             .toolbar() {
-                ToolbarItemGroup(placement: .primaryAction, content: {
-                    NavigationLink(value: Lift(liftType: .benchPress, timestamp: Date.now), label: {
+                ToolbarItem(placement: .primaryAction, content: {
+                    Button {
+                        addingLift = true
+                    } label: {
                         Label("Add Lift", systemImage: "plus")
-                   })
+                    }
                     if lifts.count > 0 {
                         EditButton()
                     }
                 })
             }
-            .navigationDestination(for: Lift.self) { lift in
-                AddLiftView(viewMode: .add, lift: lift, awardMap: awardMap).onAppear {
-                    modelContext.insert(lift)
-                }
+            .sheet(isPresented: $addingLift, content: {
+                AddLiftView(liftType: .benchPress)
+            })
+            .sheet(item: $editingLift) { lift in
+                AddLiftView(lift: lift)
             }
         }
     }
@@ -166,7 +180,7 @@ struct LiftListView: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline])
     container.mainContext.insert(lift)

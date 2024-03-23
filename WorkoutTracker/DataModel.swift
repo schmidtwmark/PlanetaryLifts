@@ -22,15 +22,16 @@ final class Lift {
     var notes: String = ""
     var modifiers: Set<LiftModifier>
     
-    init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date, modifiers: Set<LiftModifier> = Set()) {
+    init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date, modifiers: Set<LiftModifier> = Set(), notes: String = "") {
         self.type = liftType
         self.sets = sets
         self.timestamp = timestamp
         self.modifiers = modifiers
+        self.notes = notes
     }
     
-    func addSet(_ reps: Int, weight: Double, units: WeightUnits, sticker: StickerConfig? = nil) {
-        let set = LiftSet(reps: reps, weight: weight, units: units, sticker: sticker)
+    func addSet(_ reps: Int, weight: Double, units: WeightUnits) {
+        let set = LiftSet(reps: reps, weight: weight, units: units)
         sets.append(set)
     }
     
@@ -41,25 +42,25 @@ final class Lift {
             return false
         }
     }
-    
-    var stickers: [StickerConfig] {
-        sets.compactMap({$0.sticker})
-    }
 }
 
-final class LiftSet : Codable, Identifiable {
+final class LiftSet : Codable, Identifiable, Equatable {
+    static func == (lhs: LiftSet, rhs: LiftSet) -> Bool {
+        lhs.reps == rhs.reps && lhs.weight == rhs.weight && lhs.units == rhs.units
+    }
+    
     var reps: Int
     var weight: Double
     var units: WeightUnits
-    var sticker: StickerConfig? = nil
+//    var sticker: StickerConfig? = nil
     
     var id: UUID = UUID()
     
-    init(reps: Int, weight: Double, units: WeightUnits, sticker: StickerConfig? = nil) {
+    init(reps: Int, weight: Double, units: WeightUnits) {
         self.reps = reps
         self.weight = weight
         self.units = units
-        self.sticker = sticker
+//        self.sticker = sticker
     }
     
     var roundedWeight : Double {
@@ -74,31 +75,29 @@ final class LiftSet : Codable, Identifiable {
         }
         
         units = to
-        return LiftSet(reps: reps, weight: newWeight, units: to, sticker: sticker?.convert(to))
+        return LiftSet(reps: reps, weight: newWeight, units: to)
     }
     
     func weightString() -> String {
         weight == 1.0 ? "**1** \(units.singleUnit)" : "**\(roundedWeight.clean)** \(units.singleUnit)s"
     }
     
-    func checkSticker(awardMap: AwardMap, lift: Lift) {
-        sticker = nil
-        let key = AwardKey(reps: self.reps, type: lift.type, modifiers: lift.modifiers)
-        print("Checking sticker for key \(key.type) \(key.modifiers) \(key.reps)")
-        if let (awardWeight, _) = awardMap[key] {
-            if self.weight > awardWeight {
-                print("Adding sticker because \(self.weight) is greater than \(awardWeight)")
-                self.sticker = StickerConfig(id: UUID(), timestamp: lift.timestamp, type: lift.type, reps: self.reps, weight: self.weight, units: self.units, colorHex: UIColor.green.toHex())
-//                awardMap.updateValue((self.weight, self.id), forKey: key)
-            } else {
-                print("Not adding sticker, \(self.weight) is less than or equal to \(awardWeight)")
-            }
-        } else {
-            print("Adding sticker because empty key")
-            self.sticker = StickerConfig(id: UUID(), timestamp: lift.timestamp, type: lift.type, reps: self.reps, weight: self.weight, units: self.units, colorHex: UIColor.green.toHex())
-//            awardMap.updateValue((self.weight, self.id), forKey: key)
-        }
-    }
+//    func checkSticker(awardMap: AwardMap, lift: Lift) {
+//        sticker = nil
+//        let key = AwardKey(reps: self.reps, type: lift.type, modifiers: lift.modifiers)
+//        print("Checking sticker for key \(key.type) \(key.modifiers) \(key.reps)")
+//        if let (awardWeight, _) = awardMap[key] {
+//            if self.weight > awardWeight {
+//                print("Adding sticker because \(self.weight) is greater than \(awardWeight)")
+//                self.sticker = StickerConfig(id: UUID(), timestamp: lift.timestamp, type: lift.type, reps: self.reps, weight: self.weight, units: self.units, colorHex: UIColor.green.toHex())
+//            } else {
+//                print("Not adding sticker, \(self.weight) is less than or equal to \(awardWeight)")
+//            }
+//        } else {
+//            print("Adding sticker because empty key")
+//            self.sticker = StickerConfig(id: UUID(), timestamp: lift.timestamp, type: lift.type, reps: self.reps, weight: self.weight, units: self.units, colorHex: UIColor.green.toHex())
+//        }
+//    }
 }
 
 @Model

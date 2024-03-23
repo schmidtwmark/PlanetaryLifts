@@ -211,210 +211,285 @@ func roundedDecrement(_ current: Double) -> Double {
 
 
 struct AddLiftView: View {
-    enum ViewMode {
-        case add
-        case edit
+    
+    init(lift: Lift) {
+        self.mode = .edit(lift)
+        self.liftType = lift.type
+        self.timestamp = lift.timestamp
+        self.isWeighted = lift.weighted
+        self.liftSets = lift.sets
+        self.modifiers = lift.modifiers
+        self.notes = lift.notes
     }
     
-    let viewMode : ViewMode
+    init(liftType: LiftType) {
+        self.mode = .add
+        self.liftType = liftType
+        self.timestamp = Date()
+        self.isWeighted = true
+        self.liftSets = []
+        self.modifiers = Set()
+        self.notes = ""
+    }
     
-    @State var lift: Lift
+    
+    enum Mode {
+        case add
+        case edit(Lift)
+    }
+    
+    @State var mode : Mode
+    @State var liftType: LiftType
+    @State var timestamp: Date
+    @State var isWeighted: Bool
+    @State var liftSets: [LiftSet]
+    @State var modifiers: Set<LiftModifier>
+    @State var notes: String
+    
     @Environment(\.modelContext) private var modelContext
     @State var showSetSettings = false
     
-    
-    
     @StateObject var editState: EditState = EditState()
-    
-    
-    @State var linkedReps = 0
-    @State var linkedWeight = 0.0
     @Environment(\.dismiss) var dismiss
     @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
     
-    var awardMap : AwardMap
-
     var navigationTitle : String {
-        return switch viewMode {
+        return switch mode {
         case .add: "Add Lift"
         case .edit: "Edit Lift"
+        }
+    }
+    
+    var enableSave: Bool {
+        switch mode {
+        case .add:
+            return true
+        case .edit(var lift):
+            return lift.type != liftType 
+            || lift.timestamp != timestamp
+            || lift.sets != liftSets
+            || lift.modifiers != modifiers
+            || lift.weighted != isWeighted 
+            || lift.notes != notes
+        }
+    }
+    
+    @ViewBuilder
+    var modifiersSection: some View {
+        Section("Modifiers") {
+            ForEach(liftType.modifiers, id: \.rawValue) { modifier in
+                Label(modifier.rawValue, systemImage: modifiers.contains(modifier) ? "checkmark.circle" : "circle").onTapGesture(perform: {
+                    withAnimation {
+                        if modifiers.contains(modifier) {
+                            modifiers.remove(modifier)
+                        } else {
+                            let exclusions = modifier.exclusions
+                            for exclusion in exclusions {
+                                modifiers.remove(exclusion)
+                            }
+                            modifiers.insert(modifier)
+                        }
+                    }
+                })
+            }
+        }
+    }
+    
+//    @ViewBuilder
+//    var stickersSection: some View {
+//        Section("Awards") {
+//            ScrollView(.horizontal) {
+//                ForEach(stickers, id: \.id) { sticker in
+//                    StickerView(config: sticker).scaleEffect(0.2).frame(width: 100, height: 100)
+//                }
+//            }
+//        }
+//    }
+    
+    @ViewBuilder
+    var mainSection: some View {
+        Section {
+            NavigationLink(destination: { LiftTypeSelector(selectedLiftType: $liftType)
+            }, label: {
+                HStack {
+                    Text("Lift Type")
+                    Spacer()
+                    Text(liftType.string)
+                }
+            })
+            DatePicker(selection: $timestamp, label: {
+                Text("Time")
+            })
+        }
+    }
+    
+    @ViewBuilder
+    var setSection: some View {
+        Section {
+            if showSetSettings {
+                Toggle(isOn: $isWeighted.animation(), label: {
+                    Text("Weighted Sets")
+                })
+            }
+            ForEach($liftSets) { $liftSet in
+                HStack {
+                    if editState.setEditMode == .none || editState.setEditMode != .weight(liftSet.id) {
+                        NumberPicker(number: $liftSet.reps,
+                                     toString: {"\($0)"},
+                                     onIncrement: { return $0 + 1},
+                                     onDecrement: { return max(1, $0 - 1)},
+                                     type: .reps,
+                                     id: liftSet.id)
+                    }
+                    if isWeighted {
+                        if editState.setEditMode == .none || editState.setEditMode != .reps(liftSet.id) {
+                            if editState.setEditMode != .weight(liftSet.id) {
+                                Divider()
+                            }
+                            NumberPicker(number: $liftSet.weight,
+                                         toString: { _ in "\(liftSet.roundedWeight.clean)"},
+                                         onIncrement: {return roundedIncrement($0)},
+                                         onDecrement: {return max(1.0, roundedDecrement($0))},
+                                         type: .weight,
+                                         id: liftSet.id)
+                        }
+                    }
+                }
+            }.onDelete(perform: { indexSet in
+                liftSets.remove(atOffsets: indexSet)
+            })
+        } header: {
+            HStack {
+                Text("Sets")
+                Spacer()
+                Button {
+                    withAnimation {
+                        showSetSettings.toggle()
+                    }
+                } label: {
+                    Label("Settings", systemImage: "gear")
+                }.font(.caption)
+            }
+        } footer: {
+            HStack {
+                Spacer()
+                Button {
+                    withAnimation {
+                        if editState.setEditMode == .none {
+                            if let lastSet = liftSets.last {
+                                liftSets.append(LiftSet(reps: lastSet.reps, weight: lastSet.weight, units: lastSet.units))
+                            } else {
+                                liftSets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
+                            }
+                            // TODO: read from global last time this lift was performed
+
+                        } else {
+                            editState.setEditMode = .none
+                        }
+                    }
+                } label: {
+                    HStack {
+                        if editState.setEditMode == .none {
+                          Label("Add Set", systemImage: "plus")
+                        } else {
+                            Label("Done", systemImage: "checkmark")
+                        }
+                    }
+                }
+                Spacer()
+            }.padding()
         }
     }
 
     
     var body: some View {
-        List {
-            Section {
-                NavigationLink(destination: { LiftTypeSelector(selectedLiftType: $lift.type)
-                }, label: {
-                    HStack {
-                        Text("Lift Type")
-                        Spacer()
-                        Text(lift.type.string)
+        NavigationView {
+            VStack {
+                List {
+                    mainSection
+                    setSection
+                    if liftType.modifiers.count > 0 {
+                        modifiersSection
                     }
-                })
-                DatePicker(selection: $lift.timestamp, label: {
-                    Text("Time")
-                })
-            }
-            Section {
-                if showSetSettings {
-                    Toggle(isOn: $lift.weighted.animation(), label: {
-                        Text("Weighted Sets")
-                    })
+                    Section("Workout Notes") {
+                        TextEditor(text: $notes).frame(minHeight: 100)
+                    }
                 }
-                    ForEach($lift.sets) { $liftSet in
-                        HStack {
-                            if editState.setEditMode == .none || editState.setEditMode != .weight(liftSet.id) {
-                                NumberPicker(number: $liftSet.reps, 
-                                             toString: {"\($0)"},
-                                             onIncrement: { return $0 + 1},
-                                             onDecrement: { return max(1, $0 - 1)},
-                                             type: .reps,
-                                             id: liftSet.id)
-                            }
-                            if lift.weighted {
-                                if editState.setEditMode == .none || editState.setEditMode != .reps(liftSet.id) {
-                                    if editState.setEditMode != .weight(liftSet.id) {
-                                        Divider()
-                                    }
-                                    NumberPicker(number: $liftSet.weight,
-                                                 toString: { _ in "\(liftSet.roundedWeight.clean)"},
-                                                 onIncrement: {return roundedIncrement($0)},
-                                                 onDecrement: {return max(1.0, roundedDecrement($0))},
-                                                 type: .weight,
-                                                 id: liftSet.id)
-                                }
-                            }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text("Cancel")
                         }
-                    }.onDelete(perform: { indexSet in
-                        lift.sets.remove(atOffsets: indexSet)
-                    })
-            } header: {
-                HStack {
-                    Text("Sets")
-                    Spacer()
-                    Button {
-                        withAnimation {
-                            showSetSettings.toggle()
-                        }
-                    } label: {
-                        Label("Settings", systemImage: "gear")
-                    }.font(.caption)
+                    }
                 }
-            } footer: {
-                HStack {
-                    Spacer()
-                    Button {
+                .environmentObject(editState)
+                .navigationTitle(navigationTitle)
+                Spacer()
+                Button {
+                    switch mode {
+                    case .add:
+                        let newLift = Lift(liftType: liftType, sets: liftSets, timestamp: timestamp, modifiers: modifiers, notes: notes)
+                        modelContext.insert(newLift)
+                        break
                         
-                        withAnimation {
-                            if editState.setEditMode == .none {
-                                if let lastSet = lift.sets.last {
-                                    lift.addSet(lastSet.reps, weight: lastSet.weight, units: lastSet.units)
-                                } else {
-                                    lift.addSet(10, weight: 50.0, units: weightUnits)
-                                }
-                                // TODO: read from global last time this lift was performed
-
-                            } else {
-                                editState.setEditMode = .none
-                            }
-                        }
-                    } label: {
-                        HStack {
-                            if editState.setEditMode == .none {
-                              Label("Add Set", systemImage: "plus")
-                            } else {
-                                Label("Done", systemImage: "checkmark")
-                            }
-                        }
+                    case .edit(let lift):
+                        print("Updating lift \(lift)")
+                        lift.type = liftType
+                        lift.sets = liftSets
+                        lift.timestamp = timestamp
+                        lift.modifiers = modifiers
+                        lift.notes = notes
+                        print("Updated lift \(lift)")
+                        break
                     }
-                    Spacer()
-                }.padding()
-            }
-            if lift.type.modifiers.count > 0 {
-                Section("Modifiers") {
-                    ForEach(lift.type.modifiers, id: \.rawValue) { modifier in
-                        Label(modifier.rawValue, systemImage: lift.modifiers.contains(modifier) ? "checkmark.circle" : "circle").onTapGesture(perform: {
-                            withAnimation {
-                                if lift.modifiers.contains(modifier) {
-                                    lift.modifiers.remove(modifier)
-                                } else {
-                                    let exclusions = modifier.exclusions
-                                    for exclusion in exclusions {
-                                        lift.modifiers.remove(exclusion)
-                                    }
-                                    lift.modifiers.insert(modifier)
-                                }
-                            }
-                        })
+                    
+                    dismiss()
+                } label: {
+                    HStack {
+                        Text("Save")
                     }
+                    .padding(10)
+                    .frame(maxWidth: .infinity)
+                    .fontWeight(.heavy)
                 }
-            }
-            if lift.stickers.count > 0 {
-                Section("Awards") {
-                    ScrollView(.horizontal) {
-                        ForEach(lift.stickers, id: \.id) { sticker in
-                            StickerView(config: sticker).scaleEffect(0.2).frame(width: 100, height: 100)
-                        }
-                    }
-                }
-            }
-            Section("Workout Notes") {
-                TextEditor(text: $lift.notes).frame(minHeight: 100)
-            }
+                .disabled(!enableSave)
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal, 20)
+            }.background(Color(uiColor: UIColor.systemGroupedBackground))
         }
-        .onDisappear {
-            // Check stickers
-            for liftSet in lift.sets {
-                liftSet.checkSticker(awardMap: awardMap, lift: lift)
-            }
-            // TODO: show toast signifying new sticker earned, or pass message back to main view
-        }
-        .toolbar {ToolbarItemGroup(placement: .topBarTrailing) {
-            Button {
-                dismiss()
-            } label: {
-                HStack(alignment: .lastTextBaseline) {
-                    Image(systemName: "square.and.arrow.down")
-                    Text("Save")
-                }
-//                Label("Save", systemImage: "square.and.arrow.down")
-            }
-            
-        }}
-        .environmentObject(editState)
-        .navigationTitle(navigationTitle)
     }
 }
 
-#Preview("Filled") {
+#Preview("Filled Edit") {
     
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now)
     container.mainContext.insert(lift)
     lift.addSet(10, weight: 100.0, units: .pounds)
     lift.addSet(10, weight: 120.0, units: .pounds)
-    lift.addSet(10, weight: 130.0, units: .pounds, sticker: StickerConfig(id: UUID(), timestamp: Date.now, type: .benchPress, reps: 10, weight: 130.0, units: .pounds, colorHex: UIColor.blue.toHex()))
+    lift.addSet(10, weight: 130.0, units: .pounds)
+//    lift.addSet(10, weight: 130.0, units: .pounds, sticker: StickerConfig(id: UUID(), timestamp: Date.now, type: .benchPress, reps: 10, weight: 130.0, units: .pounds, colorHex: UIColor.blue.toHex()))
 
     return NavigationStack {
-        AddLiftView(viewMode: .add, lift: lift, awardMap: [:])
+        AddLiftView(lift: lift)
             .modelContainer(container)
     }
     
 }
-#Preview("Empty") {
+#Preview("Empty Add") {
     
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now)
     container.mainContext.insert(lift)
     
     return NavigationStack {
-        AddLiftView(viewMode: .add, lift: lift, awardMap: [:])
+        AddLiftView(liftType: .benchPress)
             .modelContainer(container)
     }
     

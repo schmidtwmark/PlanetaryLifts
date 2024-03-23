@@ -105,7 +105,7 @@ extension UIColor {
     }
 }
 
-struct StickerConfig: Codable {
+struct StickerConfig: Codable, Equatable{
     var id: UUID
     var timestamp: Date
     var type: LiftType
