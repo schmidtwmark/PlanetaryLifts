@@ -42,6 +42,16 @@ final class Lift {
             return false
         }
     }
+    
+    // Maps rep count to the maximum weight for that rep count in the given sets
+    func maxes() -> [Int: Double] {
+        return sets.reduce(into: [Int: Double](), { result, liftSet in
+            if let maxForReps = result[liftSet.reps], liftSet.weight < maxForReps {
+                return
+            }
+            result[liftSet.reps] = liftSet.weight
+        })
+    }
 }
 
 final class LiftSet : Codable, Identifiable, Equatable {
@@ -112,6 +122,13 @@ final class UserGeneratedLiftType  {
     }
 }
 
+func generateAllLiftsByCategory(userGeneratedTypes: [UserGeneratedLiftType]) -> [LiftCategory: [LiftType]] {
+    var categoryMap = LiftType.liftsByCategory
+    for type in userGeneratedTypes {
+        categoryMap[type.category]!.append(LiftType.other(name: type.name, category: type.category, id: type.id))
+    }
+    return categoryMap
+}
 
 final class AwardKey : Hashable {
     static func == (lhs: AwardKey, rhs: AwardKey) -> Bool {

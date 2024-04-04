@@ -23,11 +23,7 @@ struct LiftTypeSelector: View {
     @Environment(\.modelContext) private var modelContext
     
     var allLiftsByCategory: [LiftCategory: [LiftType]] {
-        var categoryMap = LiftType.liftsByCategory
-        for type in userGeneratedTypes {
-            categoryMap[type.category]!.append(LiftType.other(name: type.name, category: type.category, id: type.id))
-        }
-        return categoryMap
+        generateAllLiftsByCategory(userGeneratedTypes: userGeneratedTypes)
     }
     
     var filteredCategories : [LiftCategory] {

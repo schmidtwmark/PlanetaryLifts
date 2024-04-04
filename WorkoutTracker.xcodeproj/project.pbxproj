@@ -13,6 +13,7 @@
 		ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */; };
 		ED50D4D62B9E20CC00BD3F77 /* CrookedText in Frameworks */ = {isa = PBXBuildFile; productRef = ED50D4D52B9E20CC00BD3F77 /* CrookedText */; };
 		ED65CC512B9F523E0029FF5A /* Shiny in Frameworks */ = {isa = PBXBuildFile; productRef = ED65CC502B9F523E0029FF5A /* Shiny */; };
+		ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7BF2BBE1BE900C46300 /* StatItem.swift */; };
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
 		EDA682FA2B90E9F5002015CA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EDA682F92B90E9F5002015CA /* Assets.xcassets */; };
@@ -29,6 +30,7 @@
 		ED320A372B94DB5E003A6628 /* LiftType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftType.swift; sourceTree = "<group>"; };
 		ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftTypeSelector.swift; sourceTree = "<group>"; };
 		ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickerGeneratorView.swift; sourceTree = "<group>"; };
+		ED76D7BF2BBE1BE900C46300 /* StatItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatItem.swift; sourceTree = "<group>"; };
 		EDA682F02B90E9F4002015CA /* WorkoutTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTrackerApp.swift; sourceTree = "<group>"; };
 		EDA682F52B90E9F4002015CA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 				EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */,
 				EDA682F52B90E9F4002015CA /* ContentView.swift */,
 				EDA6830F2B9186DE002015CA /* StatsView.swift */,
+				ED76D7BF2BBE1BE900C46300 /* StatItem.swift */,
 				EDA6830B2B91469D002015CA /* DataModel.swift */,
 				EDA683072B91347A002015CA /* LiftListView.swift */,
 				ED320A372B94DB5E003A6628 /* LiftType.swift */,
@@ -184,6 +187,7 @@
 				EDA683102B9186DE002015CA /* StatsView.swift in Sources */,
 				ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */,
 				EDA6830C2B91469D002015CA /* DataModel.swift in Sources */,
+				ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */,
 				ED320A362B92A0BF003A6628 /* Date.swift in Sources */,
 				EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */,
 				ED320A3A2B950AF5003A6628 /* LiftTypeSelector.swift in Sources */,

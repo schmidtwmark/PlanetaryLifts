@@ -264,7 +264,7 @@ struct AddLiftView: View {
         switch mode {
         case .add:
             return true
-        case .edit(var lift):
+        case .edit(let lift):
             return lift.type != liftType 
             || lift.timestamp != timestamp
             || lift.sets != liftSets
