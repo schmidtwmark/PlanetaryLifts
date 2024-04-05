@@ -54,11 +54,8 @@ final class Lift {
     }
 }
 
-final class LiftSet : Codable, Identifiable, Equatable {
-    static func == (lhs: LiftSet, rhs: LiftSet) -> Bool {
-        lhs.reps == rhs.reps && lhs.weight == rhs.weight && lhs.units == rhs.units
-    }
-    
+struct LiftSet : Codable, Identifiable, Equatable {
+
     var reps: Int
     var weight: Double
     var units: WeightUnits
@@ -84,7 +81,6 @@ final class LiftSet : Codable, Identifiable, Equatable {
             default: weight
         }
         
-        units = to
         return LiftSet(reps: reps, weight: newWeight, units: to)
     }
     
