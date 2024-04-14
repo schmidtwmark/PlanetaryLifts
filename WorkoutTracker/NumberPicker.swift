@@ -8,14 +8,29 @@
 import SwiftUI
 
 struct StepperButtonStyle: ButtonStyle {
+    var frame: CGSize
+    
     func makeBody(configuration: Self.Configuration) -> some View {
         configuration.label
-            .frame(width: 50, height: 50)
+            .frame(width: frame.width, height: frame.width)
             .foregroundColor(Color(uiColor: UIColor.label))
             .background(Color(uiColor: UIColor.secondarySystemFill))
             .cornerRadius(10.0)
     }
 }
+
+//struct NumberIncrementor<T: Numeric> : View {
+//    
+//    var toString: ((T) -> String)
+//    
+//    var onIncrement: ((T) -> T)
+//    var onDecrement: ((T) -> T)
+//    
+//    var body: some View {
+//        
+//    }
+//
+//}
 
 struct NumberPicker<T: Numeric> : View {
     @Binding var number: T
@@ -73,25 +88,7 @@ struct NumberPicker<T: Numeric> : View {
             Group {
                 if selected {
                     HStack(alignment: .firstTextBaseline, spacing: 5.0) {
-                        Button {
-                            number = onDecrement(number)
-                        } label: {
-                            Image(systemName: "minus")
-                        }.buttonStyle(StepperButtonStyle())
-//                        Text("\(number)")
-                        TextField("", value: $number, formatter: formatter)
-                            .keyboardType(.decimalPad)
-                            .focused($isInputActive)
-                            .multilineTextAlignment(.center)
-                            .frame(width: 100, height: 50 )
-                            .fontWeight(.bold)
-                            .background(Color(uiColor: UIColor.secondarySystemFill))
-                            .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                        Button {
-                            number = onIncrement(number)
-                        } label: {
-                            Image(systemName: "plus")
-                        }.buttonStyle(StepperButtonStyle())
+                        NumberIncrementor(number: $number, toString: toString, onIncrement: onIncrement, onDecrement: onDecrement, formatter: formatter)
                         Spacer()
                         Text("\(type.getSingleUnitString(weightUnits))\(number != 1 ? "s" : "")")
                             .onTapGesture {
@@ -136,6 +133,42 @@ struct NumberPicker<T: Numeric> : View {
         }
         .alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
             return 0
+        }
+    }
+}
+
+struct NumberIncrementor<T: Numeric>: View {
+    @Binding var number: T
+    
+    var toString: ((T) -> String)
+    var onIncrement: ((T) -> T)
+    var onDecrement: ((T) -> T)
+    var frame: CGSize = CGSize(width: 100, height: 50)
+    
+    var formatter: NumberFormatter
+    @FocusState var isInputActive: Bool
+
+
+    var body: some View {
+        HStack {
+            Button {
+                number = onDecrement(number)
+            } label: {
+                Image(systemName: "minus")
+            }.buttonStyle(StepperButtonStyle(frame: CGSize(width: frame.width / 2, height: frame.height)))
+            TextField("", value: $number, formatter: formatter)
+                .keyboardType(.decimalPad)
+                .focused($isInputActive)
+                .multilineTextAlignment(.center)
+                .frame(width: frame.width, height: frame.height)
+                .fontWeight(.bold)
+                .background(Color(uiColor: UIColor.secondarySystemFill))
+                .clipShape(RoundedRectangle(cornerRadius: 10.0))
+            Button {
+                number = onIncrement(number)
+            } label: {
+                Image(systemName: "plus")
+            }.buttonStyle(StepperButtonStyle(frame: CGSize(width: frame.width / 2, height: frame.height)))
         }
     }
 }

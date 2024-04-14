@@ -8,7 +8,11 @@
 import Foundation
 
 
-enum LiftCategory: String, Codable, CaseIterable {
+enum LiftCategory: String, Codable, CaseIterable, Comparable {
+    static func < (lhs: LiftCategory, rhs: LiftCategory) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+    
     case back = "Back"
     case chest = "Chest"
     case arms = "Arms"
@@ -43,7 +47,12 @@ enum LiftModifier: String, Codable, CaseIterable {
     }
 }
 
-enum LiftType: Hashable, Codable{
+enum LiftType: Hashable, Codable, Comparable {
+    static func < (lhs: LiftType, rhs: LiftType) -> Bool {
+        lhs.string < rhs.string
+    }
+
+    
     // MARK: back
     case latPullDown
     

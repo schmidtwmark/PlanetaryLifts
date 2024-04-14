@@ -193,7 +193,7 @@ struct AddLiftView: View {
                     Text("Weighted Sets")
                 })
             }
-            ForEach($liftSets) { $liftSet in
+            ForEach($liftSets, id: \.id) { $liftSet in
                 HStack {
                     if editState.setEditMode == .none || editState.setEditMode != .weight(liftSet.id) {
                         NumberPicker(number: $liftSet.reps,
@@ -208,12 +208,36 @@ struct AddLiftView: View {
                             if editState.setEditMode != .weight(liftSet.id) {
                                 Divider()
                             }
-                            NumberPicker(number: $liftSet.weight,
-                                         toString: { _ in "\(liftSet.roundedWeight.clean)"},
-                                         onIncrement: {return roundedIncrement($0)},
-                                         onDecrement: {return max(1.0, roundedDecrement($0))},
-                                         type: .weight,
-                                         id: liftSet.id)
+                            switch liftSet.weight.data {
+                            case .rawWeight(let rawWeight):
+//                                Text("Placeholder 1")
+                                NumberPicker(number: Binding(get: {
+                                    return rawWeight
+                                }, set: { liftSet.weight.data = .rawWeight($0)}),
+                                             toString: { _ in "\(liftSet.roundedWeight.clean)"},
+                                             onIncrement: {return roundedIncrement($0)},
+                                             onDecrement: {return max(1.0, roundedDecrement($0))},
+                                             type: .weight,
+                                             id: liftSet.id)
+                                
+                            case .plates(let plates):
+                                if editState.setEditMode == .weight(liftSet.id) {
+                                    PlatesEditorView(plates: Binding(get: {return plates}, set: { liftSet.weight.data = .plates($0)}))
+                                } else {
+                                    Spacer()
+                                    Group {
+                                        Text("\(liftSet.weight.weight.clean)")
+                                            .fontWeight(.bold)
+                                        Text("\(weightUnits.singleUnit)\(liftSet.weight.weight != 1.0 ? "s" : "")")
+                                    }
+                                    .onTapGesture {
+                                        withAnimation {
+                                            editState.setEditMode = .weight(liftSet.id)
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                            }
                         }
                     }
                 }
@@ -239,7 +263,7 @@ struct AddLiftView: View {
                     withAnimation {
                         if editState.setEditMode == .none {
                             if let lastSet = liftSets.last {
-                                liftSets.append(LiftSet(reps: lastSet.reps, weight: lastSet.weight, units: lastSet.units))
+                                liftSets.append(LiftSet(reps: lastSet.reps, weight: lastSet.weight.weight, units: lastSet.weight.units))
                             } else {
                                 liftSets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
                             }
@@ -335,6 +359,24 @@ struct AddLiftView: View {
     lift.addSet(10, weight: 120.0, units: .pounds)
     lift.addSet(10, weight: 130.0, units: .pounds)
 //    lift.addSet(10, weight: 130.0, units: .pounds, sticker: StickerConfig(id: UUID(), timestamp: Date.now, type: .benchPress, reps: 10, weight: 130.0, units: .pounds, colorHex: UIColor.blue.toHex()))
+
+    return NavigationStack {
+        AddLiftView(lift: lift)
+            .modelContainer(container)
+    }
+    
+}
+
+#Preview("Plates Edit") {
+    
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    
+    let lift = Lift(liftType: .benchPress, timestamp: Date.now)
+    container.mainContext.insert(lift)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
 
     return NavigationStack {
         AddLiftView(lift: lift)

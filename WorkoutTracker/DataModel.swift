@@ -35,9 +35,14 @@ final class Lift {
         sets.append(set)
     }
     
+    func addSet(_ reps: Int, plates: WeightPlates, units: WeightUnits) {
+        let set = LiftSet(reps: reps, plates: plates, units: units)
+        sets.append(set)
+    }
+    
     func allSetsSame() -> Bool {
         if let first = sets.first {
-            return sets.count >= 2 && sets.allSatisfy({ $0.reps == first.reps && $0.weight == first.weight && $0.units == first.units})
+            return sets.count >= 2 && sets.allSatisfy({ $0.reps == first.reps && $0.weight == first.weight && $0.weight.units == first.weight.units})
         } else {
             return false
         }
@@ -46,64 +51,140 @@ final class Lift {
     // Maps rep count to the maximum weight for that rep count in the given sets
     func maxes() -> [Int: Double] {
         return sets.reduce(into: [Int: Double](), { result, liftSet in
-            if let maxForReps = result[liftSet.reps], liftSet.weight < maxForReps {
+            if let maxForReps = result[liftSet.reps], liftSet.roundedWeight < maxForReps {
                 return
             }
-            result[liftSet.reps] = liftSet.weight
+            result[liftSet.reps] = liftSet.roundedWeight
         })
     }
+}
+
+struct WeightPlates : Codable, Equatable {
+    var barWeight: Double
+    
+    struct Plate : Codable, Equatable, Identifiable, Comparable {
+        static func < (lhs: WeightPlates.Plate, rhs: WeightPlates.Plate) -> Bool {
+            return lhs.weight < rhs.weight
+        }
+        
+        var id: UUID = UUID()
+        var weight: Double
+        
+    }
+    var plates: [Plate]
+    var mirrored : Bool = true
+    
+    var weight: Double {
+        barWeight + (mirrored ? 2.0 : 1.0) * plates.reduce(0, { return $0 + $1.weight})
+    }
+    
+}
+
+struct Weight : Equatable, Codable{
+    
+    enum WeightData : Equatable{
+        case rawWeight(Double)
+        case plates(WeightPlates)
+    }
+    
+    enum WeightDataTypes: String {
+        case rawWeight
+        case plates
+    }
+    
+    
+    var weight: Double {
+        return switch data {
+        case .plates(let plates): plates.weight
+        case .rawWeight(let weight): weight
+        }
+    }
+    
+    var data: WeightData
+    var units: WeightUnits
+    
+    init(data: WeightData, units: WeightUnits) {
+        self.data = data
+        self.units = units
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case weightType
+        case weightData
+        case units
+    }
+    
+    
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try values.decode(String.self, forKey: .weightType)
+        switch type {
+        case WeightDataTypes.plates.rawValue:
+            let plates = try values.decode(WeightPlates.self, forKey: .weightData)
+            self.data = .plates(plates)
+            break
+        case WeightDataTypes.rawWeight.rawValue:
+            let rawWeight = try values.decode(Double.self, forKey: .weightData)
+            self.data = .rawWeight(rawWeight)
+            break
+        default:
+            self.data = .rawWeight(0)
+            break
+        }
+        self.units = try values.decode(WeightUnits.self, forKey: .units)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch data {
+        case .rawWeight(let rawWeight):
+            try container.encode(rawWeight, forKey: .weightData)
+            try container.encode(WeightDataTypes.rawWeight.rawValue, forKey: .weightType)
+            break
+        case .plates(let plates):
+            try container.encode(plates, forKey: .weightData)
+            try container.encode(WeightDataTypes.plates.rawValue, forKey: .weightType)
+        }
+        try container.encode(self.units, forKey: .units)
+    }
+    
 }
 
 struct LiftSet : Codable, Identifiable, Equatable {
 
     var reps: Int
-    var weight: Double
-    var units: WeightUnits
-//    var sticker: StickerConfig? = nil
+    var weight: Weight
     
     var id: UUID = UUID()
     
     init(reps: Int, weight: Double, units: WeightUnits) {
         self.reps = reps
-        self.weight = weight
-        self.units = units
-//        self.sticker = sticker
+        self.weight = Weight(data: .rawWeight(weight), units: units)
+    }
+            
+    init(reps: Int, plates: WeightPlates, units: WeightUnits) {
+        self.reps = reps
+        self.weight = Weight(data: .plates(plates), units: units)
     }
     
     var roundedWeight : Double {
-        round(weight / 0.5) * 0.5
+        round(weight.weight / 0.5) * 0.5
     }
     
     func convert(to: WeightUnits) -> LiftSet {
-        let newWeight = switch (units, to) {
-        case (.pounds, .kilograms): 0.453592 * weight
-        case (.kilograms, .pounds): 2.20462 * weight
-            default: weight
+        let newWeight = switch (weight.units, to) {
+        case (.pounds, .kilograms): 0.453592 * weight.weight
+        case (.kilograms, .pounds): 2.20462 * weight.weight
+        default: weight.weight
         }
         
         return LiftSet(reps: reps, weight: newWeight, units: to)
     }
     
     func weightString() -> String {
-        weight == 1.0 ? "**1** \(units.singleUnit)" : "**\(roundedWeight.clean)** \(units.singleUnit)s"
+        weight.weight == 1.0 ? "**1** \(weight.units.singleUnit)" : "**\(roundedWeight.clean)** \(weight.units.singleUnit)s"
     }
     
-//    func checkSticker(awardMap: AwardMap, lift: Lift) {
-//        sticker = nil
-//        let key = AwardKey(reps: self.reps, type: lift.type, modifiers: lift.modifiers)
-//        print("Checking sticker for key \(key.type) \(key.modifiers) \(key.reps)")
-//        if let (awardWeight, _) = awardMap[key] {
-//            if self.weight > awardWeight {
-//                print("Adding sticker because \(self.weight) is greater than \(awardWeight)")
-//                self.sticker = StickerConfig(id: UUID(), timestamp: lift.timestamp, type: lift.type, reps: self.reps, weight: self.weight, units: self.units, colorHex: UIColor.green.toHex())
-//            } else {
-//                print("Not adding sticker, \(self.weight) is less than or equal to \(awardWeight)")
-//            }
-//        } else {
-//            print("Adding sticker because empty key")
-//            self.sticker = StickerConfig(id: UUID(), timestamp: lift.timestamp, type: lift.type, reps: self.reps, weight: self.weight, units: self.units, colorHex: UIColor.green.toHex())
-//        }
-//    }
 }
 
 @Model
@@ -126,46 +207,4 @@ func generateAllLiftsByCategory(userGeneratedTypes: [UserGeneratedLiftType]) -> 
     return categoryMap
 }
 
-final class AwardKey : Hashable {
-    static func == (lhs: AwardKey, rhs: AwardKey) -> Bool {
-        return lhs.reps == rhs.reps && lhs.type == rhs.type && lhs.modifiers.elementsEqual(rhs.modifiers)
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(modifiers)
-    }
-    
-    var reps: Int
-    var type: LiftType
-    var modifiers: Set<LiftModifier>
-    
-    init(reps: Int, type: LiftType, modifiers: Set<LiftModifier>) {
-        self.reps = reps
-        self.type = type
-        self.modifiers = modifiers
-    }
-}
 
-typealias AwardMap = [AwardKey: (Double, UUID)]
-// Builds a map from a combination of lift type, lift modifiers, and number of reps
-// Value is the maximum for that type and the id for that specific set
-func generateAwardMap(_ lifts: [Lift]) -> AwardMap {
-    var map : AwardMap = [:]
-    lifts.forEach({ lift in
-        for set in lift.sets {
-            let key = AwardKey(reps: set.reps, type: lift.type, modifiers: lift.modifiers)
-            if let value = map[key] {
-                if set.weight > value.0 {
-                    map.updateValue((set.weight, set.id), forKey: key)
-                }
-            } else {
-                map.updateValue((set.weight, set.id), forKey: key)
-            }
-        }
-    })
-    print("Generated award map:")
-    for (key, value) in map {
-        print("\(key.type) \(key.modifiers) \(key.reps): \(value.0)")
-    }
-    return map
-}

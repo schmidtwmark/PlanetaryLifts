@@ -39,7 +39,7 @@ struct LiftTypeSelector: View {
     
     var body: some View {
         List {
-            ForEach(filteredCategories, id: \.rawValue) { category in
+            ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
                 Section(category.rawValue) {
                     ForEach(allLiftsByCategory[category]!, id: \.string) { lift in
                         if searchText == "" ||

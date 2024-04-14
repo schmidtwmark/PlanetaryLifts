@@ -82,9 +82,43 @@ struct BindingPlayground2: View {
     }
 }
 
+struct EnumPlayground: View {
+    enum StateEnum {
+        case a(Int)
+        
+    }
+    
+    @State var state: StateEnum = .a(5)
+    
+    var body: some View {
+        if case .a = state {
+            Incrementor(a: Binding(get: { if case .a(let a) = state { return a } else { return 0 }}, set: { state = .a($0)}))
+        }
+
+    }
+}
+
+struct Incrementor : View {
+    @Binding var a: Int
+    var body: some View {
+        VStack{
+            Text("A: \(a)")
+            Button {
+                a += 1
+            } label: {
+                Text("Add")
+            }
+        }
+    }
+}
+
 #Preview("TestData") {
     BindingPlayground()
 }
 #Preview("LiftSet") {
     BindingPlayground2()
+}
+
+#Preview("SwitchBindings") {
+    EnumPlayground()
 }

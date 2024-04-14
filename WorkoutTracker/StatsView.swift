@@ -59,32 +59,40 @@ struct StatsView: View {
         case type = "Lift Type"
     }
     
+    var categories: [LiftCategory] {
+        liftsByCategory.keys.sorted(by: <)
+    }
+    
+    var types: [LiftType] {
+        liftsByType.keys.sorted(by: <)
+    }
+    
     // Number of lifts for each category
-    var categoryCounts: [(LiftCategory, Int)] {
-        liftsByCategory.map({($0, $1.count)})
+    var categoryCounts: [LiftCategory: Int] {
+        liftsByCategory.mapValues({$0.count})
     }
     
     // Number of lifts for each type
-    var typeCounts: [(LiftType, Int)] {
-        liftsByType.map({($0, $1.count)})
+    var typeCounts: [LiftType: Int] {
+        liftsByType.mapValues({$0.count})
     }
     
     func totalWeight(_ lifts: [Lift]) -> Double {
         return lifts.reduce(into: 0, { sum, lift in
             sum += lift.sets.reduce(into: 0, { innerSum, liftSet in
-                innerSum += Double(liftSet.reps) * liftSet.weight
+                innerSum += Double(liftSet.reps) * liftSet.weight.weight
             })
         })
     }
     
     // Sum of weight * rep for each lift category
-    var categoryWeight: [(LiftCategory, Double)] {
-        liftsByCategory.map({ ($0, totalWeight($1))})
+    var categoryWeight: [LiftCategory: Double] {
+        liftsByCategory.mapValues({totalWeight($0)})
     }
     
     // Sum of weight * rep for each lift type
-    var typeWeight: [(LiftType, Double)] {
-        liftsByType.map({($0, totalWeight($1))})
+    var typeWeight: [LiftType: Double] {
+        liftsByType.mapValues({totalWeight($0)})
     }
 
     
@@ -94,52 +102,85 @@ struct StatsView: View {
     
     @State
     var granularity: Granularity = .category
+    
+    func getSector(category: LiftCategory, statsType: StatsType) -> some ChartContent {
+        let mark = switch statsType {
+        case .count:
+            SectorMark(angle: .value("Count", categoryCounts[category]!))
+        case .weight:
+            SectorMark(angle: .value("Weight", categoryWeight[category]!))
+        }
+        return mark.foregroundStyle(by: .value("Category", category.rawValue))
+    }
+    
+    func getSector(liftType: LiftType, statsType: StatsType) -> some ChartContent {
+        let mark = switch statsType {
+        case .count:
+            SectorMark(angle: .value("Count", typeCounts[liftType]!))
+        case .weight:
+            SectorMark(angle: .value("Weight", typeWeight[liftType]!))
+        }
+        return mark.foregroundStyle(by: .value("Lift Type", liftType.string))
+    }
 
     var body: some View {
         
         NavigationStack {
             List {
                 Section("General Stats") {
-                    Picker("", selection: $statsType) {
+                    Picker("", selection: $statsType.animation()) {
                         ForEach(StatsType.allCases, id: \.rawValue) { type in
                             Text(type.rawValue).tag(type)
                         }
                     }.pickerStyle(.segmented)
-                    Picker("", selection: $granularity) {
+                    Picker("", selection: $granularity.animation()) {
                         ForEach(Granularity.allCases, id: \.rawValue) { granularity in
                             Text(granularity.rawValue).tag(granularity)}
                         
                     }.pickerStyle(.segmented)
                     Chart {
-                        switch (statsType, granularity) {
-                        case (.count, .category):
-                            ForEach(categoryCounts, id: \.0) { category, count in
-                                SectorMark(angle: .value("Count", count))
-                                    .foregroundStyle(by: .value("Category", category.rawValue))
-                                
+                        
+                        switch granularity {
+                        case .category:
+                            ForEach(categories, id: \.rawValue) { category in
+                                getSector(category: category, statsType: statsType)
                             }
-                        case (.count, .type):
-                            ForEach(typeCounts, id: \.0) { type, count in
-                                SectorMark(angle: .value("Count", count))
-                                    .foregroundStyle(by: .value("Type", type.string))
-                            }
-                        case (.weight, .category):
-                            ForEach(categoryWeight, id: \.0) { category, weight in
-                                SectorMark(angle: .value("Weight", weight))
-                                    .foregroundStyle(by: .value("Category", category.rawValue))
-                                
-                            }
-                        case (.weight, .type):
-                            ForEach(typeCounts, id: \.0) { type, count in
-                                SectorMark(angle: .value("Count", count))
-                                    .foregroundStyle(by: .value("Type", type.string))
+                        case .type:
+                            ForEach(types, id: \.string) { type in
+                                getSector(liftType: type, statsType: statsType)
                             }
                         }
-
+//                        
+//                        
+//                        switch (statsType, granularity) {
+//                        case (.count, .category):
+//                            ForEach(categoryCounts, id: \.0) { category, count in
+//                                SectorMark(angle: .value("Count", count))
+//                                    .foregroundStyle(by: .value("Category", category.rawValue))
+//                                
+//                            }
+//                        case (.count, .type):
+//                            ForEach(typeCounts, id: \.0) { type, count in
+//                                SectorMark(angle: .value("Count", count))
+//                                    .foregroundStyle(by: .value("Type", type.string))
+//                            }
+//                        case (.weight, .category):
+//                            ForEach(categoryWeight, id: \.0) { category, weight in
+//                                SectorMark(angle: .value("Weight", weight))
+//                                    .foregroundStyle(by: .value("Category", category.rawValue))
+//                                
+//                            }
+//                        case (.weight, .type):
+//                            ForEach(typeCounts, id: \.0) { type, count in
+//                                SectorMark(angle: .value("Count", count))
+//                                    .foregroundStyle(by: .value("Type", type.string))
+//                            }
+//                        }
+//
                     }
                 }
                 
-                ForEach(filteredCategories, id: \.rawValue) { category in
+                ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
                     Section(category.rawValue) {
                         ForEach(allLiftsByCategory[category]!, id: \.string) { liftType in
                             if let lifts = liftsByType[liftType] {
@@ -166,13 +207,17 @@ struct StatsView: View {
     
     
     for type in [LiftType.benchPress, LiftType.backSquat, LiftType.frontSquat] {
-        for days in 0...50 {
+        for days in 0...Int.random(in: 30...70) {
             let lift = Lift(liftType: type, timestamp: Date.now.addingTimeInterval(TimeInterval(-60*60*24*days)),  modifiers: [.incline])
             container.mainContext.insert(lift)
             
-            lift.addSet(5, weight: Double.random(in: 150...250), units: .pounds)
-            lift.addSet(10, weight: Double.random(in: 100...200), units: .pounds)
+            for _ in 0...Int.random(in: 1...5) {
+                let reps = [5, 10, 15].randomElement()!
+                lift.addSet(reps, weight: Double.random(in: 150...250), units: .pounds)
+                lift.addSet(reps, weight: Double.random(in: 100...200), units: .pounds)
+            }
         }
+            
     }
     
     return StatsView().modelContainer(container)
