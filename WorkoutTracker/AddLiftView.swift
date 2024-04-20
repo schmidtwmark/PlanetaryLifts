@@ -185,6 +185,33 @@ struct AddLiftView: View {
         }
     }
     
+    func weightEditModeSelector(weightEditingId: UUID) -> some View {
+        let index = liftSets.firstIndex(where: { $0.id == weightEditingId} )!
+        var liftSet = liftSets[index]
+        return Picker("", selection: Binding(get: {
+            switch liftSet.weight.data {
+            case .rawWeight(_):
+                return Weight.WeightDataTypes.rawWeight
+            case .plates(_):
+                return Weight.WeightDataTypes.plates
+            }
+        }, set: {
+            switch $0 {
+            case Weight.WeightDataTypes.rawWeight:
+                print("Setting to raw weight")
+                liftSet.weight.data = .rawWeight(liftSet.weight.weight)
+            case Weight.WeightDataTypes.plates:
+                print("Setting to plates")
+                liftSet.weight.data = .plates(WeightPlates(barWeight: 45.0, plates: []))
+                print("After: \(liftSet.weight.data)")
+            }
+            liftSets[index] = liftSet
+        })) {
+            Text("Exact Weight").tag(Weight.WeightDataTypes.rawWeight)
+            Text("Plates").tag(Weight.WeightDataTypes.plates)
+        }.pickerStyle(.segmented)
+    }
+    
     @ViewBuilder
     var setSection: some View {
         Section {
@@ -192,6 +219,9 @@ struct AddLiftView: View {
                 Toggle(isOn: $isWeighted.animation(), label: {
                     Text("Weighted Sets")
                 })
+            }
+            if case .weight(let weightEditingId) = editState.setEditMode {
+                weightEditModeSelector(weightEditingId: weightEditingId)
             }
             ForEach($liftSets, id: \.id) { $liftSet in
                 HStack {
@@ -210,7 +240,6 @@ struct AddLiftView: View {
                             }
                             switch liftSet.weight.data {
                             case .rawWeight(let rawWeight):
-//                                Text("Placeholder 1")
                                 NumberPicker(number: Binding(get: {
                                     return rawWeight
                                 }, set: { liftSet.weight.data = .rawWeight($0)}),
@@ -221,21 +250,41 @@ struct AddLiftView: View {
                                              id: liftSet.id)
                                 
                             case .plates(let plates):
-                                if editState.setEditMode == .weight(liftSet.id) {
-                                    PlatesEditorView(plates: Binding(get: {return plates}, set: { liftSet.weight.data = .plates($0)}))
-                                } else {
-                                    Spacer()
-                                    Group {
-                                        Text("\(liftSet.weight.weight.clean)")
-                                            .fontWeight(.bold)
-                                        Text("\(weightUnits.singleUnit)\(liftSet.weight.weight != 1.0 ? "s" : "")")
-                                    }
-                                    .onTapGesture {
-                                        withAnimation {
-                                            editState.setEditMode = .weight(liftSet.id)
+                                Group {
+                                    if editState.setEditMode == .weight(liftSet.id) {
+                                        PlatesEditorView(plates: Binding(get: {
+                                            return plates
+                                        }, set: {
+                                            liftSet.weight.data = .plates($0)
+                                        }), removePlate: { removeId in
+                                            if case .plates(var editablePlates) = liftSet.weight.data {
+                                                editablePlates.plates.removeAll(where: {$0.id == removeId})
+                                                liftSet.weight.data = .plates(editablePlates)
+                                            }
+                                            
+                                        }, addPlate: { plateWeight in
+                                            if case .plates(var editablePlates) = liftSet.weight.data {
+                                                editablePlates.plates.append(WeightPlates.Plate(weight: plateWeight))
+                                                editablePlates.plates.sort(by: >)
+                                                liftSet.weight.data = .plates(editablePlates)
+                                            }
+    
                                         }
+                                        )
+                                    } else {
+                                        Spacer()
+                                        Group {
+                                            Text("\(liftSet.weight.weight.clean)")
+                                                .fontWeight(.bold)
+                                            Text("\(weightUnits.singleUnit)\(liftSet.weight.weight != 1.0 ? "s" : "")")
+                                        }
+                                        .onTapGesture {
+                                            withAnimation {
+                                                editState.setEditMode = .weight(liftSet.id)
+                                            }
+                                        }
+                                        Spacer()
                                     }
-                                    Spacer()
                                 }
                             }
                         }

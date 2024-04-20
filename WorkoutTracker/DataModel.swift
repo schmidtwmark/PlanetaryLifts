@@ -59,7 +59,11 @@ final class Lift {
     }
 }
 
-struct WeightPlates : Codable, Equatable {
+struct WeightPlates : Codable, Equatable, CustomStringConvertible {
+    var description: String {
+        "Bar: \(barWeight) Plates: [\(plates.map({ "\($0.weight)"}).joined(separator: ", "))]"
+    }
+    
     var barWeight: Double
     
     struct Plate : Codable, Equatable, Identifiable, Comparable {

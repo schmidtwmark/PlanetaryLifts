@@ -6,9 +6,14 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct PlatesEditorView: View {
     @Binding var plates: WeightPlates
+    
+    var removePlate: (UUID) -> ()
+    var addPlate: (Double) -> ()
+    
     var formatter: NumberFormatter {
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
@@ -58,7 +63,7 @@ struct PlatesEditorView: View {
                                     Text("\(plate.weight.clean)")
                                 }.onTapGesture {
                                     withAnimation {
-                                        plates.plates.removeAll(where: { $0.id == plate.id })
+                                        removePlate(plate.id)
                                     }
                                 }
                                     
@@ -76,8 +81,7 @@ struct PlatesEditorView: View {
                                 ForEach(weights, id: \.self) { plateWeight in
                                     Button {
                                         withAnimation {
-                                            plates.plates.append(WeightPlates.Plate(weight: plateWeight))
-                                            plates.plates.sort { $0 > $1 }
+                                            addPlate(plateWeight)
                                         }
                                     } label: {
                                         
@@ -106,7 +110,17 @@ struct PlatesEditorContainer: View {
 
     var body: some View {
         NavigationStack {
-                PlatesEditorView(plates: $plates)
+            PlatesEditorView(plates: $plates, removePlate: { removeId in
+                    plates.plates.removeAll(where: {$0.id == removeId})
+                
+            }, addPlate: {plateWeight  in
+                    print("Adding plate: \(plates.plates.count)")
+                    plates.plates.append(WeightPlates.Plate(weight: plateWeight))
+                    print("After add plate: \(plates.plates.count)")
+                    plates.plates.sort { $0 > $1 }
+                    print("Added plates: \(plates.plates.count)")
+                
+            })
                     .environmentObject(editState)
         }
     }
@@ -116,3 +130,39 @@ struct PlatesEditorContainer: View {
     
     PlatesEditorContainer()
 }
+//
+//struct LiftSetEditorContainer: View {
+//    
+//    @Query
+//    var lifts: [Lift]
+//    
+//    var body: some View {
+//        ForEach($lifts, id: \.id) { $lift in
+//            Text("Lift")
+////            ForEach(lift., id: \.id) { liftSet in       switch liftSet.weight.data {
+////                case .plates(let plates):
+////                    PlatesEditorView(plates: Binding(get: {return plates}, set: { liftSet.weight.data = .plates($0)
+////                    }))
+////                default: EmptyView()
+////                }
+////            }
+//        }
+//    }
+//}
+//#Preview("Plates Edit") {
+//    
+//    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+//    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+//    
+//    let lift = Lift(liftType: .benchPress, timestamp: Date.now)
+//    container.mainContext.insert(lift)
+//    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+//    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+//    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+//
+//    return NavigationStack {
+//        AddLiftView(lift: lift)
+//            .modelContainer(container)
+//    }
+//    
+//}
