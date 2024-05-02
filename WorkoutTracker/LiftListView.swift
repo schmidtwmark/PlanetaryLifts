@@ -12,15 +12,32 @@ struct LiftSetView: View {
     var liftSet: LiftSet
     var lift: Lift
     
+    @State
+    var expanded: Bool = false
+    
     var body: some View {
         
-        HStack {
+        VStack {
+            HStack {
                 Text(liftSet.reps == 1 ? "**1** rep" : "**\(liftSet.reps)** reps")
                 Spacer()
                 if lift.weighted {
                     Text(try! AttributedString(markdown: "\(liftSet.weight.displayString)"))
                 }
+                if case .plates(_) = liftSet.weight.data {
+                    Image(systemName: "chevron.down").rotationEffect(Angle(degrees: expanded ? 0.0 : -90.0))
+                        .imageScale(.small)
+                }
             }
+            if case let .plates(plates) = liftSet.weight.data, expanded {
+                Divider()
+                PlatesView(plates: plates, removePlate: {_ in })
+            }
+        }.onTapGesture {
+            withAnimation {
+                expanded.toggle()
+            }
+        }
     }
 }
 
@@ -184,10 +201,10 @@ struct LiftListView: View {
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline])
     container.mainContext.insert(lift)
-    lift.addSet(10, weight: 100.0, units: .pounds)
-    lift.addSet(10, weight: 120.0, units: .pounds)
-    lift.addSet(10, weight: 130.0, units: .pounds)
-    
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+
     let secondLift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*10))
     container.mainContext.insert(secondLift)
     secondLift.addSet(10, weight: 250.0, units: .pounds)

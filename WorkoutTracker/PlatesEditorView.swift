@@ -8,6 +8,57 @@
 import SwiftUI
 import SwiftData
 
+struct PlatesView: View {
+    let rectangleSizes = [2.5: CGSize(width: 35.0, height: 35.0),
+                          5.0: CGSize(width: 35.0, height: 50.0),
+                          10.0: CGSize(width: 35.0, height: 65.0),
+                          15.0: CGSize(width: 35.0, height: 80.0),
+                          25.0: CGSize(width: 35.0, height: 100.0),
+                          35.0: CGSize(width: 45.0, height: 100.0),
+                          45.0: CGSize(width: 55.0, height: 100.0),
+                          55.0: CGSize(width: 65.0, height: 100.0)
+    ]
+    
+    var plates: WeightPlates
+    var removePlate: (UUID) -> ()
+
+
+    
+    var body: some View {
+        ScrollView(.horizontal) {
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 5.0)
+                    .fill(.gray)
+                    .frame(minWidth: 100.0, minHeight: 10.0, maxHeight: 10.0)
+                HStack(spacing: 5.0) {
+                    Rectangle().frame(width: 10.0, height: 100.0).opacity(0.0)
+                    RoundedRectangle(cornerRadius: 5.0)
+                        .fill(.gray)
+                        .frame(width: 10.0, height: 30.0)
+                    ForEach(plates.plates) { plate in
+                        ZStack {
+                            RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / 4.0)
+                                .stroke(Color(uiColor: UIColor.label), lineWidth: 2.0)
+                                .fill(Color(uiColor: UIColor.systemBackground))
+                                .frame(width:  rectangleSizes[plate.weight]!.width, height: rectangleSizes[plate.weight]!.height)
+                            Text("\(plate.weight.clean)")
+                        }.onTapGesture {
+                            withAnimation {
+                                removePlate(plate.id)
+                            }
+                        }
+                        
+                    }
+                    
+                    Spacer()
+                }.padding(2.0)
+                
+            }
+        }
+    }
+        
+}
+
 struct PlatesEditorView: View {
     @Binding var plates: WeightPlates
     
@@ -26,15 +77,6 @@ struct PlatesEditorView: View {
     let topRowWeights = [2.5, 5.0, 10.0, 15.0]
     let bottomRowWeights =  [25.0, 35.0, 45.0, 55.0]
     
-    let rectangleSizes = [2.5: CGSize(width: 35.0, height: 35.0),
-                          5.0: CGSize(width: 35.0, height: 50.0),
-                          10.0: CGSize(width: 35.0, height: 65.0),
-                          15.0: CGSize(width: 35.0, height: 80.0),
-                          25.0: CGSize(width: 35.0, height: 100.0),
-                          35.0: CGSize(width: 45.0, height: 100.0),
-                          45.0: CGSize(width: 55.0, height: 100.0),
-                          55.0: CGSize(width: 65.0, height: 100.0)
-    ]
     
     
     var body: some View {
@@ -44,63 +86,27 @@ struct PlatesEditorView: View {
                 Spacer()
                 Text(plates.weight == 1.0 ? "**1** \(units.singleUnit)" : "**\(plates.weight.clean)** \(units.singleUnit)s")
             }
-            VStack {
-                ZStack {
-                    Rectangle().frame(height: 100.0).opacity(0.0)
-                    ScrollView(.horizontal) {
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 5.0)
-//                                .stroke(.white, lineWidth: 2.0)
-                                .fill(.gray)
-                                .frame(minWidth: 100.0, minHeight: 10.0, maxHeight: 10.0)
-                            HStack(spacing: 5.0) {
-                                Rectangle().frame(width: 10.0, height: 100.0).opacity(0.0)
-                                RoundedRectangle(cornerRadius: 5.0)
-//                                    .stroke(.white, lineWidth: 2.0)
-                                    .fill(.gray)
-                                    .frame(width: 10.0, height: 30.0)
-                                ForEach(plates.plates) { plate in
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / 4.0)
-                                            .stroke(Color(uiColor: UIColor.label), lineWidth: 2.0)
-                                            .fill(Color(uiColor: UIColor.systemBackground))
-                                            .frame(width:  rectangleSizes[plate.weight]!.width, height: rectangleSizes[plate.weight]!.height)
-                                        Text("\(plate.weight.clean)")
-                                    }.onTapGesture {
-                                        withAnimation {
-                                            removePlate(plate.id)
-                                        }
+            PlatesView(plates: plates, removePlate: removePlate)
+            HStack {
+                Spacer()
+                VStack {
+                    ForEach([topRowWeights, bottomRowWeights], id: \.first!) { weights in
+                        HStack {
+                            ForEach(weights, id: \.self) { plateWeight in
+                                Button {
+                                    withAnimation {
+                                        addPlate(plateWeight)
                                     }
+                                } label: {
                                     
-                                }
-                                
-                                Spacer()
-                            }.padding(2.0)
-                           
-                        }
-                    }
-                }
-                HStack {
-                    Spacer()
-                    VStack {
-                        ForEach([topRowWeights, bottomRowWeights], id: \.first!) { weights in
-                            HStack {
-                                ForEach(weights, id: \.self) { plateWeight in
-                                    Button {
-                                        withAnimation {
-                                            addPlate(plateWeight)
-                                        }
-                                    } label: {
-                                        
-                                        Text("\(plateWeight.clean)")
-                                    }.buttonStyle(StepperButtonStyle(frame: CGSize(width: 60.0, height: 40.0)))
-                                }
+                                    Text("\(plateWeight.clean)")
+                                }.buttonStyle(StepperButtonStyle(frame: CGSize(width: 60.0, height: 40.0)))
                             }
-                            
                         }
+                        
                     }
-                    Spacer()
                 }
+                Spacer()
             }
             HStack {
                 Text("Base Weight")
