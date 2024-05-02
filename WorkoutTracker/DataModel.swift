@@ -51,10 +51,10 @@ final class Lift {
     // Maps rep count to the maximum weight for that rep count in the given sets
     func maxes() -> [Int: Double] {
         return sets.reduce(into: [Int: Double](), { result, liftSet in
-            if let maxForReps = result[liftSet.reps], liftSet.roundedWeight < maxForReps {
+            if let maxForReps = result[liftSet.reps], liftSet.weight.roundedWeight < maxForReps {
                 return
             }
-            result[liftSet.reps] = liftSet.roundedWeight
+            result[liftSet.reps] = liftSet.weight.roundedWeight
         })
     }
 }
@@ -106,6 +106,14 @@ struct Weight : Equatable, Codable{
     
     var data: WeightData
     var units: WeightUnits
+    
+    var displayString : String {
+        self.weight == 1.0 ? "**1** \(self.units.singleUnit)" : "**\(roundedWeight.clean)** \(self.units.singleUnit)s"
+    }
+    
+    var roundedWeight : Double {
+        round(self.weight / 0.5) * 0.5
+    }
     
     init(data: WeightData, units: WeightUnits) {
         self.data = data
@@ -171,9 +179,11 @@ struct LiftSet : Codable, Identifiable, Equatable {
         self.weight = Weight(data: .plates(plates), units: units)
     }
     
-    var roundedWeight : Double {
-        round(weight.weight / 0.5) * 0.5
+    init(reps: Int, weight: Weight) {
+        self.reps = reps
+        self.weight = weight
     }
+    
     
     func convert(to: WeightUnits) -> LiftSet {
         let newWeight = switch (weight.units, to) {
@@ -184,10 +194,7 @@ struct LiftSet : Codable, Identifiable, Equatable {
         
         return LiftSet(reps: reps, weight: newWeight, units: to)
     }
-    
-    func weightString() -> String {
-        weight.weight == 1.0 ? "**1** \(weight.units.singleUnit)" : "**\(roundedWeight.clean)** \(weight.units.singleUnit)s"
-    }
+   
     
 }
 

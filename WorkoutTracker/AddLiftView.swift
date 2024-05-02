@@ -220,10 +220,10 @@ struct AddLiftView: View {
                     Text("Weighted Sets")
                 })
             }
-            if case .weight(let weightEditingId) = editState.setEditMode {
-                weightEditModeSelector(weightEditingId: weightEditingId)
-            }
             ForEach($liftSets, id: \.id) { $liftSet in
+                if case .weight(let weightEditingId) = editState.setEditMode, liftSet.id == weightEditingId {
+                    weightEditModeSelector(weightEditingId: weightEditingId)
+                }
                 HStack {
                     if editState.setEditMode == .none || editState.setEditMode != .weight(liftSet.id) {
                         NumberPicker(number: $liftSet.reps,
@@ -243,49 +243,53 @@ struct AddLiftView: View {
                                 NumberPicker(number: Binding(get: {
                                     return rawWeight
                                 }, set: { liftSet.weight.data = .rawWeight($0)}),
-                                             toString: { _ in "\(liftSet.roundedWeight.clean)"},
+                                             toString: { _ in "\(liftSet.weight.roundedWeight.clean)"},
                                              onIncrement: {return roundedIncrement($0)},
                                              onDecrement: {return max(1.0, roundedDecrement($0))},
                                              type: .weight,
                                              id: liftSet.id)
                                 
                             case .plates(let plates):
-                                Group {
-                                    if editState.setEditMode == .weight(liftSet.id) {
-                                        PlatesEditorView(plates: Binding(get: {
-                                            return plates
-                                        }, set: {
-                                            liftSet.weight.data = .plates($0)
-                                        }), removePlate: { removeId in
-                                            if case .plates(var editablePlates) = liftSet.weight.data {
-                                                editablePlates.plates.removeAll(where: {$0.id == removeId})
-                                                liftSet.weight.data = .plates(editablePlates)
-                                            }
-                                            
-                                        }, addPlate: { plateWeight in
-                                            if case .plates(var editablePlates) = liftSet.weight.data {
-                                                editablePlates.plates.append(WeightPlates.Plate(weight: plateWeight))
-                                                editablePlates.plates.sort(by: >)
-                                                liftSet.weight.data = .plates(editablePlates)
-                                            }
-    
+                                HStack {
+                                    Group {
+                                       
+                                        if editState.setEditMode == .weight(liftSet.id) {
+                                            PlatesEditorView(plates: Binding(get: {
+                                                return plates
+                                            }, set: {
+                                                liftSet.weight.data = .plates($0)
+                                            }), removePlate: { removeId in
+                                                if case .plates(var editablePlates) = liftSet.weight.data {
+                                                    editablePlates.plates.removeAll(where: {$0.id == removeId})
+                                                    liftSet.weight.data = .plates(editablePlates)
+                                                }
+                                                
+                                            }, addPlate: { plateWeight in
+                                                if case .plates(var editablePlates) = liftSet.weight.data {
+                                                    editablePlates.plates.append(WeightPlates.Plate(weight: plateWeight))
+                                                    editablePlates.plates.sort(by: >)
+                                                    liftSet.weight.data = .plates(editablePlates)
+                                                }
+
+                                            })
+                                            //, weightUnits: liftSet.weight.units)
+                                        } else {
+                                            Spacer()
+                                            Text(try! AttributedString(markdown: "\(liftSet.weight.displayString)"))
+                                                .onTapGesture {
+                                                    withAnimation {
+                                                        editState.setEditMode = .weight(liftSet.id)
+                                                    }
+                                                }
+                                            Spacer()
                                         }
-                                        )
-                                    } else {
-                                        Spacer()
-                                        Group {
-                                            Text("\(liftSet.weight.weight.clean)")
-                                                .fontWeight(.bold)
-                                            Text("\(weightUnits.singleUnit)\(liftSet.weight.weight != 1.0 ? "s" : "")")
-                                        }
-                                        .onTapGesture {
-                                            withAnimation {
-                                                editState.setEditMode = .weight(liftSet.id)
-                                            }
-                                        }
-                                        Spacer()
                                     }
                                 }
+                                .alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
+                                    return 0
+                                }
+
+                                
                             }
                         }
                     }
@@ -312,7 +316,7 @@ struct AddLiftView: View {
                     withAnimation {
                         if editState.setEditMode == .none {
                             if let lastSet = liftSets.last {
-                                liftSets.append(LiftSet(reps: lastSet.reps, weight: lastSet.weight.weight, units: lastSet.weight.units))
+                                liftSets.append(LiftSet(reps: lastSet.reps, weight: lastSet.weight))
                             } else {
                                 liftSets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
                             }

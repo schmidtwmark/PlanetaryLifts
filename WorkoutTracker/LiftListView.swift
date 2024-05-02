@@ -18,7 +18,7 @@ struct LiftSetView: View {
                 Text(liftSet.reps == 1 ? "**1** rep" : "**\(liftSet.reps)** reps")
                 Spacer()
                 if lift.weighted {
-                    Text(try! AttributedString(markdown: "\(liftSet.weightString())"))
+                    Text(try! AttributedString(markdown: "\(liftSet.weight.displayString)"))
                 }
             }
     }

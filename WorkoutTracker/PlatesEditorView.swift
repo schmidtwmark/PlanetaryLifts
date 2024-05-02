@@ -14,6 +14,8 @@ struct PlatesEditorView: View {
     var removePlate: (UUID) -> ()
     var addPlate: (Double) -> ()
     
+    var units: WeightUnits = .pounds
+    
     var formatter: NumberFormatter {
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
@@ -38,39 +40,44 @@ struct PlatesEditorView: View {
     var body: some View {
         VStack {
             HStack {
-                Text("Base Weight")
+                Text("Total Weight:")
                 Spacer()
-                NumberIncrementor(number: $plates.barWeight,  toString: {  "\($0.clean)"},
-                                  onIncrement: {return roundedIncrement($0)},
-                                  onDecrement: {return max(1.0, roundedDecrement($0))}, frame: CGSize(width: 70, height: 35), formatter: formatter)
-            }
-            Toggle("Mirrored", isOn: $plates.mirrored)
-            HStack {
-                Text("Total Weight")
-                Spacer()
-                Text("\(plates.weight.clean)")
+                Text(plates.weight == 1.0 ? "**1** \(units.singleUnit)" : "**\(plates.weight.clean)** \(units.singleUnit)s")
             }
             VStack {
                 ZStack {
                     Rectangle().frame(height: 100.0).opacity(0.0)
                     ScrollView(.horizontal) {
-                        HStack(spacing: 5.0) {
-                            ForEach(plates.plates) { plate in
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / 4.0)
-                                        .stroke(.black, lineWidth: 2.0)
-                                        .frame(width:  rectangleSizes[plate.weight]!.width, height: rectangleSizes[plate.weight]!.height)
-                                    Text("\(plate.weight.clean)")
-                                }.onTapGesture {
-                                    withAnimation {
-                                        removePlate(plate.id)
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 5.0)
+//                                .stroke(.white, lineWidth: 2.0)
+                                .fill(.gray)
+                                .frame(minWidth: 100.0, minHeight: 10.0, maxHeight: 10.0)
+                            HStack(spacing: 5.0) {
+                                Rectangle().frame(width: 10.0, height: 100.0).opacity(0.0)
+                                RoundedRectangle(cornerRadius: 5.0)
+//                                    .stroke(.white, lineWidth: 2.0)
+                                    .fill(.gray)
+                                    .frame(width: 10.0, height: 30.0)
+                                ForEach(plates.plates) { plate in
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / 4.0)
+                                            .stroke(Color(uiColor: UIColor.label), lineWidth: 2.0)
+                                            .fill(Color(uiColor: UIColor.systemBackground))
+                                            .frame(width:  rectangleSizes[plate.weight]!.width, height: rectangleSizes[plate.weight]!.height)
+                                        Text("\(plate.weight.clean)")
+                                    }.onTapGesture {
+                                        withAnimation {
+                                            removePlate(plate.id)
+                                        }
                                     }
-                                }
                                     
-                            }
-                            
-                            Spacer()
-                        }.padding(2.0)
+                                }
+                                
+                                Spacer()
+                            }.padding(2.0)
+                           
+                        }
                     }
                 }
                 HStack {
@@ -95,7 +102,15 @@ struct PlatesEditorView: View {
                     Spacer()
                 }
             }
-            
+            HStack {
+                Text("Base Weight")
+                Spacer()
+                NumberIncrementor(number: $plates.barWeight,  toString: {  "\($0.clean)"},
+                                  onIncrement: {return roundedIncrement($0)},
+                                  onDecrement: {return max(1.0, roundedDecrement($0))}, frame: CGSize(width: 70, height: 35), formatter: formatter)
+            }
+            Toggle("Mirrored", isOn: $plates.mirrored)
+
             
             
         }
