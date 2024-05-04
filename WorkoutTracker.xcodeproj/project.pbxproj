@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		ED1B48D52BCB6792003F74BF /* PlatesEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */; };
+		ED30C2512BE6997D000303F9 /* LiftTypesGenerated.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED30C2502BE6997D000303F9 /* LiftTypesGenerated.swift */; };
 		ED320A362B92A0BF003A6628 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A352B92A0BF003A6628 /* Date.swift */; };
 		ED320A382B94DB5E003A6628 /* LiftType.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A372B94DB5E003A6628 /* LiftType.swift */; };
 		ED320A3A2B950AF5003A6628 /* LiftTypeSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */; };
@@ -30,6 +31,7 @@
 
 /* Begin PBXFileReference section */
 		ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatesEditorView.swift; sourceTree = "<group>"; };
+		ED30C2502BE6997D000303F9 /* LiftTypesGenerated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = LiftTypesGenerated.swift; path = workout_types_generator/LiftTypesGenerated.swift; sourceTree = "<group>"; };
 		ED320A352B92A0BF003A6628 /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
 		ED320A372B94DB5E003A6628 /* LiftType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftType.swift; sourceTree = "<group>"; };
 		ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftTypeSelector.swift; sourceTree = "<group>"; };
@@ -98,6 +100,7 @@
 				ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */,
 				EDA683092B913492002015CA /* SettingsView.swift */,
 				ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */,
+				ED30C2502BE6997D000303F9 /* LiftTypesGenerated.swift */,
 				EDA682F92B90E9F5002015CA /* Assets.xcassets */,
 				EDA682FE2B90E9F5002015CA /* WorkoutTracker.entitlements */,
 				EDA682FF2B90E9F5002015CA /* Info.plist */,
@@ -198,6 +201,7 @@
 				ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */,
 				EDA6830C2B91469D002015CA /* DataModel.swift in Sources */,
 				ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */,
+				ED30C2512BE6997D000303F9 /* LiftTypesGenerated.swift in Sources */,
 				ED320A362B92A0BF003A6628 /* Date.swift in Sources */,
 				ED1B48D52BCB6792003F74BF /* PlatesEditorView.swift in Sources */,
 				EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */,

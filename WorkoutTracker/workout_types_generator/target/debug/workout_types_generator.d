@@ -1,0 +1,1 @@
+/Users/markschmidt/Documents/WorkoutTracker/WorkoutTracker/workout_types_generator/target/debug/workout_types_generator: /Users/markschmidt/Documents/WorkoutTracker/WorkoutTracker/workout_types_generator/src/main.rs
