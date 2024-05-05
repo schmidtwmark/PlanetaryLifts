@@ -96,9 +96,9 @@ struct LiftListItem: View {
                     ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
                         Text(modifier.rawValue)
                             .padding(10)
-                            .background(Color.accentColor)
-                            .clipShape(Capsule())
-                        
+                            .background(Color(uiColor: UIColor.systemGroupedBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 10.0))
+
                         
                     }
                     Spacer()
@@ -199,7 +199,7 @@ struct LiftListView: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
-    let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline])
+    let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip])
     container.mainContext.insert(lift)
     lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
     lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)

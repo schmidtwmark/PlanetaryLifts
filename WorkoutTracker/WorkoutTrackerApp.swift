@@ -11,17 +11,18 @@ import SwiftData
 @main
 struct WorkoutTrackerApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Lift.self,
-            UserGeneratedLiftType.self
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+        if let cloudContainer = try? ModelContainer(
+            for: Lift.self,
+            UserGeneratedLiftType.self,
+            configurations: .init(
+                "iCloud.planetary-lifts.container"
+            )
+        ) {
+            return cloudContainer
         }
+        // If failed to get cloud container, just make a local container
+        return try! ModelContainer(for: Lift.self,
+                                   UserGeneratedLiftType.self)
     }()
 
     var body: some Scene {

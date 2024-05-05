@@ -11,16 +11,16 @@ import UIKit
 
 @Model
 final class Lift {
-    var type: LiftType
+    var type: LiftType = LiftType.benchPress
     
-    var sets: [LiftSet]
+    var sets: [LiftSet] = Array<LiftSet>()
     
-    var timestamp: Date
+    var timestamp: Date = Date.now
     var equalWeight: Bool = true
     var equalReps: Bool = true
     var weighted: Bool = true
     var notes: String = ""
-    var modifiers: Set<LiftModifier>
+    var modifiers: Set<LiftModifier> = Set<LiftModifier>()
     
     init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date, modifiers: Set<LiftModifier> = Set(), notes: String = "") {
         self.type = liftType
@@ -200,8 +200,8 @@ struct LiftSet : Codable, Identifiable, Equatable {
 
 @Model
 final class UserGeneratedLiftType  {
-    var name: String
-    var category: LiftCategory
+    var name: String = ""
+    var category: LiftCategory = LiftCategory.chest
     var id: UUID = UUID()
     
     init(name: String, category: LiftCategory) {
