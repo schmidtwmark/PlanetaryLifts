@@ -168,22 +168,30 @@ enum LiftType: Hashable, Codable{
 	var modifiers: [LiftModifier] {
 		return switch self {
 		// MARK: Arms
-		case .bicepCurl: [.oneArm, .reverse, .barbell, .dumbbell]
+		case .bicepCurl: [.incline, .oneArm, .reverse, .barbell, .dumbbell]
+		case .skullcrushers: [.incline, .decline]
+		case .tricepExtensions: [.incline, .oneArm, .dumbbell, .cable]
 
 		// MARK: Back
 		case .backSquat: [.barbell, .dumbbell]
 		case .frontSquat: [.barbell, .dumbbell]
 		case .deadlift: [.narrowGrip, .wideGrip, .barbell, .hexBar]
+		case .latPulldowns: [.narrowGrip, .wideGrip]
+		case .row: [.oneArm, .cable]
 
 		// MARK: Chest
-		case .benchPress: [.incline, .decline, .narrowGrip, .wideGrip, .barbell, .dumbbell]
+		case .benchPress: [.incline, .decline, .narrowGrip, .wideGrip, .barbell, .dumbbell, .multiGripBar]
+		case .vikingPress: [.narrowGrip, .wideGrip]
+		case .pushups: [.incline, .narrowGrip, .wideGrip, .oneArm]
 		case .plankPullThrough: [.incline]
 
 		// MARK: Core
 
 		// MARK: Legs
+		case .lunge: [.reverse, .dumbbell]
 
 		// MARK: Shoulders
+		case .overheadPress: [.narrowGrip, .wideGrip, .multiGripBar]
 
 		default: []
 		}

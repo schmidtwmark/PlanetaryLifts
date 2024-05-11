@@ -1,0 +1,1 @@
+cargo build && target/debug/workout_types_generator > LiftTypesGenerated.swift
