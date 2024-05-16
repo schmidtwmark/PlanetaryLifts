@@ -42,7 +42,7 @@ final class Lift {
     
     func allSetsSame() -> Bool {
         if let first = sets.first {
-            return sets.count >= 2 && sets.allSatisfy({ $0.reps == first.reps && $0.weight == first.weight && $0.weight.units == first.weight.units})
+            return sets.count >= 2 && sets.allSatisfy({ $0.reps == first.reps && $0.weight.weight == first.weight.weight && $0.weight.units == first.weight.units})
         } else {
             return false
         }

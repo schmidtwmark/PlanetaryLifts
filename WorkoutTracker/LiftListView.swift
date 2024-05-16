@@ -8,17 +8,31 @@
 import SwiftUI
 import SwiftData
 
+struct AnimatingCellHeight: AnimatableModifier {
+    var height: CGFloat = 0
+
+    var animatableData: CGFloat {
+        get { height }
+        set { height = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content.frame(height: height)
+    }
+}
+
+
 struct LiftSetView: View {
     var liftSet: LiftSet
     var lift: Lift
     
-    @State
-    var expanded: Bool = false
+    @State var expanded: Bool = false
     
     var body: some View {
         
         VStack {
-            HStack {
+            HStack(alignment: .center)
+             {
                 Text(liftSet.reps == 1 ? "**1** rep" : "**\(liftSet.reps)** reps")
                 Spacer()
                 if lift.weighted {
@@ -30,12 +44,15 @@ struct LiftSetView: View {
                 }
             }
             if case let .plates(plates) = liftSet.weight.data, expanded {
-                Divider()
                 PlatesView(plates: plates, removePlate: {_ in })
             }
-        }.onTapGesture {
-            withAnimation {
-                expanded.toggle()
+        }
+        .modifier(AnimatingCellHeight(height: expanded ? 150 : 40))
+        .onTapGesture {
+            if case .plates(_) = liftSet.weight.data {
+                withAnimation {
+                    expanded.toggle()
+                }
             }
         }
     }
@@ -49,7 +66,8 @@ struct SetsView: View {
         if lift.sets.isEmpty {
             EmptyView()
         } else {
-            HStack {
+            HStack
+             {
                 if lift.allSetsSame() {
                     Text("\(lift.sets.count)x").font(.title)
                     LiftSetView(liftSet: lift.sets.first!, lift: lift)

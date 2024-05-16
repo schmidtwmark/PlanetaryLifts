@@ -14,8 +14,9 @@ func repToString(_ reps: Int) -> String {
     } else {
         return "\(reps) reps"
     }
-
 }
+
+
 
 struct StatItem: View {
     @State var expanded = true
@@ -23,7 +24,9 @@ struct StatItem: View {
     var lifts: [Lift]
     
     @State var position: (Date, Double)? = nil
+    @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
     
+
     var maxes: [Int: Double]{
         return lifts.reduce(into: [Int: Double](), { result, lift in
             let liftMaxes = lift.maxes()
@@ -44,14 +47,25 @@ struct StatItem: View {
     var body: some View {
         List {
             if let max = allTimeMax {
+                Section {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading) {
+                        StatBlock(description: "All Time Max", units: weightUnits.rawValue, number: max)
+                        StatBlock(description: "Total Weight", units: weightUnits.rawValue, number: totalWeight(lifts))
+                        StatBlock(description: "Total Reps", units: "Reps", number: Double(totalReps(lifts)))
+                        StatBlock(description: "Total Lifts", units: "Lifts", number: Double(lifts.count))
+                        
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                }
                 Section("Maxes") {
-                    Text("All Time Max: \(max.clean) ")
                     Chart {
                         ForEach(maxes.sorted(by: <), id: \.key) { reps, max in
                             BarMark(x: .value("Reps", repToString(reps)), y: .value("Weight", max))
                                 .foregroundStyle(by: .value("Reps", repToString(reps)))
                         }
                     }
+                    .frame(minWidth: 150, minHeight: 200)
                 }
                 
                 Section("Progress") {
@@ -65,12 +79,14 @@ struct StatItem: View {
                                 .foregroundStyle(by: .value("Reps", repToString(reps)))
                             
                         }
+                        
                     }
                     .chartYScale(domain: 0...max * 1.4)
                     .chartScrollableAxes(.horizontal)
                     .chartScrollTargetBehavior(
                         .valueAligned(matching: .init(day: 0))
                     )
+                    .frame(minWidth: 150, minHeight: 200)
                 }
             }
         }

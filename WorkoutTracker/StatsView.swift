@@ -9,6 +9,22 @@ import SwiftUI
 import SwiftData
 import Charts
 
+func totalWeight(_ lifts: [Lift]) -> Double {
+    return lifts.reduce(into: 0, { sum, lift in
+        sum += lift.sets.reduce(into: 0, { innerSum, liftSet in
+            innerSum += Double(liftSet.reps) * liftSet.weight.weight
+        })
+    })
+}
+func totalReps(_ lifts: [Lift]) -> Int {
+    return lifts.reduce(into: 0, { sum, lift in
+        sum += lift.sets.reduce(into: 0, { innerSum, liftSet in
+            innerSum += liftSet.reps
+        })
+    })
+}
+
+
 struct StatsView: View {
     @Query var userGeneratedTypes : [UserGeneratedLiftType]
     @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
@@ -77,13 +93,6 @@ struct StatsView: View {
         liftsByType.mapValues({$0.count})
     }
     
-    func totalWeight(_ lifts: [Lift]) -> Double {
-        return lifts.reduce(into: 0, { sum, lift in
-            sum += lift.sets.reduce(into: 0, { innerSum, liftSet in
-                innerSum += Double(liftSet.reps) * liftSet.weight.weight
-            })
-        })
-    }
     
     // Sum of weight * rep for each lift category
     var categoryWeight: [LiftCategory: Double] {
@@ -106,9 +115,9 @@ struct StatsView: View {
     func getSector(category: LiftCategory, statsType: StatsType) -> some ChartContent {
         let mark = switch statsType {
         case .count:
-            SectorMark(angle: .value("Count", categoryCounts[category]!))
+            SectorMark(angle: .value("Count", categoryCounts[category]!), innerRadius: .ratio(0.25))
         case .weight:
-            SectorMark(angle: .value("Weight", categoryWeight[category]!))
+            SectorMark(angle: .value("Weight", categoryWeight[category]!), innerRadius: .ratio(0.25))
         }
         return mark.foregroundStyle(by: .value("Category", category.rawValue))
     }
@@ -116,9 +125,9 @@ struct StatsView: View {
     func getSector(liftType: LiftType, statsType: StatsType) -> some ChartContent {
         let mark = switch statsType {
         case .count:
-            SectorMark(angle: .value("Count", typeCounts[liftType]!))
+            SectorMark(angle: .value("Count", typeCounts[liftType]!), innerRadius: .ratio(0.25))
         case .weight:
-            SectorMark(angle: .value("Weight", typeWeight[liftType]!))
+            SectorMark(angle: .value("Weight", typeWeight[liftType]!), innerRadius: .ratio(0.25))
         }
         return mark.foregroundStyle(by: .value("Lift Type", liftType.string))
     }
@@ -128,15 +137,15 @@ struct StatsView: View {
         NavigationStack {
             List {
                 Section("General Stats") {
-                    Picker("", selection: $statsType.animation()) {
-                        ForEach(StatsType.allCases, id: \.rawValue) { type in
-                            Text(type.rawValue).tag(type)
-                        }
-                    }.pickerStyle(.segmented)
                     Picker("", selection: $granularity.animation()) {
                         ForEach(Granularity.allCases, id: \.rawValue) { granularity in
                             Text(granularity.rawValue).tag(granularity)}
                         
+                    }.pickerStyle(.segmented)
+                    Picker("", selection: $statsType.animation()) {
+                        ForEach(StatsType.allCases, id: \.rawValue) { type in
+                            Text(type.rawValue).tag(type)
+                        }
                     }.pickerStyle(.segmented)
                     Chart {
                         
@@ -150,34 +159,7 @@ struct StatsView: View {
                                 getSector(liftType: type, statsType: statsType)
                             }
                         }
-//                        
-//                        
-//                        switch (statsType, granularity) {
-//                        case (.count, .category):
-//                            ForEach(categoryCounts, id: \.0) { category, count in
-//                                SectorMark(angle: .value("Count", count))
-//                                    .foregroundStyle(by: .value("Category", category.rawValue))
-//                                
-//                            }
-//                        case (.count, .type):
-//                            ForEach(typeCounts, id: \.0) { type, count in
-//                                SectorMark(angle: .value("Count", count))
-//                                    .foregroundStyle(by: .value("Type", type.string))
-//                            }
-//                        case (.weight, .category):
-//                            ForEach(categoryWeight, id: \.0) { category, weight in
-//                                SectorMark(angle: .value("Weight", weight))
-//                                    .foregroundStyle(by: .value("Category", category.rawValue))
-//                                
-//                            }
-//                        case (.weight, .type):
-//                            ForEach(typeCounts, id: \.0) { type, count in
-//                                SectorMark(angle: .value("Count", count))
-//                                    .foregroundStyle(by: .value("Type", type.string))
-//                            }
-//                        }
-//
-                    }
+                    }.scaledToFit()
                 }
                 
                 ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in

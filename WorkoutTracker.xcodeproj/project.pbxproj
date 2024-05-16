@@ -15,6 +15,7 @@
 		ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */; };
 		ED50D4D62B9E20CC00BD3F77 /* CrookedText in Frameworks */ = {isa = PBXBuildFile; productRef = ED50D4D52B9E20CC00BD3F77 /* CrookedText */; };
 		ED65CC512B9F523E0029FF5A /* Shiny in Frameworks */ = {isa = PBXBuildFile; productRef = ED65CC502B9F523E0029FF5A /* Shiny */; };
+		ED749DC12BF5769200A3AA3E /* StatBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED749DC02BF5769200A3AA3E /* StatBlock.swift */; };
 		ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7BF2BBE1BE900C46300 /* StatItem.swift */; };
 		ED76D7C22BBF9D4200C46300 /* BindingPlayground.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */; };
 		ED76D7C42BBF9F9500C46300 /* NumberPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */; };
@@ -36,6 +37,7 @@
 		ED320A372B94DB5E003A6628 /* LiftType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftType.swift; sourceTree = "<group>"; };
 		ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftTypeSelector.swift; sourceTree = "<group>"; };
 		ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickerGeneratorView.swift; sourceTree = "<group>"; };
+		ED749DC02BF5769200A3AA3E /* StatBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatBlock.swift; sourceTree = "<group>"; };
 		ED76D7BF2BBE1BE900C46300 /* StatItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatItem.swift; sourceTree = "<group>"; };
 		ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingPlayground.swift; sourceTree = "<group>"; };
 		ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberPicker.swift; sourceTree = "<group>"; };
@@ -89,6 +91,7 @@
 				EDA682F52B90E9F4002015CA /* ContentView.swift */,
 				EDA6830F2B9186DE002015CA /* StatsView.swift */,
 				ED76D7BF2BBE1BE900C46300 /* StatItem.swift */,
+				ED749DC02BF5769200A3AA3E /* StatBlock.swift */,
 				EDA6830B2B91469D002015CA /* DataModel.swift */,
 				EDA683072B91347A002015CA /* LiftListView.swift */,
 				ED320A372B94DB5E003A6628 /* LiftType.swift */,
@@ -207,6 +210,7 @@
 				EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */,
 				ED320A3A2B950AF5003A6628 /* LiftTypeSelector.swift in Sources */,
 				EDA6830A2B913492002015CA /* SettingsView.swift in Sources */,
+				ED749DC12BF5769200A3AA3E /* StatBlock.swift in Sources */,
 				EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */,
 				ED76D7C22BBF9D4200C46300 /* BindingPlayground.swift in Sources */,
 				EDA683082B91347A002015CA /* LiftListView.swift in Sources */,
@@ -343,7 +347,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WorkoutTracker/WorkoutTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracker/Preview Content\"";
 				DEVELOPMENT_TEAM = C2UW47HS8X;
 				ENABLE_PREVIEWS = YES;
@@ -353,13 +357,13 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.PlanetaryLifts;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -375,7 +379,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WorkoutTracker/WorkoutTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracker/Preview Content\"";
 				DEVELOPMENT_TEAM = C2UW47HS8X;
 				ENABLE_PREVIEWS = YES;
@@ -385,13 +389,13 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.PlanetaryLifts;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
