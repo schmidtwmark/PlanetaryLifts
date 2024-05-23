@@ -98,7 +98,9 @@ struct SetsView: View {
 struct LiftListItem: View {
     @State var lift: Lift
     @Binding var editingLift: Lift?
-    
+    @Environment(\.modelContext) private var modelContext
+    var scrollViewProxy: ScrollViewProxy
+
     var body: some View {
         VStack {
             HStack {
@@ -128,7 +130,24 @@ struct LiftListItem: View {
             Button {
                 editingLift = lift
             } label: {
-                Text("Edit Lift")
+                Label("Edit Lift", systemImage: "pencil")
+            }
+            Button {                    
+                let newLift = Lift(liftType: lift.type,
+                                       sets: lift.sets,
+                                       timestamp: Date.now,
+                                       modifiers:
+                                        lift.modifiers,
+                                       notes: lift.notes)
+
+                withAnimation {
+                    modelContext.insert(newLift)
+                }
+                withAnimation {
+                    scrollViewProxy.scrollTo(0)
+                }
+            } label: {
+                Label("Repeat Now", systemImage: "arrow.circlepath")
             }
         })
         
@@ -177,37 +196,44 @@ struct LiftListView: View {
     
     var body: some View {
         NavigationStack {
-            List(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
-                Section("\(date.format())") {
-                    ForEach(liftsForDate) { lift in
-                        LiftListItem(lift: lift, editingLift: $editingLift)
-                    }
-                    .onDelete { indexSet in
-                        let liftsToRemove = indexSet.map({idx in liftsForDate[idx]})
-                        for lift in liftsToRemove {
-                            modelContext.delete(lift)
+            ScrollViewReader { proxy in
+                List {
+                    EmptyView().id(0)
+                    ForEach(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
+                        Section("\(date.format())") {
+                            ForEach(liftsForDate) { lift in
+                                VStack {
+                                    LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy)
+                                }
+                            }
+                            .onDelete { indexSet in
+                                let liftsToRemove = indexSet.map({idx in liftsForDate[idx]})
+                                for lift in liftsToRemove {
+                                    modelContext.delete(lift)
+                                }
+                            }
                         }
                     }
                 }
-            }
-            .navigationTitle("Lifts")
-            .toolbar() {
-                ToolbarItem(placement: .primaryAction, content: {
-                    Button {
-                        addingLift = true
-                    } label: {
-                        Label("Add Lift", systemImage: "plus")
-                    }
-                    if lifts.count > 0 {
-                        EditButton()
-                    }
+                .navigationTitle("Lifts")
+                .toolbar() {
+                    ToolbarItem(placement: .primaryAction, content: {
+                        Button {
+                            addingLift = true
+                        } label: {
+                            Label("Add Lift", systemImage: "plus")
+                        }
+                        if lifts.count > 0 {
+                            EditButton()
+                        }
+                    })
+                }
+                .sheet(isPresented: $addingLift, content: {
+                    AddLiftView(liftType: .benchPress)
                 })
-            }
-            .sheet(isPresented: $addingLift, content: {
-                AddLiftView(liftType: .benchPress)
-            })
-            .sheet(item: $editingLift) { lift in
-                AddLiftView(lift: lift)
+                .sheet(item: $editingLift) { lift in
+                    AddLiftView(lift: lift)
+                }
             }
         }
     }
