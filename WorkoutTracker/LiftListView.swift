@@ -125,6 +125,13 @@ struct LiftListItem: View {
                 }
             }
             SetsView(lift: lift)
+            if !lift.notes.isEmpty {
+                HStack {
+                    Text(lift.notes)
+                        .padding(10)
+                    Spacer()
+                }.background(Color(uiColor: UIColor.systemGroupedBackground))
+            }
         }
         .contextMenu(menuItems: {
             Button {
@@ -243,11 +250,12 @@ struct LiftListView: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
-    let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip])
+    let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip], notes: "Notes notes notes notes notes notes notes")
     container.mainContext.insert(lift)
     lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
     lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
     lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    
 
     let secondLift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*10))
     container.mainContext.insert(secondLift)
