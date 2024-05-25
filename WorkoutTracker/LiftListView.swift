@@ -100,7 +100,7 @@ struct LiftListItem: View {
     @Binding var editingLift: Lift?
     @Environment(\.modelContext) private var modelContext
     var scrollViewProxy: ScrollViewProxy
-
+    
     var body: some View {
         VStack {
             HStack {
@@ -165,24 +165,45 @@ struct LiftListItem: View {
 }
 
 struct LiftListView: View {
-    
+    @State var searchText: String = ""
+
     @Environment(\.modelContext) private var modelContext
     
     @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
+    @Query var userGeneratedTypes: [UserGeneratedLiftType]
+    
+    var allLiftsByCategory: [LiftCategory: [LiftType]] {
+        generateAllLiftsByCategory(userGeneratedTypes: userGeneratedTypes)
+    }
+    
+    @State var filterSelection: LiftType? = nil
 
     @State var editingLift: Lift? = nil
     @State var addingLift: Bool = false
-
+    
     private var liftsByDate: [(TimelessDate, [Lift])] {
         var maybeLastDate : TimelessDate? = nil
         var todayLifts : [Lift] = []
         var output : [(TimelessDate, [Lift])] = []
         
         for lift in lifts{
+            if searchText != "" &&
+                !lift.type.string.containsIgnoringCase(searchText) &&
+                !lift.type.category.rawValue.containsIgnoringCase(searchText) &&
+                !lift.notes.containsIgnoringCase(searchText) &&
+                !lift.modifiers.contains(where: {$0.rawValue.containsIgnoringCase(searchText)})
+                {
+                continue
+            }
+            if let filterType = filterSelection, filterType != lift.type {
+                continue
+            }
             let currentDate = lift.timestamp.timeless()
             if let lastDate = maybeLastDate {
                 if lastDate != currentDate {
-                    output.append((lastDate, todayLifts.sorted(by: {$0.timestamp > $1.timestamp})))
+                    if !todayLifts.isEmpty {
+                        output.append((lastDate, todayLifts.sorted(by: {$0.timestamp > $1.timestamp})))
+                    }
                     maybeLastDate = currentDate
                     todayLifts = []
                 }
@@ -198,6 +219,14 @@ struct LiftListView: View {
             output.append((lastDate, todayLifts.sorted(by: {$0.timestamp > $1.timestamp})))
         }
         return output
+    }
+    
+    var filterImageName: String {
+        if let _ = filterSelection {
+            return "line.3.horizontal.decrease.circle.fill"
+        } else {
+            return "line.3.horizontal.decrease.circle"
+        }
     }
     
     
@@ -223,16 +252,40 @@ struct LiftListView: View {
                     }
                 }
                 .navigationTitle("Lifts")
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
                 .toolbar() {
-                    ToolbarItem(placement: .primaryAction, content: {
+                    ToolbarItemGroup(placement: .primaryAction, content: {
                         Button {
                             addingLift = true
                         } label: {
                             Label("Add Lift", systemImage: "plus")
                         }
-                        if lifts.count > 0 {
-                            EditButton()
-                        }
+                        Menu("Filter", systemImage: filterImageName, content: {
+                            if let filterType = filterSelection {
+                                Text ("Filtering \(filterType.string) Lifts")
+                                Button(role: .destructive, action: {
+                                    filterSelection = nil
+                                }) {
+                                    HStack {
+                                        Text("Clear Filter")
+                                        Image(systemName: "xmark.circle")
+                                    }
+                                }
+                            } else {
+                                ForEach(allLiftsByCategory.keys.sorted(by: <), id: \.rawValue) { category in
+                                    Menu(category.rawValue, content: {
+                                        ForEach(allLiftsByCategory[category]!, id: \.hashValue) { lift in
+                                            Button {
+                                                filterSelection = lift
+                                            } label: {
+                                                Text(lift.string)
+                                            }
+                                        }
+                                    })
+                                    
+                                }
+                            }
+                        })
                     })
                 }
                 .sheet(isPresented: $addingLift, content: {
