@@ -229,6 +229,10 @@ struct LiftListView: View {
         }
     }
     
+    func getMostRecentLiftType() -> LiftType? {
+        return lifts.first?.type
+    }
+
     
     var body: some View {
         NavigationStack {
@@ -289,7 +293,7 @@ struct LiftListView: View {
                     })
                 }
                 .sheet(isPresented: $addingLift, content: {
-                    AddLiftView(liftType: .benchPress)
+                    AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress)
                 })
                 .sheet(item: $editingLift) { lift in
                     AddLiftView(lift: lift)

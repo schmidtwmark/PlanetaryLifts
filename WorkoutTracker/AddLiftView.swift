@@ -20,10 +20,22 @@ class EditState : ObservableObject {
         case none
         case reps(UUID)
         case weight(UUID)
+        
+        var editingId: UUID? {
+            switch self {
+            case .none:
+                nil
+            case .reps(let UUID):
+                UUID
+            case .weight(let UUID):
+                UUID
+            }
+        }
     }
     
+    
+    
     @Published var setEditMode: SetEditMode = .none
-   
 }
 
 func weightGranularityIncrement(_ current: Double) -> Double {
@@ -100,6 +112,8 @@ struct AddLiftView: View {
         case edit(Lift)
     }
     
+    
+    @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
     @State var mode : Mode
     @State var liftType: LiftType
     @State var timestamp: Date
@@ -114,6 +128,11 @@ struct AddLiftView: View {
     @StateObject var editState: EditState = EditState()
     @Environment(\.dismiss) var dismiss
     @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    
+    
+    var mostRecentSet: LiftSet? {
+        lifts.first(where: {$0.type == liftType})?.sets.first
+    }
     
     var navigationTitle : String {
         return switch mode {
@@ -295,6 +314,12 @@ struct AddLiftView: View {
                     }
                 }
             }.onDelete(perform: { indexSet in
+                for index in indexSet {
+                    let liftSet = liftSets[index]
+                    if let editId = editState.setEditMode.editingId, editId == liftSet.id {
+                        editState.setEditMode = .none
+                    }
+                }
                 liftSets.remove(atOffsets: indexSet)
             })
         } header: {
@@ -317,11 +342,11 @@ struct AddLiftView: View {
                         if editState.setEditMode == .none {
                             if let lastSet = liftSets.last {
                                 liftSets.append(LiftSet(reps: lastSet.reps, weight: lastSet.weight))
+                            } else if let mostRecentSet = mostRecentSet {
+                                liftSets.append(mostRecentSet)
                             } else {
                                 liftSets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
                             }
-                            // TODO: read from global last time this lift was performed
-
                         } else {
                             editState.setEditMode = .none
                         }
@@ -411,7 +436,6 @@ struct AddLiftView: View {
     lift.addSet(10, weight: 100.0, units: .pounds)
     lift.addSet(10, weight: 120.0, units: .pounds)
     lift.addSet(10, weight: 130.0, units: .pounds)
-//    lift.addSet(10, weight: 130.0, units: .pounds, sticker: StickerConfig(id: UUID(), timestamp: Date.now, type: .benchPress, reps: 10, weight: 130.0, units: .pounds, colorHex: UIColor.blue.toHex()))
 
     return NavigationStack {
         AddLiftView(lift: lift)
@@ -443,6 +467,9 @@ struct AddLiftView: View {
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
     container.mainContext.insert(lift)
     
     return NavigationStack {
