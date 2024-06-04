@@ -74,9 +74,17 @@ struct WeightPlates : Codable, Equatable, CustomStringConvertible {
         var id: UUID = UUID()
         var weight: Double
         
+        func clone() -> Plate {
+            return Plate(weight: self.weight)
+        }
+        
     }
     var plates: [Plate]
     var mirrored : Bool = true
+    
+    func clone() -> WeightPlates {
+        return WeightPlates(barWeight: self.barWeight, plates: plates.map({$0.clone()}), mirrored: self.mirrored)
+    }
     
     var weight: Double {
         barWeight + (mirrored ? 2.0 : 1.0) * plates.reduce(0, { return $0 + $1.weight})
@@ -89,6 +97,15 @@ struct Weight : Equatable, Codable{
     enum WeightData : Equatable{
         case rawWeight(Double)
         case plates(WeightPlates)
+        
+        func clone() -> WeightData {
+            switch self {
+            case .rawWeight(let rawWeight):
+                return .rawWeight(rawWeight)
+            case .plates(let plates):
+                return .plates(plates.clone())
+            }
+        }
     }
     
     enum WeightDataTypes: String {
@@ -120,12 +137,27 @@ struct Weight : Equatable, Codable{
         self.units = units
     }
     
+    func clone() -> Weight {
+        return Weight(data: self.data.clone(), units: self.units)
+    }
+    
+    func same(other: Weight) -> Bool {
+        let sameWeight =  switch (self.data, other.data) {
+        case (.plates(let selfPlates), .plates(let otherPlates)):
+            selfPlates.mirrored == otherPlates.mirrored && selfPlates.barWeight == otherPlates.barWeight && selfPlates.plates.elementsEqual(otherPlates.plates, by: {$0.weight == $1.weight})
+        case (.rawWeight(let selfWeight), .rawWeight(let otherWeight)):
+            selfWeight == otherWeight
+        default:
+            false
+        }
+        return sameWeight && self.units == other.units
+    }
+    
     enum CodingKeys: String, CodingKey {
         case weightType
         case weightData
         case units
     }
-    
     
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -184,6 +216,11 @@ struct LiftSet : Codable, Identifiable, Equatable {
         self.weight = weight
     }
     
+    // Copies with a new ID
+    func clone() -> LiftSet {
+        return LiftSet(reps: self.reps, weight: self.weight)
+    }
+    
     
     func convert(to: WeightUnits) -> LiftSet {
         let newWeight = switch (weight.units, to) {
@@ -194,8 +231,6 @@ struct LiftSet : Codable, Identifiable, Equatable {
         
         return LiftSet(reps: reps, weight: newWeight, units: to)
     }
-   
-    
 }
 
 @Model

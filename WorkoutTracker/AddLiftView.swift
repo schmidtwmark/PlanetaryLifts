@@ -142,17 +142,18 @@ struct AddLiftView: View {
     }
     
     var enableSave: Bool {
-        switch mode {
+        let differs = switch mode {
         case .add:
-            return true
+           true
         case .edit(let lift):
-            return lift.type != liftType 
+            lift.type != liftType
             || lift.timestamp != timestamp
             || lift.sets != liftSets
             || lift.modifiers != modifiers
             || lift.weighted != isWeighted 
             || lift.notes != notes
         }
+        return differs || editState.setEditMode != .none
     }
     
     @ViewBuilder
@@ -339,25 +340,18 @@ struct AddLiftView: View {
                 Spacer()
                 Button {
                     withAnimation {
-                        if editState.setEditMode == .none {
                             if let lastSet = liftSets.last {
-                                liftSets.append(LiftSet(reps: lastSet.reps, weight: lastSet.weight))
+                                liftSets.append(lastSet.clone())
                             } else if let mostRecentSet = mostRecentSet {
-                                liftSets.append(mostRecentSet)
+                                liftSets.append(mostRecentSet.clone())
                             } else {
                                 liftSets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
                             }
-                        } else {
-                            editState.setEditMode = .none
-                        }
+                        
                     }
                 } label: {
                     HStack {
-                        if editState.setEditMode == .none {
-                          Label("Add Set", systemImage: "plus")
-                        } else {
-                            Label("Done", systemImage: "checkmark")
-                        }
+                      Label("Add Set", systemImage: "plus")
                     }
                 }
                 Spacer()
@@ -391,38 +385,86 @@ struct AddLiftView: View {
                 .environmentObject(editState)
                 .navigationTitle(navigationTitle)
                 Spacer()
-                Button {
-                    switch mode {
-                    case .add:
-                        let newLift = Lift(liftType: liftType, sets: liftSets, timestamp: timestamp, modifiers: modifiers, notes: notes)
-                        modelContext.insert(newLift)
-                        break
-                        
-                    case .edit(let lift):
-                        print("Updating lift \(lift)")
-                        lift.type = liftType
-                        lift.sets = liftSets
-                        lift.timestamp = timestamp
-                        lift.modifiers = modifiers
-                        lift.notes = notes
-                        print("Updated lift \(lift)")
-                        break
+                HStack {
+                    Button {
+                        withAnimation {
+                            if editState.setEditMode == .none {
+                                switch mode {
+                                case .add:
+                                    let newLift = Lift(liftType: liftType, sets: liftSets, timestamp: timestamp, modifiers: modifiers, notes: notes)
+                                    modelContext.insert(newLift)
+                                    break
+                                    
+                                case .edit(let lift):
+                                    print("Updating lift \(lift)")
+                                    lift.type = liftType
+                                    lift.sets = liftSets
+                                    lift.timestamp = timestamp
+                                    lift.modifiers = modifiers
+                                    lift.notes = notes
+                                    print("Updated lift \(lift)")
+                                    break
+                                }
+                                dismiss()
+                            } else {
+                                editState.setEditMode = .none
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text(editState.setEditMode == .none ? "Save" : "Save Set")
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity)
+                        .fontWeight(.heavy)
                     }
-                    
-                    dismiss()
-                } label: {
-                    HStack {
-                        Text("Save")
+                    .disabled(!enableSave)
+                    .buttonStyle(.borderedProminent)
+                    if let editingId = editState.setEditMode.editingId,
+                        let editingSet = liftSets.first(where: {$0.id == editingId}), showUpdateAllSetsButton(editingSet: editingSet) {
+                        Button {
+                            withAnimation {
+                                liftSets = liftSets.map({
+                                    var copy = $0
+                                    switch editState.setEditMode {
+                                    case .none:
+                                        break
+                                    case .reps(_):
+                                        copy.reps = editingSet.reps
+                                    case .weight(_):
+                                        copy.weight = editingSet.weight.clone()
+                                        
+                                    }
+                                    return copy
+
+                                })
+                                editState.setEditMode = .none
+                            }
+
+                        } label: {
+                            HStack {
+                                Text("Update All Sets")
+                            }
+                            .padding(10)
+                            .frame(maxWidth: .infinity)
+                        }
                     }
-                    .padding(10)
-                    .frame(maxWidth: .infinity)
-                    .fontWeight(.heavy)
-                }
-                .disabled(!enableSave)
-                .buttonStyle(.borderedProminent)
-                .padding(.horizontal, 20)
+                }.padding(.horizontal, 20.0)
             }.background(Color(uiColor: UIColor.systemGroupedBackground))
         }
+    }
+    
+    private func showUpdateAllSetsButton(editingSet: LiftSet) -> Bool {
+        let anyDifferent = switch editState.setEditMode {
+        case .none:
+            false
+        case .reps(_):
+            liftSets.contains(where: {$0.reps != editingSet.reps})
+        case .weight(_):
+            liftSets.contains(where: { !editingSet.weight.same(other: $0.weight)})
+        }
+        
+        return anyDifferent && liftSets.count > 1
     }
 }
 
