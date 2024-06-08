@@ -29,7 +29,7 @@ extension Double {
 
 struct StatBlock: View {
     var description: String
-    var units: String
+    var unit: String
     var number: Double
     
 
@@ -39,7 +39,7 @@ struct StatBlock: View {
         VStack(alignment: .leading) {
             Text(description)
             HStack(alignment: .firstTextBaseline) {
-                Text("\(number.roundedWithAbbreviations) \(units)")
+                Text("\(number.roundedWithAbbreviations) \(unit)\(number.rounded() != 1.0 ? "s" : "")")
                     .font(.title3)
                     .fontWeight(.bold)
                 Spacer()
@@ -52,5 +52,5 @@ struct StatBlock: View {
 }
 
 #Preview {
-    StatBlock(description:"All Time Max", units:"Pounds", number: 1500000.0)
+    StatBlock(description:"All Time Max", unit:"Pound", number: 1500000.0)
 }

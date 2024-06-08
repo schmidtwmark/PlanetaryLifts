@@ -28,6 +28,9 @@
 		EDA6830C2B91469D002015CA /* DataModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA6830B2B91469D002015CA /* DataModel.swift */; };
 		EDA6830E2B915190002015CA /* AddLiftView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA6830D2B915190002015CA /* AddLiftView.swift */; };
 		EDA683102B9186DE002015CA /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA6830F2B9186DE002015CA /* StatsView.swift */; };
+		EDFE3FA52C13CABB0035F065 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FA42C13CABB0035F065 /* Palette.swift */; };
+		EDFE3FA72C13CB5B0035F065 /* ColorAdjustment.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FA62C13CB5B0035F065 /* ColorAdjustment.swift */; };
+		EDFE3FAB2C13CD2D0035F065 /* AppStorageKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FAA2C13CD2D0035F065 /* AppStorageKeys.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +56,9 @@
 		EDA6830B2B91469D002015CA /* DataModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataModel.swift; sourceTree = "<group>"; };
 		EDA6830D2B915190002015CA /* AddLiftView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddLiftView.swift; sourceTree = "<group>"; };
 		EDA6830F2B9186DE002015CA /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		EDFE3FA42C13CABB0035F065 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
+		EDFE3FA62C13CB5B0035F065 /* ColorAdjustment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorAdjustment.swift; sourceTree = "<group>"; };
+		EDFE3FAA2C13CD2D0035F065 /* AppStorageKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStorageKeys.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,7 +100,10 @@
 				ED749DC02BF5769200A3AA3E /* StatBlock.swift */,
 				EDA6830B2B91469D002015CA /* DataModel.swift */,
 				EDA683072B91347A002015CA /* LiftListView.swift */,
+				EDFE3FAA2C13CD2D0035F065 /* AppStorageKeys.swift */,
 				ED320A372B94DB5E003A6628 /* LiftType.swift */,
+				EDFE3FA42C13CABB0035F065 /* Palette.swift */,
+				EDFE3FA62C13CB5B0035F065 /* ColorAdjustment.swift */,
 				ED320A352B92A0BF003A6628 /* Date.swift */,
 				EDA6830D2B915190002015CA /* AddLiftView.swift */,
 				ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */,
@@ -201,6 +210,9 @@
 				ED76D7C42BBF9F9500C46300 /* NumberPicker.swift in Sources */,
 				EDA6830E2B915190002015CA /* AddLiftView.swift in Sources */,
 				EDA683102B9186DE002015CA /* StatsView.swift in Sources */,
+				EDFE3FA72C13CB5B0035F065 /* ColorAdjustment.swift in Sources */,
+				EDFE3FA52C13CABB0035F065 /* Palette.swift in Sources */,
+				EDFE3FAB2C13CD2D0035F065 /* AppStorageKeys.swift in Sources */,
 				ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */,
 				EDA6830C2B91469D002015CA /* DataModel.swift in Sources */,
 				ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */,

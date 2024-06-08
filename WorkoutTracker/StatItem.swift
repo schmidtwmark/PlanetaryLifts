@@ -16,6 +16,55 @@ func repToString(_ reps: Int) -> String {
     }
 }
 
+struct MaxesBarChart : View {
+    
+    var maxes: [Int: Double]
+    var colorByRepCount: [String: Color]
+    @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    
+    
+    @State var selectedPosition: (String, Double)? = nil
+    var body: some View {
+        Chart {
+            ForEach(maxes.sorted(by: <), id: \.key) { reps, max in
+                BarMark(x: .value("Reps", repToString(reps)), y: .value("Weight", max))
+                    .foregroundStyle(by: .value("Reps", repToString(reps)))
+            }
+        }
+        .chartForegroundStyleScale(mapping: { data in
+            return colorByRepCount[data]!
+        })
+        .chartOverlay { proxy in
+            GeometryReader { geometry in
+                ZStack {
+                    Rectangle().fill(.clear).contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0.0)
+                                .onEnded{ value in
+                                    // Convert the gesture location to the coordiante space of the plot area.
+                                    let origin = geometry[proxy.plotFrame!].origin
+                                    let location = CGPoint(
+                                        x: value.location.x - origin.x,
+                                        y: value.location.y - origin.y
+                                    )
+                                    // Get the x (date) and y (price) value from the location.
+                                    if let selection = proxy.value(at: location, as: (String, Double).self) {
+                                        selectedPosition = selection
+                                    } else {
+                                        print("Tap at \(location) is invalid")
+                                    }
+                                }
+                        )
+                    if let selection = selectedPosition, let position = proxy.position(for: selection) {
+                        Text("Selection: \(selection)").position(position)
+                    }
+                    
+                }
+            }
+        }
+    }
+}
+
 
 
 struct StatItem: View {
@@ -25,6 +74,7 @@ struct StatItem: View {
     
     @State var position: (Date, Double)? = nil
     @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    @AppStorage(PALETTE) var palette: Palette = .main
     
 
     var maxes: [Int: Double]{
@@ -40,6 +90,16 @@ struct StatItem: View {
         })
     }
     
+    var colorByRepCount: [String: Color] {
+        let baseColor = type.category.getColor(for: palette)
+        
+        let shades = baseColor.shades(count: maxes.count)
+        return zip(shades, maxes.sorted(by: <)).reduce(into: [String: Color](), { dict, values in
+            let (color, (reps, _)) = values
+            dict[repToString(reps)] = color
+        })
+    }
+    
     var allTimeMax: Double? {
         maxes.values.max()
     }
@@ -49,38 +109,32 @@ struct StatItem: View {
             if let max = allTimeMax {
                 Section {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading) {
-                        StatBlock(description: "All Time Max", units: weightUnits.rawValue, number: max)
-                        StatBlock(description: "Total Weight", units: weightUnits.rawValue, number: totalWeight(lifts))
-                        StatBlock(description: "Total Reps", units: "Reps", number: Double(totalReps(lifts)))
-                        StatBlock(description: "Total Lifts", units: "Lifts", number: Double(lifts.count))
+                        StatBlock(description: "All Time Max", unit: weightUnits.shortSingleUnit, number: max)
+                        StatBlock(description: "Total Weight", unit: weightUnits.shortSingleUnit, number: totalWeight(lifts))
+                        StatBlock(description: "Total Reps", unit: "Rep", number: Double(totalReps(lifts)))
+                        StatBlock(description: "Total Lifts", unit: "Lift", number: Double(lifts.count))
                         
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                 }
                 Section("Maxes") {
-                    Chart {
-                        ForEach(maxes.sorted(by: <), id: \.key) { reps, max in
-                            BarMark(x: .value("Reps", repToString(reps)), y: .value("Weight", max))
-                                .foregroundStyle(by: .value("Reps", repToString(reps)))
-                        }
-                    }
+                    MaxesBarChart(maxes: maxes, colorByRepCount: colorByRepCount)
                     .frame(minWidth: 150, minHeight: 200)
                 }
                 
                 Section("Progress") {
                     Chart(lifts) { lift in
                         ForEach(lift.maxes().sorted(by: <), id: \.key) { reps, maximum in
-                            //                    LineMark(x: .value("Date", lift.timestamp, unit: .day), y: .value(repToString(reps), maximum))
-                            //                    .foregroundStyle(by: .value("Reps", repToString(reps)))
-                            
-                            PointMark(x: .value("Date", lift.timestamp, unit: .day), y: .value(repToString(reps), maximum))
+                            PointMark(x: .value("Date", lift.timestamp, unit: .day), y:
+                                    .value(repToString(reps), maximum))
                                 .symbol(.circle)
                                 .foregroundStyle(by: .value("Reps", repToString(reps)))
-                            
                         }
-                        
                     }
+                    .chartForegroundStyleScale(mapping: { data in
+                        return colorByRepCount[data]!
+                    })
                     .chartYScale(domain: 0...max * 1.4)
                     .chartScrollableAxes(.horizontal)
                     .chartScrollTargetBehavior(

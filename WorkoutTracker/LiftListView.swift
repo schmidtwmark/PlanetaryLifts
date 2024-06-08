@@ -61,6 +61,8 @@ struct LiftSetView: View {
 struct SetsView: View {
     
     var lift: Lift
+    @AppStorage(PALETTE) var palette: Palette = .main
+    
     
     var body: some View {
         if lift.sets.isEmpty {
@@ -73,7 +75,7 @@ struct SetsView: View {
                     LiftSetView(liftSet: lift.sets.first!, lift: lift)
                         .font(.title3)
                         .padding()
-                        .background(Color(uiColor: UIColor.systemGroupedBackground))
+                        .background(lift.type.category.getColor(for: palette))
                         .clipShape(RoundedRectangle(cornerRadius: 10.0))
                 } else {
                     VStack {
@@ -86,7 +88,7 @@ struct SetsView: View {
                     }
                     .font(.title3)
                     .padding()
-                    .background(Color(uiColor: UIColor.systemGroupedBackground))
+                    .background(lift.type.category.getColor(for: palette))
                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
                 }
             }
@@ -100,6 +102,8 @@ struct LiftListItem: View {
     @Binding var editingLift: Lift?
     @Environment(\.modelContext) private var modelContext
     var scrollViewProxy: ScrollViewProxy
+    @AppStorage(PALETTE) var palette: Palette = .main
+    var onDelete: (Lift) -> ()
     
     var body: some View {
         VStack {
@@ -116,7 +120,7 @@ struct LiftListItem: View {
                     ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
                         Text(modifier.rawValue)
                             .padding(10)
-                            .background(Color(uiColor: UIColor.systemGroupedBackground))
+                            .background(lift.type.category.getColor(for: palette))
                             .clipShape(RoundedRectangle(cornerRadius: 10.0))
 
                         
@@ -130,9 +134,12 @@ struct LiftListItem: View {
                     Text(lift.notes)
                         .padding(10)
                     Spacer()
-                }.background(Color(uiColor: UIColor.systemGroupedBackground))
+                }
+                .background(lift.type.category.getColor(for: palette))
+                .clipShape(RoundedRectangle(cornerRadius: 10.0))
             }
         }
+        
         .contextMenu(menuItems: {
             Button {
                 editingLift = lift
@@ -156,9 +163,16 @@ struct LiftListItem: View {
             } label: {
                 Label("Repeat Now", systemImage: "arrow.circlepath")
             }
+            Button(role: .destructive) {
+                onDelete(lift)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         })
-        
         .padding([.top, .bottom], 5.0)
+        .padding()
+        .background(lift.type.category.getColor(for: palette).opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 24.0))
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0))
         .buttonStyle(.plain)
     }
@@ -180,6 +194,8 @@ struct LiftListView: View {
 
     @State var editingLift: Lift? = nil
     @State var addingLift: Bool = false
+    
+    @AppStorage(PALETTE) var palette : Palette = .main
     
     private var liftsByDate: [(TimelessDate, [Lift])] {
         var maybeLastDate : TimelessDate? = nil
@@ -232,74 +248,94 @@ struct LiftListView: View {
     func getMostRecentLiftType() -> LiftType? {
         return lifts.first?.type
     }
+    
+    func getTintColor() -> Color {
+        if let mostRecentLift = getMostRecentLiftType() {
+            return mostRecentLift.category.getColor(for: palette)
+        }
+        return LiftCategory.allCases.first!.getColor(for: palette)
+    }
 
     
     var body: some View {
-        NavigationStack {
-            ScrollViewReader { proxy in
-                List {
-                    EmptyView().id(0)
-                    ForEach(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
-                        Section("\(date.format())") {
-                            ForEach(liftsForDate) { lift in
-                                VStack {
-                                    LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy)
-                                }
-                            }
-                            .onDelete { indexSet in
-                                let liftsToRemove = indexSet.map({idx in liftsForDate[idx]})
-                                for lift in liftsToRemove {
-                                    modelContext.delete(lift)
+        TabView {
+            NavigationStack {
+                ScrollViewReader { proxy in
+                    List {
+                        EmptyView().id(0)
+                        ForEach(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
+                            Section("\(date.format())") {
+                                ForEach(liftsForDate) { lift in
+                                    VStack {
+                                        LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy, onDelete: {
+                                              modelContext.delete($0)
+                                            }
+                                        )
+                                        Spacer(minLength: 10.0)
+                                    }
+                                    .listRowInsets(EdgeInsets())
+                                    .listRowBackground(Color.clear)
                                 }
                             }
                         }
                     }
-                }
-                .navigationTitle("Lifts")
-                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-                .toolbar() {
-                    ToolbarItemGroup(placement: .primaryAction, content: {
-                        Button {
-                            addingLift = true
-                        } label: {
-                            Label("Add Lift", systemImage: "plus")
-                        }
-                        Menu("Filter", systemImage: filterImageName, content: {
-                            if let filterType = filterSelection {
-                                Text ("Filtering \(filterType.string) Lifts")
-                                Button(role: .destructive, action: {
-                                    filterSelection = nil
-                                }) {
-                                    HStack {
-                                        Text("Clear Filter")
-                                        Image(systemName: "xmark.circle")
+                    .navigationTitle("Lifts")
+                    .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+                    .toolbar() {
+                        ToolbarItemGroup(placement: .primaryAction, content: {
+                            Button {
+                                addingLift = true
+                            } label: {
+                                Label("Add Lift", systemImage: "plus")
+                            }
+                            Menu("Filter", systemImage: filterImageName, content: {
+                                if let filterType = filterSelection {
+                                    Text ("Filtering \(filterType.string) Lifts")
+                                    Button(role: .destructive, action: {
+                                        filterSelection = nil
+                                    }) {
+                                        HStack {
+                                            Text("Clear Filter")
+                                            Image(systemName: "xmark.circle")
+                                        }
+                                    }
+                                } else {
+                                    ForEach(allLiftsByCategory.keys.sorted(by: <), id: \.rawValue) { category in
+                                        Menu(category.rawValue, content: {
+                                            ForEach(allLiftsByCategory[category]!, id: \.hashValue) { lift in
+                                                Button {
+                                                    filterSelection = lift
+                                                } label: {
+                                                    Text(lift.string)
+                                                }
+                                            }
+                                        })
+                                        
                                     }
                                 }
-                            } else {
-                                ForEach(allLiftsByCategory.keys.sorted(by: <), id: \.rawValue) { category in
-                                    Menu(category.rawValue, content: {
-                                        ForEach(allLiftsByCategory[category]!, id: \.hashValue) { lift in
-                                            Button {
-                                                filterSelection = lift
-                                            } label: {
-                                                Text(lift.string)
-                                            }
-                                        }
-                                    })
-                                    
-                                }
-                            }
+                            })
                         })
+                    }
+                    .sheet(isPresented: $addingLift, content: {
+                        AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress)
                     })
+                    .sheet(item: $editingLift) { lift in
+                        AddLiftView(lift: lift)
+                    }
                 }
-                .sheet(isPresented: $addingLift, content: {
-                    AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress)
-                })
-                .sheet(item: $editingLift) { lift in
-                    AddLiftView(lift: lift)
-                }
+            }.tabItem {
+                Label("Lifts", systemImage: "dumbbell")
             }
+            StatsView().tabItem {
+                Label("Stats", systemImage: "chart.xyaxis.line")
+            }
+            SettingsView().tabItem {
+                Label("Settings", systemImage: "gear")
+            }
+
         }
+        .tint(getTintColor())
+
     }
 }
 

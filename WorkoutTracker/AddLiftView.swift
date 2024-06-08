@@ -128,6 +128,7 @@ struct AddLiftView: View {
     @StateObject var editState: EditState = EditState()
     @Environment(\.dismiss) var dismiss
     @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    @AppStorage(PALETTE) var palette: Palette = .main
     
     
     var mostRecentSet: LiftSet? {
@@ -450,7 +451,9 @@ struct AddLiftView: View {
                         }
                     }
                 }.padding(.horizontal, 20.0)
-            }.background(Color(uiColor: UIColor.systemGroupedBackground))
+            }
+            .tint(liftType.category.getColor(for: palette))
+            .background(Color(uiColor: UIColor.systemGroupedBackground))
         }
     }
     

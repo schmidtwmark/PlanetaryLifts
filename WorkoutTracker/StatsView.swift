@@ -103,6 +103,23 @@ struct StatsView: View {
     var typeWeight: [LiftType: Double] {
         liftsByType.mapValues({totalWeight($0)})
     }
+    
+    var colorByTypeString: [String: Color] {
+        
+        liftsByCategory.reduce(into: [String: Color](), { output, value in
+            let (category, lifts) = value
+            let types = lifts.reduce(into: Set(), {typeSet, lift in
+                typeSet.insert(lift.type)
+            })
+            // We have a category and all the types we need to worry about
+            let baseColor = category.getColor(for: palette)
+            let shades = baseColor.shades(count: types.count)
+            zip(shades, types.sorted(by: <)).forEach({ (shade, type) in
+                output[type.string] = shade
+            })
+        })
+        
+    }
 
     
     
@@ -112,6 +129,8 @@ struct StatsView: View {
     @State
     var granularity: Granularity = .category
     
+    @AppStorage(PALETTE) var palette: Palette = .main
+    
     func getSector(category: LiftCategory, statsType: StatsType) -> some ChartContent {
         let mark = switch statsType {
         case .count:
@@ -119,7 +138,7 @@ struct StatsView: View {
         case .weight:
             SectorMark(angle: .value("Weight", categoryWeight[category]!), innerRadius: .ratio(0.25))
         }
-        return mark.foregroundStyle(by: .value("Category", category.rawValue))
+        return mark.foregroundStyle(by: .value("Category", category))
     }
     
     func getSector(liftType: LiftType, statsType: StatsType) -> some ChartContent {
@@ -129,7 +148,17 @@ struct StatsView: View {
         case .weight:
             SectorMark(angle: .value("Weight", typeWeight[liftType]!), innerRadius: .ratio(0.25))
         }
-        return mark.foregroundStyle(by: .value("Lift Type", liftType.string))
+        
+        return mark
+            .foregroundStyle(by: .value("Lift Type", liftType.string))
+    }
+    
+    func categoryMapping(_ category: LiftCategory) -> Color {
+        return category.getColor(for: palette)
+    }
+    
+    func typeMapping(_ typeString: String) -> Color {
+        colorByTypeString[typeString]!
     }
 
     var body: some View {
@@ -147,19 +176,25 @@ struct StatsView: View {
                             Text(type.rawValue).tag(type)
                         }
                     }.pickerStyle(.segmented)
-                    Chart {
-                        
-                        switch granularity {
-                        case .category:
+                    switch granularity {
+                    case .category:
+                        Chart {
                             ForEach(categories, id: \.rawValue) { category in
                                 getSector(category: category, statsType: statsType)
                             }
+                        }
+                        .scaledToFit()
+                        .chartForegroundStyleScale(mapping: categoryMapping)
+
                         case .type:
+                        Chart {
                             ForEach(types, id: \.string) { type in
                                 getSector(liftType: type, statsType: statsType)
                             }
                         }
-                    }.scaledToFit()
+                        .scaledToFit()
+                        .chartForegroundStyleScale(mapping: typeMapping)
+                    }
                 }
                 
                 ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in

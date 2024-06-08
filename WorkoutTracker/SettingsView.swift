@@ -18,6 +18,13 @@ enum WeightUnits : String, Codable, Equatable{
             case .kilograms: "kilogram"
         }
     }
+    
+    var shortSingleUnit: String {
+        switch self {
+        case .pounds: "lb"
+        case .kilograms: "kg"
+        }
+    }
 }
 
 struct SettingsView: View {

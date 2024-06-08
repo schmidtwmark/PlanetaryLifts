@@ -152,7 +152,9 @@ struct NumberIncrementor<T: Numeric>: View {
     var body: some View {
         HStack {
             Button {
-                number = onDecrement(number)
+                withAnimation {
+                    number = onDecrement(number)
+                }
             } label: {
                 Image(systemName: "minus")
             }.buttonStyle(StepperButtonStyle(frame: CGSize(width: frame.width / 2, height: frame.height)))
@@ -165,7 +167,9 @@ struct NumberIncrementor<T: Numeric>: View {
                 .background(Color(uiColor: UIColor.secondarySystemFill))
                 .clipShape(RoundedRectangle(cornerRadius: 10.0))
             Button {
-                number = onIncrement(number)
+                withAnimation {
+                    number = onIncrement(number)
+                }
             } label: {
                 Image(systemName: "plus")
             }.buttonStyle(StepperButtonStyle(frame: CGSize(width: frame.width / 2, height: frame.height)))

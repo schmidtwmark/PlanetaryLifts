@@ -6,10 +6,12 @@
 //
 
 import Foundation
+import SwiftUI
+import Charts
 
 
-enum LiftCategory: String, Codable, CaseIterable, Comparable {
-    static func < (lhs: LiftCategory, rhs: LiftCategory) -> Bool {
+public enum LiftCategory: String, Codable, CaseIterable, Comparable {
+    public static func < (lhs: LiftCategory, rhs: LiftCategory) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
     
@@ -23,6 +25,15 @@ enum LiftCategory: String, Codable, CaseIterable, Comparable {
     case other = "Other"
 }
 
+extension LiftCategory {
+    func getColor(for palette: Palette) -> Color {
+        palette.getColors()[self]!
+    }
+}
+
+extension LiftCategory : Plottable {
+    
+}
 
 enum LiftModifier: String, Codable, CaseIterable {
     case incline = "Incline"

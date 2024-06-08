@@ -10,18 +10,10 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    
+    @AppStorage(PALETTE) var palette: Palette = .main
     var body: some View {
-        TabView {
-            LiftListView().tabItem {
-                Label("Lifts", systemImage: "dumbbell")
-            }
-            StatsView().tabItem {
-                Label("Stats", systemImage: "chart.xyaxis.line")
-            }
-            SettingsView().tabItem {
-                Label("Settings", systemImage: "gear")
-            }
-        }
+        LiftListView()
     }
 
 }
