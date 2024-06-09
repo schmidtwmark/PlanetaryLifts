@@ -16,18 +16,28 @@ func repToString(_ reps: Int) -> String {
     }
 }
 
+enum Selection {
+    case none
+    case maxes(String) // selection of number of reps
+    case progress(Date, Double) // Selection of a single progress spot
+}
+
 struct MaxesBarChart : View {
     
     var maxes: [Int: Double]
     var colorByRepCount: [String: Color]
     @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    @Binding var selection: Selection
     
-    
-    @State var selectedPosition: (String, Double)? = nil
     var body: some View {
         Chart {
             ForEach(maxes.sorted(by: <), id: \.key) { reps, max in
                 BarMark(x: .value("Reps", repToString(reps)), y: .value("Weight", max))
+                    .annotation(content: {
+                        if case let .maxes(selectedReps) = selection, selectedReps == repToString(reps) {
+                            Text("\(max.roundedWithAbbreviations) \(weightUnits.shortSingleUnit)\(max.rounded() != 1.0 ? "s" : "")")
+                        }
+                    })
                     .foregroundStyle(by: .value("Reps", repToString(reps)))
             }
         }
@@ -48,16 +58,15 @@ struct MaxesBarChart : View {
                                         y: value.location.y - origin.y
                                     )
                                     // Get the x (date) and y (price) value from the location.
-                                    if let selection = proxy.value(at: location, as: (String, Double).self) {
-                                        selectedPosition = selection
-                                    } else {
-                                        print("Tap at \(location) is invalid")
+                                    if let item = proxy.value(at: location, as: (String, Double).self) {
+                                        if case let .maxes(selectedReps) = selection,  selectedReps == item.0 {
+                                            selection = .none
+                                        } else {
+                                            selection = .maxes(item.0)
+                                        }
                                     }
                                 }
                         )
-                    if let selection = selectedPosition, let position = proxy.position(for: selection) {
-                        Text("Selection: \(selection)").position(position)
-                    }
                     
                 }
             }
@@ -75,7 +84,31 @@ struct StatItem: View {
     @State var position: (Date, Double)? = nil
     @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
     @AppStorage(PALETTE) var palette: Palette = .main
+    @State var selection: Selection = .none
+    @State var timeWindow: TimeWindow = .week
     
+    enum TimeWindow : String, CaseIterable {
+        case week = "Week"
+        case month = "Month"
+        case ninetyDays = "90 Days"
+        case year = "Year"
+        
+        var timeRange: Int {
+            let days = switch self {
+            case .week:
+                7
+            case .month:
+                30
+            case .ninetyDays:
+                90
+            case .year:
+                365
+            }
+            return 60 * 60 * 24 * days
+            
+        }
+    }
+
 
     var maxes: [Int: Double]{
         return lifts.reduce(into: [Int: Double](), { result, lift in
@@ -104,6 +137,8 @@ struct StatItem: View {
         maxes.values.max()
     }
     
+    
+
     var body: some View {
         List {
             if let max = allTimeMax {
@@ -119,11 +154,18 @@ struct StatItem: View {
                     .listRowBackground(Color.clear)
                 }
                 Section("Maxes") {
-                    MaxesBarChart(maxes: maxes, colorByRepCount: colorByRepCount)
+                    MaxesBarChart(maxes: maxes, 
+                                  colorByRepCount: colorByRepCount,
+                                  selection: $selection)
                     .frame(minWidth: 150, minHeight: 200)
                 }
                 
                 Section("Progress") {
+                    Picker("Time Window", selection: $timeWindow) {
+                        ForEach(TimeWindow.allCases, id: \.rawValue) {
+                            Text($0.rawValue).tag($0)
+                        }
+                    }
                     Chart(lifts) { lift in
                         ForEach(lift.maxes().sorted(by: <), id: \.key) { reps, maximum in
                             PointMark(x: .value("Date", lift.timestamp, unit: .day), y:
@@ -135,7 +177,9 @@ struct StatItem: View {
                     .chartForegroundStyleScale(mapping: { data in
                         return colorByRepCount[data]!
                     })
+                    .chartXVisibleDomain(length: timeWindow.timeRange)
                     .chartYScale(domain: 0...max * 1.4)
+                    .chartScrollPosition(initialX: Date().addingTimeInterval(TimeInterval(-1 * timeWindow.timeRange)))
                     .chartScrollableAxes(.horizontal)
                     .chartScrollTargetBehavior(
                         .valueAligned(matching: .init(day: 0))
@@ -146,18 +190,6 @@ struct StatItem: View {
         }
         .navigationTitle(type.string)
     }
-    
-    func updateCursorPosition(at: CGPoint, geometry: GeometryProxy, proxy: ChartProxy) {
-        
-        let origin = geometry[proxy.plotFrame!].origin
-        let datePos = proxy.value(atX: at.x - origin.x, as: Date.self)
-        let firstGreater = lifts.lastIndex(where: { $0.timestamp < datePos! })
-        if let index = firstGreater {
-          let time = lifts[index].timestamp
-            let weight = lifts[index].maxes().values.first!
-          position = (time, weight)
-        }
-      }
 }
 
 #Preview {

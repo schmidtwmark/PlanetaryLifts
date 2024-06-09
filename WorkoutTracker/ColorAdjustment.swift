@@ -92,19 +92,16 @@ extension Color {
         let midpoint = count / 2
         let darker = (0..<midpoint).map({ index in
             let darker = delta * Double(index + 1)
-            print("Darker \(darker)")
             return self.darker(by: darker)
         }).reversed()
         
         let lighter = ((midpoint + 1)..<count).map({ index in
             let lighter = delta * Double(index - midpoint)
-            print("Lighter \(lighter)")
             return self.lighter(by: lighter)
         })
         
         let maybeMiddle = lighter.count + darker.count == count ? [] : [self]
         let output = darker + maybeMiddle + lighter
-        print("For color \(self) and count \(count) got \(output.count) shades \(output)")
         return output
         
     }
