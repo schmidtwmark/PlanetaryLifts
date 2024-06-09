@@ -25,6 +25,221 @@ func totalReps(_ lifts: [Lift]) -> Int {
 }
 
 
+let INNER_RADIUS_RATIO : MarkDimension = .ratio(0.618)
+let PIE_MARK_CORNER_RADIUS: CGFloat = 5.0
+let PIE_ANGULAR_INSET: CGFloat = 2
+
+
+enum StatsType: String, Codable, CaseIterable {
+    case count = "Lift Count"
+    case weight = "Total Weight"
+}
+
+enum Granularity: String, Codable, CaseIterable {
+    case category = "Category"
+    case type = "Lift Type"
+}
+
+
+struct CategoryPieChart: View {
+    
+    @AppStorage(PALETTE) var palette: Palette = .main
+    var liftsByCategory: [LiftCategory: [Lift]]
+    @Binding var statsType: StatsType
+    @State var viewModel = ViewModel()
+    
+    class ViewModel: ObservableObject {
+        var selectedCategory: LiftCategory? = nil
+    }
+
+    var categories: [LiftCategory] {
+        liftsByCategory.keys.sorted(by: <)
+    }
+    
+    // Number of lifts for each category
+    var categoryCounts: [LiftCategory: Int] {
+        liftsByCategory.mapValues({$0.count})
+    }
+    
+    // Sum of weight * rep for each lift category
+    var categoryWeight: [LiftCategory: Double] {
+        liftsByCategory.mapValues({totalWeight($0)})
+    }
+        
+    func categoryMapping(_ category: LiftCategory) -> Color {
+        return category.getColor(for: palette)
+    }
+    
+    func getSector(category: LiftCategory, statsType: StatsType) -> some ChartContent {
+        let isSelected = viewModel.selectedCategory == category
+        let mark = switch statsType {
+        case .count:
+            SectorMark(angle: .value("Count", categoryCounts[category]!), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
+        case .weight:
+            SectorMark(angle: .value("Weight", categoryWeight[category]!), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
+        }
+        return mark
+            .cornerRadius(PIE_MARK_CORNER_RADIUS)
+            .foregroundStyle(by: .value("Category", category))
+    }
+    
+    var body: some View {
+        Chart(categories, id: \.rawValue) { category in
+            getSector(category: category, statsType: statsType)
+        }
+        .chartAngleSelection(value: $viewModel.selectedCategory)
+        .onChange(of: viewModel.selectedCategory, {
+            print("Category change: \(String(describing: viewModel.selectedCategory))")
+        })
+        .chartLegend(.hidden)
+        .chartForegroundStyleScale(mapping: categoryMapping)
+        .scaledToFit()
+        .padding()
+        ScrollView(.horizontal, content: {
+            HStack(alignment: .top) {
+                ForEach(categories.chunked(into: 4), id: \.first!.rawValue) { chunk in
+                    VStack(alignment: .leading) {
+                        ForEach(chunk, id: \.rawValue) { category in
+                            HStack {
+                                categoryMapping(category).clipShape(Circle())
+                                Text(category.rawValue)
+                            }.fixedSize()
+                        }
+                    }
+                }
+            }
+        })
+    }
+}
+
+struct TypesPieChart: View {
+    @AppStorage(PALETTE) var palette: Palette = .main
+    var liftsByType: [LiftType: [Lift]]
+    var liftsByCategory: [LiftCategory: [Lift]]
+    @Binding var statsType: StatsType
+    @State var selectedTypeString: String? = nil
+    
+   
+    var types: [LiftType] {
+        liftsByType.keys.sorted(by: <)
+    }
+    
+    
+    // Number of lifts for each type
+    var typeCounts: [LiftType: Int] {
+        liftsByType.mapValues({$0.count})
+    }
+    
+    
+    // Sum of weight * rep for each lift type
+    var typeWeight: [LiftType: Double] {
+        liftsByType.mapValues({totalWeight($0)})
+    }
+    
+    var colorByTypeString: [String: Color] {
+        
+        liftsByCategory.reduce(into: [String: Color](), { output, value in
+            let (category, lifts) = value
+            let types = lifts.reduce(into: Set(), {typeSet, lift in
+                typeSet.insert(lift.type)
+            })
+            // We have a category and all the types we need to worry about
+            let baseColor = category.getColor(for: palette)
+            let shades = baseColor.shades(count: types.count)
+            zip(shades, types.sorted(by: <)).forEach({ (shade, type) in
+                output[type.string] = shade
+            })
+        })
+        
+    }
+    
+    func getSector(liftType: LiftType, statsType: StatsType) -> some ChartContent {
+        let mark = switch statsType {
+        case .count:
+            SectorMark(angle: .value("Count", typeCounts[liftType]!), innerRadius: INNER_RADIUS_RATIO, angularInset: PIE_ANGULAR_INSET)
+        case .weight:
+            SectorMark(angle: .value("Weight", typeWeight[liftType]!), innerRadius: INNER_RADIUS_RATIO, angularInset: PIE_ANGULAR_INSET)
+        }
+        
+        return mark
+            .cornerRadius(PIE_MARK_CORNER_RADIUS)
+            .foregroundStyle(by: .value("Lift Type", liftType.string))
+    }
+    func typeMapping(_ typeString: String) -> Color {
+        colorByTypeString[typeString]!
+    }
+
+
+    
+
+    
+    var body: some View {
+        Chart(types, id: \.string){ type in
+            getSector(liftType: type, statsType: statsType)
+        }
+        .chartAngleSelection(value: $selectedTypeString)
+        .onChange(of: selectedTypeString, {
+            print("Selected \(String(describing: selectedTypeString))")
+        })
+        .chartOverlay { _ in
+            if let typeString = selectedTypeString {
+                Text(typeString)
+            }
+        }
+//        .chartOverlay { proxy in
+//            GeometryReader { geometry in
+//                ZStack {
+//                    Rectangle().fill(.clear).contentShape(Rectangle())
+//                        .gesture(
+//                            DragGesture(minimumDistance: 0.0)
+//                                .onEnded{ value in
+//                                    // Convert the gesture location to the coordiante space of the plot area.
+//                                    let origin = geometry[proxy.plotFrame!].origin
+//                                    let location = CGPoint(
+//                                        x: value.location.x - origin.x,
+//                                        y: value.location.y - origin.y
+//                                    )
+//                                    // Get the x (date) and y (price) value from the location.
+//                                    if let item = proxy.value(at: location, as: (String, Double).self) {
+//                                        print("Selected \(item)")
+//                                        if let selectedType = selectedTypeString, item.0 == selectedType{
+//                                            selectedTypeString = nil
+//                                        } else {
+//                                            selectedTypeString = item.0
+//                                        }
+//                                    } else {
+//                                        print("No select at location \(location)")
+//                                    }
+//                                }
+//                        )
+//                    if let typeString = selectedTypeString {
+//                        Text(typeString)
+//                    }
+//                }
+//            }
+//        }
+        .chartLegend(.hidden)
+        .chartForegroundStyleScale(mapping: typeMapping)
+        .scaledToFit()
+        .padding()
+        ScrollView(.horizontal, content: {
+            HStack(alignment: .top) {
+                ForEach(types.chunked(into: 4), id: \.first!.string) { chunk in
+                    VStack(alignment: .leading) {
+                        ForEach(chunk, id: \.string) { type in
+                            HStack {
+                                typeMapping(type.string).clipShape(Circle())
+                                Text(type.string)
+                            }.fixedSize()
+                        }
+                    }
+                }
+            }
+        })
+    }
+}
+
+
 struct StatsView: View {
     @Query var userGeneratedTypes : [UserGeneratedLiftType]
     @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
@@ -65,64 +280,6 @@ struct StatsView: View {
         })
     }
     
-    enum StatsType: String, Codable, CaseIterable {
-        case count = "Lift Count"
-        case weight = "Total Weight"
-    }
-    
-    enum Granularity: String, Codable, CaseIterable {
-        case category = "Category"
-        case type = "Lift Type"
-    }
-    
-    var categories: [LiftCategory] {
-        liftsByCategory.keys.sorted(by: <)
-    }
-    
-    var types: [LiftType] {
-        liftsByType.keys.sorted(by: <)
-    }
-    
-    // Number of lifts for each category
-    var categoryCounts: [LiftCategory: Int] {
-        liftsByCategory.mapValues({$0.count})
-    }
-    
-    // Number of lifts for each type
-    var typeCounts: [LiftType: Int] {
-        liftsByType.mapValues({$0.count})
-    }
-    
-    
-    // Sum of weight * rep for each lift category
-    var categoryWeight: [LiftCategory: Double] {
-        liftsByCategory.mapValues({totalWeight($0)})
-    }
-    
-    // Sum of weight * rep for each lift type
-    var typeWeight: [LiftType: Double] {
-        liftsByType.mapValues({totalWeight($0)})
-    }
-    
-    var colorByTypeString: [String: Color] {
-        
-        liftsByCategory.reduce(into: [String: Color](), { output, value in
-            let (category, lifts) = value
-            let types = lifts.reduce(into: Set(), {typeSet, lift in
-                typeSet.insert(lift.type)
-            })
-            // We have a category and all the types we need to worry about
-            let baseColor = category.getColor(for: palette)
-            let shades = baseColor.shades(count: types.count)
-            zip(shades, types.sorted(by: <)).forEach({ (shade, type) in
-                output[type.string] = shade
-            })
-        })
-        
-    }
-
-    
-    
     @State
     var statsType: StatsType = .count
     
@@ -131,69 +288,31 @@ struct StatsView: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
     
-    func getSector(category: LiftCategory, statsType: StatsType) -> some ChartContent {
-        let mark = switch statsType {
-        case .count:
-            SectorMark(angle: .value("Count", categoryCounts[category]!), innerRadius: .ratio(0.25))
-        case .weight:
-            SectorMark(angle: .value("Weight", categoryWeight[category]!), innerRadius: .ratio(0.25))
-        }
-        return mark.foregroundStyle(by: .value("Category", category))
-    }
-    
-    func getSector(liftType: LiftType, statsType: StatsType) -> some ChartContent {
-        let mark = switch statsType {
-        case .count:
-            SectorMark(angle: .value("Count", typeCounts[liftType]!), innerRadius: .ratio(0.25))
-        case .weight:
-            SectorMark(angle: .value("Weight", typeWeight[liftType]!), innerRadius: .ratio(0.25))
-        }
-        
-        return mark
-            .foregroundStyle(by: .value("Lift Type", liftType.string))
-    }
-    
-    func categoryMapping(_ category: LiftCategory) -> Color {
-        return category.getColor(for: palette)
-    }
-    
-    func typeMapping(_ typeString: String) -> Color {
-        colorByTypeString[typeString]!
-    }
-
+  
     var body: some View {
         
         NavigationStack {
             List {
                 Section("General Stats") {
-                    Picker("", selection: $granularity.animation()) {
-                        ForEach(Granularity.allCases, id: \.rawValue) { granularity in
-                            Text(granularity.rawValue).tag(granularity)}
-                        
-                    }.pickerStyle(.segmented)
-                    Picker("", selection: $statsType.animation()) {
-                        ForEach(StatsType.allCases, id: \.rawValue) { type in
-                            Text(type.rawValue).tag(type)
-                        }
-                    }.pickerStyle(.segmented)
-                    switch granularity {
-                    case .category:
-                        Chart {
-                            ForEach(categories, id: \.rawValue) { category in
-                                getSector(category: category, statsType: statsType)
+                    VStack {
+                        Picker("", selection: $granularity.animation()) {
+                            ForEach(Granularity.allCases, id: \.rawValue) { granularity in
+                                Text(granularity.rawValue).tag(granularity)}
+                            
+                        }.pickerStyle(.segmented)
+                        Picker("", selection: $statsType.animation()) {
+                            ForEach(StatsType.allCases, id: \.rawValue) { type in
+                                Text(type.rawValue).tag(type)
                             }
-                        }
-                        .scaledToFit()
-                        .chartForegroundStyleScale(mapping: categoryMapping)
-
+                        }.pickerStyle(.segmented)
+                        switch granularity {
+                        case .category:
+                            CategoryPieChart(liftsByCategory: liftsByCategory, statsType: $statsType)
+                            
                         case .type:
-                        Chart {
-                            ForEach(types, id: \.string) { type in
-                                getSector(liftType: type, statsType: statsType)
-                            }
+                            TypesPieChart(liftsByType: liftsByType, liftsByCategory: liftsByCategory, statsType: $statsType)
                         }
-                        .scaledToFit()
-                        .chartForegroundStyleScale(mapping: typeMapping)
+                        
                     }
                 }
                 

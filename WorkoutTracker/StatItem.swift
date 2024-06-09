@@ -161,30 +161,32 @@ struct StatItem: View {
                 }
                 
                 Section("Progress") {
-                    Picker("Time Window", selection: $timeWindow) {
-                        ForEach(TimeWindow.allCases, id: \.rawValue) {
-                            Text($0.rawValue).tag($0)
-                        }
-                    }
-                    Chart(lifts) { lift in
-                        ForEach(lift.maxes().sorted(by: <), id: \.key) { reps, maximum in
-                            PointMark(x: .value("Date", lift.timestamp, unit: .day), y:
-                                    .value(repToString(reps), maximum))
+                    VStack {
+                        Picker("Time Window", selection: $timeWindow) {
+                            ForEach(TimeWindow.allCases, id: \.rawValue) {
+                                Text($0.rawValue).tag($0)
+                            }
+                        }.pickerStyle(.segmented)
+                        Chart(lifts) { lift in
+                            ForEach(lift.maxes().sorted(by: <), id: \.key) { reps, maximum in
+                                PointMark(x: .value("Date", lift.timestamp, unit: .day), y:
+                                        .value(repToString(reps), maximum))
                                 .symbol(.circle)
                                 .foregroundStyle(by: .value("Reps", repToString(reps)))
+                            }
                         }
+                        .chartForegroundStyleScale(mapping: { data in
+                            return colorByRepCount[data]!
+                        })
+                        .chartXVisibleDomain(length: timeWindow.timeRange)
+                        .chartYScale(domain: 0...max * 1.4)
+                        .chartScrollPosition(initialX: Date().addingTimeInterval(TimeInterval(-1 * timeWindow.timeRange)))
+                        .chartScrollableAxes(.horizontal)
+                        .chartScrollTargetBehavior(
+                            .valueAligned(matching: .init(day: 0))
+                        )
+                        .frame(minWidth: 150, minHeight: 200)
                     }
-                    .chartForegroundStyleScale(mapping: { data in
-                        return colorByRepCount[data]!
-                    })
-                    .chartXVisibleDomain(length: timeWindow.timeRange)
-                    .chartYScale(domain: 0...max * 1.4)
-                    .chartScrollPosition(initialX: Date().addingTimeInterval(TimeInterval(-1 * timeWindow.timeRange)))
-                    .chartScrollableAxes(.horizontal)
-                    .chartScrollTargetBehavior(
-                        .valueAligned(matching: .init(day: 0))
-                    )
-                    .frame(minWidth: 150, minHeight: 200)
                 }
             }
         }
