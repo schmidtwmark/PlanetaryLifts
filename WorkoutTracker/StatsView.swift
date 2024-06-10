@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import Charts
+import Observation
 
 func totalWeight(_ lifts: [Lift]) -> Double {
     return lifts.reduce(into: 0, { sum, lift in
@@ -46,19 +47,34 @@ struct CategoryPieChart: View {
     @AppStorage(PALETTE) var palette: Palette = .main
     var liftsByCategory: [LiftCategory: [Lift]]
     @Binding var statsType: StatsType
-    @State var viewModel = ViewModel()
+    @State var selectedCategory: LiftCategory? = nil
+    @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     
-    class ViewModel: ObservableObject {
-        var selectedCategory: LiftCategory? = nil
-    }
-
     var categories: [LiftCategory] {
         liftsByCategory.keys.sorted(by: <)
     }
     
+    func getCategoryBy(count: Double) -> LiftCategory? {
+        var sum = 0.0
+        for category in categories {
+            let delta = switch statsType {
+            case .count:
+                categoryCounts[category]!
+            case .weight:
+                categoryWeight[category]!
+            }
+            sum += delta
+            if count <= sum {
+                return category
+            }
+        } 
+        return nil
+    
+    }
+    
     // Number of lifts for each category
-    var categoryCounts: [LiftCategory: Int] {
-        liftsByCategory.mapValues({$0.count})
+    var categoryCounts: [LiftCategory: Double] {
+        liftsByCategory.mapValues({Double($0.count)})
     }
     
     // Sum of weight * rep for each lift category
@@ -71,14 +87,15 @@ struct CategoryPieChart: View {
     }
     
     func getSector(category: LiftCategory, statsType: StatsType) -> some ChartContent {
-        let isSelected = viewModel.selectedCategory == category
-        let mark = switch statsType {
+        let isSelected = selectedCategory == category
+        let value : PlottableValue<Double> = switch statsType {
         case .count:
-            SectorMark(angle: .value("Count", categoryCounts[category]!), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
+            .value("Count", categoryCounts[category]!)
         case .weight:
-            SectorMark(angle: .value("Weight", categoryWeight[category]!), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
+            .value("Weight", categoryWeight[category]!)
         }
-        return mark
+        
+        return SectorMark(angle: value, innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
             .cornerRadius(PIE_MARK_CORNER_RADIUS)
             .foregroundStyle(by: .value("Category", category))
     }
@@ -87,10 +104,48 @@ struct CategoryPieChart: View {
         Chart(categories, id: \.rawValue) { category in
             getSector(category: category, statsType: statsType)
         }
-        .chartAngleSelection(value: $viewModel.selectedCategory)
-        .onChange(of: viewModel.selectedCategory, {
-            print("Category change: \(String(describing: viewModel.selectedCategory))")
-        })
+        .chartOverlay { proxy in
+            GeometryReader { geometry in
+                ZStack {
+                    Rectangle().fill(.clear).contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0.0)
+                                .onEnded{ value in
+                                    // Convert the gesture location to the coordiante space of the plot area.
+                                    let origin = geometry[proxy.plotFrame!].origin
+                                    let location = CGPoint(
+                                        x: value.location.x - origin.x,
+                                        y: value.location.y - origin.y
+                                    )
+                                    let angle = proxy.angle(at: location)
+                                    if let item = proxy.value(atAngle: angle, as: Double.self) {
+                                        if let category = getCategoryBy(count: item) {
+                                            withAnimation {
+                                                if category == selectedCategory {
+                                                    selectedCategory = nil
+                                                } else {
+                                                    selectedCategory = category
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                        )
+                    if let category = selectedCategory {
+                        VStack {
+                            Text(category.rawValue)
+                            switch statsType {
+                            case .count:
+                                Text(displayString(number: categoryCounts[category]!, singleUnit: "lift"))
+                            case .weight:
+                                Text(displayString(number: categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
+                            }
+                        }
+                        
+                    }
+                }
+            }
+        }
         .chartLegend(.hidden)
         .chartForegroundStyleScale(mapping: categoryMapping)
         .scaledToFit()
@@ -103,7 +158,11 @@ struct CategoryPieChart: View {
                             HStack {
                                 categoryMapping(category).clipShape(Circle())
                                 Text(category.rawValue)
-                            }.fixedSize()
+                            }
+//                            .padding(8)
+//                            .background(category == selectedCategory ? Color(uiColor: UIColor.systemGray) : Color.clear)
+//                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .fixedSize()
                         }
                     }
                 }
@@ -117,17 +176,36 @@ struct TypesPieChart: View {
     var liftsByType: [LiftType: [Lift]]
     var liftsByCategory: [LiftCategory: [Lift]]
     @Binding var statsType: StatsType
-    @State var selectedTypeString: String? = nil
+    @State var selectedType: LiftType? = nil
+    @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     
    
     var types: [LiftType] {
         liftsByType.keys.sorted(by: <)
     }
     
+    func getTypeBy(count: Double) -> LiftType? {
+        var sum = 0.0
+        for type in types {
+            let delta = switch statsType {
+            case .count:
+                typeCounts[type]!
+            case .weight:
+                typeWeight[type]!
+            }
+            sum += delta
+            if count <= sum {
+                return type
+            }
+        }
+        return nil
+    
+    }
+    
     
     // Number of lifts for each type
-    var typeCounts: [LiftType: Int] {
-        liftsByType.mapValues({$0.count})
+    var typeCounts: [LiftType: Double] {
+        liftsByType.mapValues({Double($0.count)})
     }
     
     
@@ -154,14 +232,15 @@ struct TypesPieChart: View {
     }
     
     func getSector(liftType: LiftType, statsType: StatsType) -> some ChartContent {
-        let mark = switch statsType {
+        let isSelected = selectedType == liftType
+        let value : PlottableValue<Double> = switch statsType {
         case .count:
-            SectorMark(angle: .value("Count", typeCounts[liftType]!), innerRadius: INNER_RADIUS_RATIO, angularInset: PIE_ANGULAR_INSET)
+            .value("Count", typeCounts[liftType]!)
         case .weight:
-            SectorMark(angle: .value("Weight", typeWeight[liftType]!), innerRadius: INNER_RADIUS_RATIO, angularInset: PIE_ANGULAR_INSET)
+            .value("Weight", typeWeight[liftType]!)
         }
         
-        return mark
+        return SectorMark(angle: value, innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
             .cornerRadius(PIE_MARK_CORNER_RADIUS)
             .foregroundStyle(by: .value("Lift Type", liftType.string))
     }
@@ -177,47 +256,48 @@ struct TypesPieChart: View {
         Chart(types, id: \.string){ type in
             getSector(liftType: type, statsType: statsType)
         }
-        .chartAngleSelection(value: $selectedTypeString)
-        .onChange(of: selectedTypeString, {
-            print("Selected \(String(describing: selectedTypeString))")
-        })
-        .chartOverlay { _ in
-            if let typeString = selectedTypeString {
-                Text(typeString)
+        .chartOverlay { proxy in
+            GeometryReader { geometry in
+                ZStack {
+                    Rectangle().fill(.clear).contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0.0)
+                                .onEnded{ value in
+                                    // Convert the gesture location to the coordiante space of the plot area.
+                                    let origin = geometry[proxy.plotFrame!].origin
+                                    let location = CGPoint(
+                                        x: value.location.x - origin.x,
+                                        y: value.location.y - origin.y
+                                    )
+                                    let angle = proxy.angle(at: location)
+                                    if let item = proxy.value(atAngle: angle, as: Double.self) {
+                                        if let type = getTypeBy(count: item) {
+                                            withAnimation {
+                                                if type == selectedType{
+                                                    selectedType = nil
+                                                } else {
+                                                    selectedType = type
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                        )
+                    if let type = selectedType {
+                        VStack {
+                            Text(type.string)
+                            switch statsType {
+                            case .count:
+                                Text(displayString(number: typeCounts[type]!, singleUnit: "lift"))
+                            case .weight:
+                                Text(displayString(number: typeWeight[type]!, singleUnit: weightUnits.shortSingleUnit ))
+                            }
+                        }
+                        
+                    }
+                }
             }
         }
-//        .chartOverlay { proxy in
-//            GeometryReader { geometry in
-//                ZStack {
-//                    Rectangle().fill(.clear).contentShape(Rectangle())
-//                        .gesture(
-//                            DragGesture(minimumDistance: 0.0)
-//                                .onEnded{ value in
-//                                    // Convert the gesture location to the coordiante space of the plot area.
-//                                    let origin = geometry[proxy.plotFrame!].origin
-//                                    let location = CGPoint(
-//                                        x: value.location.x - origin.x,
-//                                        y: value.location.y - origin.y
-//                                    )
-//                                    // Get the x (date) and y (price) value from the location.
-//                                    if let item = proxy.value(at: location, as: (String, Double).self) {
-//                                        print("Selected \(item)")
-//                                        if let selectedType = selectedTypeString, item.0 == selectedType{
-//                                            selectedTypeString = nil
-//                                        } else {
-//                                            selectedTypeString = item.0
-//                                        }
-//                                    } else {
-//                                        print("No select at location \(location)")
-//                                    }
-//                                }
-//                        )
-//                    if let typeString = selectedTypeString {
-//                        Text(typeString)
-//                    }
-//                }
-//            }
-//        }
         .chartLegend(.hidden)
         .chartForegroundStyleScale(mapping: typeMapping)
         .scaledToFit()

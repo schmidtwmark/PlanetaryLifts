@@ -27,6 +27,10 @@ extension Double {
     }
 }
 
+func displayString(number: Double, singleUnit: String) -> String {
+    return "\(number.roundedWithAbbreviations) \(singleUnit)\(number.rounded() != 1.0 ? "s" : "")"
+}
+
 struct StatBlock: View {
     var description: String
     var unit: String

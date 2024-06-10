@@ -26,7 +26,7 @@ struct MaxesBarChart : View {
     
     var maxes: [Int: Double]
     var colorByRepCount: [String: Color]
-    @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @Binding var selection: Selection
     
     var body: some View {
@@ -35,7 +35,7 @@ struct MaxesBarChart : View {
                 BarMark(x: .value("Reps", repToString(reps)), y: .value("Weight", max))
                     .annotation(content: {
                         if case let .maxes(selectedReps) = selection, selectedReps == repToString(reps) {
-                            Text("\(max.roundedWithAbbreviations) \(weightUnits.shortSingleUnit)\(max.rounded() != 1.0 ? "s" : "")")
+                            Text(displayString(number: max, singleUnit: weightUnits.shortSingleUnit))
                         }
                     })
                     .foregroundStyle(by: .value("Reps", repToString(reps)))
@@ -82,7 +82,7 @@ struct StatItem: View {
     var lifts: [Lift]
     
     @State var position: (Date, Double)? = nil
-    @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @AppStorage(PALETTE) var palette: Palette = .main
     @State var selection: Selection = .none
     @State var timeWindow: TimeWindow = .week

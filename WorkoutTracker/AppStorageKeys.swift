@@ -7,3 +7,4 @@
 
 import Foundation
 let PALETTE = "palette"
+let WEIGHT_UNITS = "weightUnits"

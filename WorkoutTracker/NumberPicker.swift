@@ -34,7 +34,7 @@ struct StepperButtonStyle: ButtonStyle {
 
 struct NumberPicker<T: Numeric> : View {
     @Binding var number: T
-    @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     
     var toString: ((T) -> String)
     

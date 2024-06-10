@@ -127,7 +127,7 @@ struct AddLiftView: View {
     
     @StateObject var editState: EditState = EditState()
     @Environment(\.dismiss) var dismiss
-    @AppStorage("weightUnits") var weightUnits: WeightUnits = .pounds
+    @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @AppStorage(PALETTE) var palette: Palette = .main
     
     

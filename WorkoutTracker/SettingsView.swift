@@ -42,7 +42,7 @@ struct SettingsView: View {
         return map
     }
     
-    @AppStorage("weightUnits") var weight: WeightUnits = .pounds
+    @AppStorage(WEIGHT_UNITS) var weight: WeightUnits = .pounds
     
     var body: some View {
         NavigationStack {
