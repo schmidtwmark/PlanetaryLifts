@@ -49,7 +49,7 @@ struct MaxesBarChart : View {
                 ZStack {
                     Rectangle().fill(.clear).contentShape(Rectangle())
                         .gesture(
-                            DragGesture(minimumDistance: 0.0)
+                            SpatialTapGesture()
                                 .onEnded{ value in
                                     // Convert the gesture location to the coordiante space of the plot area.
                                     let origin = geometry[proxy.plotFrame!].origin

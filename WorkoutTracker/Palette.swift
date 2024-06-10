@@ -23,7 +23,7 @@ public enum Palette : String, CaseIterable {
 }
 
 extension Palette {
-    private func getColorByName(_ paletteString: String, _ category: LiftCategory) -> Color? {
+    private func getColorByCategory(_ paletteString: String, _ category: LiftCategory) -> Color? {
         let fullName = paletteString + "/" + category.rawValue
         
         return if let uiColor = UIColor(named: fullName) {
@@ -33,12 +33,10 @@ extension Palette {
         }
     }
     
-    public func getColors() -> [LiftCategory: Color] {
-        let paletteName = self.rawValue
-        return LiftCategory.allCases.reduce(into: [LiftCategory: Color](), {
-            $0[$1] = getColorByName(paletteName, $1)
-        })
+    public func getColor(forCategory: LiftCategory) -> Color {
+        return getColorByCategory(self.rawValue, forCategory)!
     }
+    
     
 //    
 //    public func accentColor(colorScheme: ColorScheme) -> Color {

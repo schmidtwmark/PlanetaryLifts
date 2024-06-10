@@ -27,7 +27,7 @@ public enum LiftCategory: String, Codable, CaseIterable, Comparable {
 
 extension LiftCategory {
     func getColor(for palette: Palette) -> Color {
-        palette.getColors()[self]!
+        palette.getColor(forCategory: self)
     }
 }
 

@@ -45,54 +45,58 @@ enum Granularity: String, Codable, CaseIterable {
 struct CategoryPieChart: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
-    var liftsByCategory: [LiftCategory: [Lift]]
     @Binding var statsType: StatsType
-    @State var selectedCategory: LiftCategory? = nil
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
+    @State var viewModel: ViewModel
     
-    var categories: [LiftCategory] {
-        liftsByCategory.keys.sorted(by: <)
+    init(liftsByCategory: [LiftCategory: [Lift]], statsType: Binding<StatsType> ) {
+        self.viewModel = ViewModel(liftsByCategory: liftsByCategory)
+        self._statsType = statsType
     }
     
-    func getCategoryBy(count: Double) -> LiftCategory? {
-        var sum = 0.0
-        for category in categories {
-            let delta = switch statsType {
-            case .count:
-                categoryCounts[category]!
-            case .weight:
-                categoryWeight[category]!
+    @Observable final class ViewModel {
+        var selectedCategory: LiftCategory? = nil
+        
+        var categories: [LiftCategory]
+        var categoryCounts: [LiftCategory: Double]
+        var categoryWeight: [LiftCategory: Double]
+        
+        init(liftsByCategory: [LiftCategory: [Lift]]) {
+            categories = liftsByCategory.keys.sorted(by: <)
+            categoryCounts = liftsByCategory.mapValues({Double($0.count)})
+            categoryWeight = liftsByCategory.mapValues({totalWeight($0)})
+        }    
+        
+        func getCategoryBy(count: Double, statsType: StatsType) -> LiftCategory? {
+            var sum = 0.0
+            for category in categories {
+                let delta = switch statsType {
+                case .count:
+                    categoryCounts[category]!
+                case .weight:
+                    categoryWeight[category]!
+                }
+                sum += delta
+                if count <= sum {
+                    return category
+                }
             }
-            sum += delta
-            if count <= sum {
-                return category
-            }
-        } 
-        return nil
-    
+            return nil
+        }
     }
     
-    // Number of lifts for each category
-    var categoryCounts: [LiftCategory: Double] {
-        liftsByCategory.mapValues({Double($0.count)})
-    }
-    
-    // Sum of weight * rep for each lift category
-    var categoryWeight: [LiftCategory: Double] {
-        liftsByCategory.mapValues({totalWeight($0)})
-    }
         
     func categoryMapping(_ category: LiftCategory) -> Color {
         return category.getColor(for: palette)
     }
     
     func getSector(category: LiftCategory, statsType: StatsType) -> some ChartContent {
-        let isSelected = selectedCategory == category
+        let isSelected = viewModel.selectedCategory == category
         let value : PlottableValue<Double> = switch statsType {
         case .count:
-            .value("Count", categoryCounts[category]!)
+                .value("Count", viewModel.categoryCounts[category]!)
         case .weight:
-            .value("Weight", categoryWeight[category]!)
+                .value("Weight", viewModel.categoryWeight[category]!)
         }
         
         return SectorMark(angle: value, innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
@@ -101,7 +105,7 @@ struct CategoryPieChart: View {
     }
     
     var body: some View {
-        Chart(categories, id: \.rawValue) { category in
+        Chart(viewModel.categories, id: \.rawValue) { category in
             getSector(category: category, statsType: statsType)
         }
         .chartOverlay { proxy in
@@ -109,7 +113,7 @@ struct CategoryPieChart: View {
                 ZStack {
                     Rectangle().fill(.clear).contentShape(Rectangle())
                         .gesture(
-                            DragGesture(minimumDistance: 0.0)
+                            SpatialTapGesture()
                                 .onEnded{ value in
                                     // Convert the gesture location to the coordiante space of the plot area.
                                     let origin = geometry[proxy.plotFrame!].origin
@@ -119,26 +123,26 @@ struct CategoryPieChart: View {
                                     )
                                     let angle = proxy.angle(at: location)
                                     if let item = proxy.value(atAngle: angle, as: Double.self) {
-                                        if let category = getCategoryBy(count: item) {
+                                        if let category = viewModel.getCategoryBy(count: item, statsType: statsType) {
                                             withAnimation {
-                                                if category == selectedCategory {
-                                                    selectedCategory = nil
+                                                if category == viewModel.selectedCategory {
+                                                    viewModel.selectedCategory = nil
                                                 } else {
-                                                    selectedCategory = category
+                                                    viewModel.selectedCategory = category
                                                 }
                                             }
                                         }
                                     }
                                 }
                         )
-                    if let category = selectedCategory {
+                    if let category = viewModel.selectedCategory {
                         VStack {
                             Text(category.rawValue)
                             switch statsType {
                             case .count:
-                                Text(displayString(number: categoryCounts[category]!, singleUnit: "lift"))
+                                Text(displayString(number: viewModel.categoryCounts[category]!, singleUnit: "lift"))
                             case .weight:
-                                Text(displayString(number: categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
+                                Text(displayString(number: viewModel.categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
                             }
                         }
                         
@@ -152,16 +156,13 @@ struct CategoryPieChart: View {
         .padding()
         ScrollView(.horizontal, content: {
             HStack(alignment: .top) {
-                ForEach(categories.chunked(into: 4), id: \.first!.rawValue) { chunk in
+                ForEach(viewModel.categories.chunked(into: 4), id: \.first!.rawValue) { chunk in
                     VStack(alignment: .leading) {
                         ForEach(chunk, id: \.rawValue) { category in
                             HStack {
                                 categoryMapping(category).clipShape(Circle())
                                 Text(category.rawValue)
                             }
-//                            .padding(8)
-//                            .background(category == selectedCategory ? Color(uiColor: UIColor.systemGray) : Color.clear)
-//                            .clipShape(RoundedRectangle(cornerRadius: 4))
                             .fixedSize()
                         }
                     }
@@ -261,7 +262,7 @@ struct TypesPieChart: View {
                 ZStack {
                     Rectangle().fill(.clear).contentShape(Rectangle())
                         .gesture(
-                            DragGesture(minimumDistance: 0.0)
+                            SpatialTapGesture()
                                 .onEnded{ value in
                                     // Convert the gesture location to the coordiante space of the plot area.
                                     let origin = geometry[proxy.plotFrame!].origin
