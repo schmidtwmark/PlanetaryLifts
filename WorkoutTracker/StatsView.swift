@@ -41,51 +41,50 @@ enum Granularity: String, Codable, CaseIterable {
     case type = "Lift Type"
 }
 
+@Observable final class ChartViewModel<T: Hashable & Comparable>{
+    var selectedCategory: T? = nil
+    
+    var categories: [T]
+    var categoryCounts: [T: Double]
+    var categoryWeight: [T: Double]
+    
+    init(liftsByCategory: [T: [Lift]]) {
+        categories = liftsByCategory.keys.sorted(by: <)
+        categoryCounts = liftsByCategory.mapValues({Double($0.count)})
+        categoryWeight = liftsByCategory.mapValues({totalWeight($0)})
+    }
+    
+    func getCategoryBy(count: Double, statsType: StatsType) -> T? {
+        var sum = 0.0
+        for category in categories {
+            let delta = switch statsType {
+            case .count:
+                categoryCounts[category]!
+            case .weight:
+                categoryWeight[category]!
+            }
+            sum += delta
+            if count <= sum {
+                return category
+            }
+        }
+        return nil
+    }
+}
+
 
 struct CategoryPieChart: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
     @Binding var statsType: StatsType
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
-    @State var viewModel: ViewModel
+    @State var viewModel: ChartViewModel<LiftCategory>
     
     init(liftsByCategory: [LiftCategory: [Lift]], statsType: Binding<StatsType> ) {
-        self.viewModel = ViewModel(liftsByCategory: liftsByCategory)
+        self.viewModel = ChartViewModel<LiftCategory>(liftsByCategory: liftsByCategory)
         self._statsType = statsType
     }
     
-    @Observable final class ViewModel {
-        var selectedCategory: LiftCategory? = nil
-        
-        var categories: [LiftCategory]
-        var categoryCounts: [LiftCategory: Double]
-        var categoryWeight: [LiftCategory: Double]
-        
-        init(liftsByCategory: [LiftCategory: [Lift]]) {
-            categories = liftsByCategory.keys.sorted(by: <)
-            categoryCounts = liftsByCategory.mapValues({Double($0.count)})
-            categoryWeight = liftsByCategory.mapValues({totalWeight($0)})
-        }    
-        
-        func getCategoryBy(count: Double, statsType: StatsType) -> LiftCategory? {
-            var sum = 0.0
-            for category in categories {
-                let delta = switch statsType {
-                case .count:
-                    categoryCounts[category]!
-                case .weight:
-                    categoryWeight[category]!
-                }
-                sum += delta
-                if count <= sum {
-                    return category
-                }
-            }
-            return nil
-        }
-    }
-    
-        
     func categoryMapping(_ category: LiftCategory) -> Color {
         return category.getColor(for: palette)
     }
@@ -174,45 +173,16 @@ struct CategoryPieChart: View {
 
 struct TypesPieChart: View {
     @AppStorage(PALETTE) var palette: Palette = .main
-    var liftsByType: [LiftType: [Lift]]
     var liftsByCategory: [LiftCategory: [Lift]]
     @Binding var statsType: StatsType
-    @State var selectedType: LiftType? = nil
+    
+    @State var viewModel: ChartViewModel<LiftType>
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     
-   
-    var types: [LiftType] {
-        liftsByType.keys.sorted(by: <)
-    }
-    
-    func getTypeBy(count: Double) -> LiftType? {
-        var sum = 0.0
-        for type in types {
-            let delta = switch statsType {
-            case .count:
-                typeCounts[type]!
-            case .weight:
-                typeWeight[type]!
-            }
-            sum += delta
-            if count <= sum {
-                return type
-            }
-        }
-        return nil
-    
-    }
-    
-    
-    // Number of lifts for each type
-    var typeCounts: [LiftType: Double] {
-        liftsByType.mapValues({Double($0.count)})
-    }
-    
-    
-    // Sum of weight * rep for each lift type
-    var typeWeight: [LiftType: Double] {
-        liftsByType.mapValues({totalWeight($0)})
+    init(liftsByType: [LiftType: [Lift]], liftsByCategory: [LiftCategory: [Lift]], statsType: Binding<StatsType>) {
+        self.viewModel = ChartViewModel<LiftType>(liftsByCategory: liftsByType)
+        self.liftsByCategory = liftsByCategory
+        self._statsType = statsType
     }
     
     var colorByTypeString: [String: Color] {
@@ -233,12 +203,12 @@ struct TypesPieChart: View {
     }
     
     func getSector(liftType: LiftType, statsType: StatsType) -> some ChartContent {
-        let isSelected = selectedType == liftType
+        let isSelected = viewModel.selectedCategory == liftType
         let value : PlottableValue<Double> = switch statsType {
         case .count:
-            .value("Count", typeCounts[liftType]!)
+                .value("Count", viewModel.categoryCounts[liftType]!)
         case .weight:
-            .value("Weight", typeWeight[liftType]!)
+                .value("Weight", viewModel.categoryWeight[liftType]!)
         }
         
         return SectorMark(angle: value, innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
@@ -254,7 +224,7 @@ struct TypesPieChart: View {
 
     
     var body: some View {
-        Chart(types, id: \.string){ type in
+        Chart(viewModel.categories, id: \.string){ type in
             getSector(liftType: type, statsType: statsType)
         }
         .chartOverlay { proxy in
@@ -272,26 +242,26 @@ struct TypesPieChart: View {
                                     )
                                     let angle = proxy.angle(at: location)
                                     if let item = proxy.value(atAngle: angle, as: Double.self) {
-                                        if let type = getTypeBy(count: item) {
+                                        if let type = viewModel.getCategoryBy(count: item, statsType: statsType) {
                                             withAnimation {
-                                                if type == selectedType{
-                                                    selectedType = nil
+                                                if type == viewModel.selectedCategory {
+                                                    viewModel.selectedCategory = nil
                                                 } else {
-                                                    selectedType = type
+                                                    viewModel.selectedCategory = type
                                                 }
                                             }
                                         }
                                     }
                                 }
                         )
-                    if let type = selectedType {
+                    if let type = viewModel.selectedCategory {
                         VStack {
                             Text(type.string)
                             switch statsType {
                             case .count:
-                                Text(displayString(number: typeCounts[type]!, singleUnit: "lift"))
+                                Text(displayString(number: viewModel.categoryCounts[type]!, singleUnit: "lift"))
                             case .weight:
-                                Text(displayString(number: typeWeight[type]!, singleUnit: weightUnits.shortSingleUnit ))
+                                Text(displayString(number: viewModel.categoryWeight[type]!, singleUnit: weightUnits.shortSingleUnit ))
                             }
                         }
                         
@@ -305,7 +275,7 @@ struct TypesPieChart: View {
         .padding()
         ScrollView(.horizontal, content: {
             HStack(alignment: .top) {
-                ForEach(types.chunked(into: 4), id: \.first!.string) { chunk in
+                ForEach(viewModel.categories.chunked(into: 4), id: \.first!.string) { chunk in
                     VStack(alignment: .leading) {
                         ForEach(chunk, id: \.string) { type in
                             HStack {
