@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Charts
+import Observation
 
 func repToString(_ reps: Int) -> String {
     if reps == 1 {
@@ -25,9 +26,10 @@ enum Selection {
 struct MaxesBarChart : View {
     
     var maxes: [Int: Double]
-    var colorByRepCount: [String: Color]
+    var colorByRepCount: (String, Palette) -> Color
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @Binding var selection: Selection
+    @AppStorage(PALETTE) var palette: Palette = .main
     
     var body: some View {
         Chart {
@@ -42,7 +44,7 @@ struct MaxesBarChart : View {
             }
         }
         .chartForegroundStyleScale(mapping: { data in
-            return colorByRepCount[data]!
+            return colorByRepCount(data, palette)
         })
         .chartOverlay { proxy in
             GeometryReader { geometry in
@@ -77,15 +79,14 @@ struct MaxesBarChart : View {
 
 
 struct StatItem: View {
-    @State var expanded = true
     var type: LiftType
     var lifts: [Lift]
     
-    @State var position: (Date, Double)? = nil
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @AppStorage(PALETTE) var palette: Palette = .main
     @State var selection: Selection = .none
     @State var timeWindow: TimeWindow = .week
+    @State var viewModel: ViewModel
     
     enum TimeWindow : String, CaseIterable {
         case week = "Week"
@@ -108,40 +109,48 @@ struct StatItem: View {
             
         }
     }
-
-
-    var maxes: [Int: Double]{
-        return lifts.reduce(into: [Int: Double](), { result, lift in
-            let liftMaxes = lift.maxes()
-            for (reps, maxWeight) in liftMaxes {
-                if let maxForReps = result[reps], maxWeight < maxForReps {
-                    return
-                }
-                result[reps] = maxWeight
-
-            }
-        })
-    }
     
-    var colorByRepCount: [String: Color] {
-        let baseColor = type.category.getColor(for: palette)
+    @Observable final class ViewModel {
+        var maxes: [Int: Double]
+        var shadeIndexByRepCount: [String: Int]
+        var allTimeMax: Double?
+        var type: LiftType
+
+        func colorByRepCount(_ string: String, _ palette: Palette) -> Color {
+            type.category.getColor(for: palette).shades(count: maxes.count)[ shadeIndexByRepCount[string]!]
+        }
         
-        let shades = baseColor.shades(count: maxes.count)
-        return zip(shades, maxes.sorted(by: <)).reduce(into: [String: Color](), { dict, values in
-            let (color, (reps, _)) = values
-            dict[repToString(reps)] = color
-        })
+        init(lifts: [Lift], type: LiftType) {
+            self.type = type
+            let maxes = lifts.reduce(into: [Int: Double](), { result, lift in
+                let liftMaxes = lift.maxes()
+                for (reps, maxWeight) in liftMaxes {
+                    if let maxForReps = result[reps], maxWeight < maxForReps {
+                        return
+                    }
+                    result[reps] = maxWeight
+                }
+            })
+            shadeIndexByRepCount = zip((0..<maxes.count), maxes.sorted(by: <)).reduce(into: [String: Int](), { dict, values in
+                let (index, (reps, _)) = values
+                dict[repToString(reps)] = index
+            })
+            
+            allTimeMax = maxes.values.max()
+            self.maxes = maxes
+        }
     }
     
-    var allTimeMax: Double? {
-        maxes.values.max()
+    init(type: LiftType, lifts: [Lift]) {
+        self.type = type
+        self.lifts = lifts
+        self.viewModel = ViewModel(lifts: lifts, type: type)
     }
-    
-    
+
 
     var body: some View {
         List {
-            if let max = allTimeMax {
+            if let max = viewModel.allTimeMax {
                 Section {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading) {
                         StatBlock(description: "All Time Max", unit: weightUnits.shortSingleUnit, number: max)
@@ -154,8 +163,8 @@ struct StatItem: View {
                     .listRowBackground(Color.clear)
                 }
                 Section("Maxes") {
-                    MaxesBarChart(maxes: maxes, 
-                                  colorByRepCount: colorByRepCount,
+                    MaxesBarChart(maxes: viewModel.maxes,
+                                  colorByRepCount: viewModel.colorByRepCount,
                                   selection: $selection)
                     .frame(minWidth: 150, minHeight: 200)
                 }
@@ -176,7 +185,7 @@ struct StatItem: View {
                             }
                         }
                         .chartForegroundStyleScale(mapping: { data in
-                            return colorByRepCount[data]!
+                            return viewModel.colorByRepCount(data, palette)
                         })
                         .chartXVisibleDomain(length: timeWindow.timeRange)
                         .chartYScale(domain: 0...max * 1.4)
