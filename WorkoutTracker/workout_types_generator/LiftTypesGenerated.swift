@@ -23,6 +23,7 @@ enum LiftType: Hashable, Codable{
 	case latPulldowns
 	case hackSquat
 	case backExtensions
+	case row
 	case chestSupportedRow
 	case bentOverRow
 	case seatedRow
@@ -86,6 +87,7 @@ enum LiftType: Hashable, Codable{
 		.latPulldowns,
 		.hackSquat,
 		.backExtensions,
+		.row,
 		.chestSupportedRow,
 		.bentOverRow,
 		.seatedRow,
@@ -149,6 +151,7 @@ enum LiftType: Hashable, Codable{
 		case .latPulldowns: "Lat Pulldowns"
 		case .hackSquat: "Hack Squat"
 		case .backExtensions: "Back Extensions"
+		case .row: "Row"
 		case .chestSupportedRow: "Chest Supported Row"
 		case .bentOverRow: "Bent Over Row"
 		case .seatedRow: "Seated Row"
@@ -220,6 +223,7 @@ enum LiftType: Hashable, Codable{
 		case .latPulldowns: .back
 		case .hackSquat: .back
 		case .backExtensions: .back
+		case .row: .back
 		case .chestSupportedRow: .back
 		case .bentOverRow: .back
 		case .seatedRow: .back
@@ -288,6 +292,7 @@ enum LiftType: Hashable, Codable{
 		case .backSquat: [.barbell, .dumbbell]
 		case .deadlift: [.narrowGrip, .wideGrip, .barbell, .hexBar]
 		case .latPulldowns: [.narrowGrip, .wideGrip, .cable]
+		case .row: [.oneArm, .barbell, .dumbbell, .cable]
 		case .chestSupportedRow: [.incline, .narrowGrip, .wideGrip, .oneArm, .barbell, .dumbbell]
 		case .bentOverRow: [.oneArm, .dumbbell]
 		case .seatedRow: [.narrowGrip, .wideGrip, .oneArm, .dumbbell, .cable]
