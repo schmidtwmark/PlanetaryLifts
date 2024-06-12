@@ -105,84 +105,92 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable>: View {
     }
     
     var body: some View {
-        Chart(viewModel.categories) { category in
-            getSector(category: category, statsType: statsType)
-        }
-        .chartOverlay { proxy in
-            GeometryReader { geometry in
-                ZStack {
-                    Rectangle().fill(.clear).contentShape(Rectangle())
-                        .gesture(
-                            SpatialTapGesture()
-                                .onEnded{ value in
-                                    // Convert the gesture location to the coordiante space of the plot area.
-                                    let origin = geometry[proxy.plotFrame!].origin
-                                    let location = CGPoint(
-                                        x: value.location.x - origin.x,
-                                        y: value.location.y - origin.y
-                                    )
-                                    let angle = proxy.angle(at: location)
-                                    if let item = proxy.value(atAngle: angle, as: Double.self) {
-                                        if let category = viewModel.getCategoryBy(count: item, statsType: statsType) {
-                                            withAnimation {
-                                                if category == viewModel.selectedCategory {
-                                                    viewModel.selectedCategory = nil
-                                                } else {
-                                                    viewModel.selectedCategory = category
+        ScrollViewReader { scrollProxy in
+            Chart(viewModel.categories) { category in
+                getSector(category: category, statsType: statsType)
+            }
+            .chartOverlay { proxy in
+                GeometryReader { geometry in
+                    ZStack {
+                        Rectangle().fill(.clear).contentShape(Rectangle())
+                            .gesture(
+                                SpatialTapGesture()
+                                    .onEnded{ value in
+                                        // Convert the gesture location to the coordiante space of the plot area.
+                                        let origin = geometry[proxy.plotFrame!].origin
+                                        let location = CGPoint(
+                                            x: value.location.x - origin.x,
+                                            y: value.location.y - origin.y
+                                        )
+                                        let angle = proxy.angle(at: location)
+                                        if let item = proxy.value(atAngle: angle, as: Double.self) {
+                                            if let category = viewModel.getCategoryBy(count: item, statsType: statsType) {
+                                                withAnimation {
+                                                    if category == viewModel.selectedCategory {
+                                                        viewModel.selectedCategory = nil
+                                                    } else {
+                                                        viewModel.selectedCategory = category
+                                                        if let idx = viewModel.categories.firstIndex(of: category) {
+                                                            scrollProxy.scrollTo(idx / 2)
+                                                        }
+                                                        
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                            )
+                        if let category = viewModel.selectedCategory {
+                            VStack {
+                                Text(stringMapping(category))
+                                switch statsType {
+                                case .count:
+                                    Text(displayString(number: viewModel.categoryCounts[category]!, singleUnit: "lift"))
+                                case .weight:
+                                    Text(displayString(number: viewModel.categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
                                 }
-                        )
-                    if let category = viewModel.selectedCategory {
-                        VStack {
-                            Text(stringMapping(category))
-                            switch statsType {
-                            case .count:
-                                Text(displayString(number: viewModel.categoryCounts[category]!, singleUnit: "lift"))
-                            case .weight:
-                                Text(displayString(number: viewModel.categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
                             }
+                            
                         }
-                        
                     }
                 }
             }
-        }
-        .chartLegend(.hidden)
-        .chartForegroundStyleScale(mapping: colorMapping)
-        .scaledToFit()
-        .padding()
-        ScrollView(.horizontal, content: {
-            HStack(alignment: .top) {
-                ForEach(viewModel.categories.chunked(into: 4), id: \.first!.id) { chunk in
-                    VStack(alignment: .leading) {
-                        ForEach(chunk) { category in
-                            let isSelected = category == viewModel.selectedCategory
-                            HStack {
-                                let string = stringMapping(category)
-                                colorMapping(string).clipShape(Circle())
-                                Text(string)
-                            }
-                            .padding(5)
-                            .background(isSelected ? Color.gray : Color.clear)
-                            .clipShape(RoundedRectangle(cornerRadius: 5.0))
-                            .fixedSize()
-                            .onTapGesture(perform: {
-                                withAnimation {
-                                    if isSelected {
-                                        viewModel.selectedCategory = nil
-                                    } else {
-                                        viewModel.selectedCategory = category
+            .chartLegend(.hidden)
+            .chartForegroundStyleScale(mapping: colorMapping)
+            .scaledToFit()
+            .padding()
+            ScrollView(.horizontal) {
+                HStack(alignment: .top) {
+                    ForEach(Array(viewModel.categories.chunked(into: 2).enumerated()), id: \.offset) { offset, chunk in
+                        VStack(alignment: .leading) {
+                            ForEach(chunk) { category in
+                                let isSelected = category == viewModel.selectedCategory
+                                HStack {
+                                    let string = stringMapping(category)
+                                    colorMapping(string).clipShape(Circle())
+                                    Text(string)
+                                }
+                                .padding(5)
+                                .background(isSelected ? Color.gray : Color.clear)
+                                .clipShape(RoundedRectangle(cornerRadius: 5.0))
+                                .fixedSize()
+                                .onTapGesture(perform: {
+                                    withAnimation {
+                                        if isSelected {
+                                            viewModel.selectedCategory = nil
+                                        } else {
+                                            viewModel.selectedCategory = category
+                                        }
                                     }
-                                }
-                            })
-                        }
+                                })
+                            }
+                        }.tag(offset)
                     }
                 }
             }
-        })
+            .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
+            .scrollIndicators(.hidden)
+        }
     }
 }
 
@@ -256,34 +264,36 @@ struct StatsView: View {
         
         NavigationStack {
             List {
-                Section("General Stats") {
-                    VStack {
-                        Picker("", selection: $granularity.animation()) {
-                            ForEach(Granularity.allCases, id: \.rawValue) { granularity in
-                                Text(granularity.rawValue).tag(granularity)}
-                            
-                        }.pickerStyle(.segmented)
-                        Picker("", selection: $statsType.animation()) {
-                            ForEach(StatsType.allCases, id: \.rawValue) { type in
-                                Text(type.rawValue).tag(type)
+                if searchText.isEmpty {
+                    Section("General Stats") {
+                        VStack {
+                            Picker("", selection: $granularity.animation()) {
+                                ForEach(Granularity.allCases, id: \.rawValue) { granularity in
+                                    Text(granularity.rawValue).tag(granularity)}
+                                
+                            }.pickerStyle(.segmented)
+                            Picker("", selection: $statsType.animation()) {
+                                ForEach(StatsType.allCases, id: \.rawValue) { type in
+                                    Text(type.rawValue).tag(type)
+                                }
+                            }.pickerStyle(.segmented)
+                            switch granularity {
+                            case .category:
+                                CategoryPieChart<LiftCategory>(
+                                    liftsByCategory: liftsByCategory,
+                                    statsType: $statsType,
+                                    colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
+                                    stringMapping: {$0.rawValue})
+                                
+                            case .type:
+                                CategoryPieChart<LiftType>(
+                                    liftsByCategory: liftsByType,
+                                    statsType: $statsType,
+                                    colorMapping: {colorByTypeString[$0]!},
+                                    stringMapping: {$0.string})
                             }
-                        }.pickerStyle(.segmented)
-                        switch granularity {
-                        case .category:
-                            CategoryPieChart<LiftCategory>(
-                                liftsByCategory: liftsByCategory,
-                                statsType: $statsType,
-                                colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
-                                stringMapping: {$0.rawValue})
                             
-                        case .type:
-                            CategoryPieChart<LiftType>(
-                                liftsByCategory: liftsByType,
-                                statsType: $statsType,
-                                colorMapping: {colorByTypeString[$0]!},
-                                stringMapping: {$0.string})
                         }
-                        
                     }
                 }
                 
@@ -302,8 +312,8 @@ struct StatsView: View {
                     }
                 }
             }
+            .navigationTitle("Stats")
         }
-        .navigationTitle("Stats")
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
     }
 }
