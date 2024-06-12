@@ -159,12 +159,25 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable>: View {
                 ForEach(viewModel.categories.chunked(into: 4), id: \.first!.id) { chunk in
                     VStack(alignment: .leading) {
                         ForEach(chunk) { category in
+                            let isSelected = category == viewModel.selectedCategory
                             HStack {
                                 let string = stringMapping(category)
                                 colorMapping(string).clipShape(Circle())
                                 Text(string)
                             }
+                            .padding(5)
+                            .background(isSelected ? Color.gray : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: 5.0))
                             .fixedSize()
+                            .onTapGesture(perform: {
+                                withAnimation {
+                                    if isSelected {
+                                        viewModel.selectedCategory = nil
+                                    } else {
+                                        viewModel.selectedCategory = category
+                                    }
+                                }
+                            })
                         }
                     }
                 }

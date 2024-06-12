@@ -121,19 +121,4 @@ extension Color {
     var brightness : CGFloat {
         self.hsv.value
     }
-    
-    var backgroundAccentColor : Color {
-        return self.darker(by: 20.0)
-//        var white : CGFloat = 0.0
-//        let uiColor = UIColor(self)
-//        uiColor.getWhite(&white, alpha: nil)
-////        let brightness = self.brightness
-//        if white > 0.5 {
-//            print("Accent color should be darker")
-//            return self.darker(by: 50.0)
-//        } else {
-//            print("Accent color should be lighter")
-//            return self.lighter(by: 50.0)
-//        }
-    }
 }
