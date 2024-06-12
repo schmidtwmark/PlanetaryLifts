@@ -162,11 +162,15 @@ struct StatItem: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                 }
-                Section("Maxes") {
-                    MaxesBarChart(maxes: viewModel.maxes,
-                                  colorByRepCount: viewModel.colorByRepCount,
-                                  selection: $selection)
-                    .frame(minWidth: 150, minHeight: 200)
+                
+                // Only show this
+                if viewModel.maxes.count > 1 {
+                    Section("Maxes") {
+                        MaxesBarChart(maxes: viewModel.maxes,
+                                      colorByRepCount: viewModel.colorByRepCount,
+                                      selection: $selection)
+                        .frame(minWidth: 150, minHeight: 200)
+                    }
                 }
                 
                 Section("Progress") {

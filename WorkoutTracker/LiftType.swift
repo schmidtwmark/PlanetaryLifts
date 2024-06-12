@@ -10,7 +10,11 @@ import SwiftUI
 import Charts
 
 
-public enum LiftCategory: String, Codable, CaseIterable, Comparable {
+public enum LiftCategory: String, Codable, CaseIterable, Comparable, Identifiable {
+    public var id: String {
+        self.rawValue
+    }
+    
     public static func < (lhs: LiftCategory, rhs: LiftCategory) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
@@ -85,4 +89,16 @@ extension LiftType {
         }
         return map
     }
+}
+
+extension LiftType : Identifiable {
+    var id: String {
+        switch self {
+        case .other(_, _, let uuid):
+            uuid.uuidString
+        default: 
+            self.string
+        }
+    }
+    
 }
