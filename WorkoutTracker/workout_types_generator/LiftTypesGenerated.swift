@@ -27,6 +27,7 @@ enum LiftType: Hashable, Codable{
 	case chestSupportedRow
 	case bentOverRow
 	case seatedRow
+	case pullUp
 	// MARK: Chest
 	case benchPress
 	case vikingPress
@@ -43,6 +44,7 @@ enum LiftType: Hashable, Codable{
 	case russianTwists
 	case sideBends
 	case plankPullThrough
+	case legRaises
 	// MARK: Glutes
 	case hipThrust
 	case reverseHyperextension
@@ -91,6 +93,7 @@ enum LiftType: Hashable, Codable{
 		.chestSupportedRow,
 		.bentOverRow,
 		.seatedRow,
+		.pullUp,
 		// MARK: Chest
 		.benchPress,
 		.vikingPress,
@@ -107,6 +110,7 @@ enum LiftType: Hashable, Codable{
 		.russianTwists,
 		.sideBends,
 		.plankPullThrough,
+		.legRaises,
 		// MARK: Glutes
 		.hipThrust,
 		.reverseHyperextension,
@@ -155,6 +159,7 @@ enum LiftType: Hashable, Codable{
 		case .chestSupportedRow: "Chest Supported Row"
 		case .bentOverRow: "Bent Over Row"
 		case .seatedRow: "Seated Row"
+		case .pullUp: "Pull Up"
 
 		// MARK: Chest
 		case .benchPress: "Bench Press"
@@ -172,7 +177,8 @@ enum LiftType: Hashable, Codable{
 		case .sidePlank: "Side Plank"
 		case .russianTwists: "Russian Twists"
 		case .sideBends: "Side Bends"
-		case .plankPullThrough: "Plank Pull through"
+		case .plankPullThrough: "Plank Pull Through"
+		case .legRaises: "Leg Raises"
 
 		// MARK: Glutes
 		case .hipThrust: "Hip Thrust"
@@ -227,6 +233,7 @@ enum LiftType: Hashable, Codable{
 		case .chestSupportedRow: .back
 		case .bentOverRow: .back
 		case .seatedRow: .back
+		case .pullUp: .back
 
 		// MARK: Chest
 		case .benchPress: .chest
@@ -245,6 +252,7 @@ enum LiftType: Hashable, Codable{
 		case .russianTwists: .core
 		case .sideBends: .core
 		case .plankPullThrough: .core
+		case .legRaises: .core
 
 		// MARK: Glutes
 		case .hipThrust: .glutes

@@ -22,12 +22,13 @@ final class Lift {
     var notes: String = ""
     var modifiers: Set<LiftModifier> = Set<LiftModifier>()
     
-    init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date, modifiers: Set<LiftModifier> = Set(), notes: String = "") {
+    init(liftType: LiftType, sets: [LiftSet] = [], timestamp: Date, modifiers: Set<LiftModifier> = Set(), notes: String = "", weighted: Bool = true) {
         self.type = liftType
         self.sets = sets
         self.timestamp = timestamp
         self.modifiers = modifiers
         self.notes = notes
+        self.weighted = weighted
     }
     
     func addSet(_ reps: Int, weight: Double, units: WeightUnits) {

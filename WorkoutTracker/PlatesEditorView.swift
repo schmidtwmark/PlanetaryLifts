@@ -21,39 +21,47 @@ struct PlatesView: View {
     
     var plates: WeightPlates
     var removePlate: (UUID) -> ()
+    var rendering: Bool
 
+    var innerView: some View {
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 5.0)
+                .fill(.gray)
+                .frame(minWidth: 100.0, minHeight: 10.0, maxHeight: 10.0)
+            HStack(spacing: 5.0) {
+                Rectangle().frame(width: 10.0, height: 100.0).opacity(0.0)
+                RoundedRectangle(cornerRadius: 5.0)
+                    .fill(.gray)
+                    .frame(width: 10.0, height: 30.0)
+                ForEach(plates.plates) { plate in
+                    ZStack {
+                        RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / 4.0)
+                            .stroke(Color(uiColor: UIColor.label), lineWidth: 2.0)
+                            .fill(Color(uiColor: UIColor.systemBackground))
+                            .frame(width:  rectangleSizes[plate.weight]!.width, height: rectangleSizes[plate.weight]!.height)
+                        Text("\(plate.weight.clean)")
+                    }.onTapGesture {
+                        withAnimation {
+                            removePlate(plate.id)
+                        }
+                    }
+                    
+                }
+                
+                Spacer()
+            }.padding(2.0)
+        }
+    }
 
     
     var body: some View {
-        ScrollView(.horizontal) {
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 5.0)
-                    .fill(.gray)
-                    .frame(minWidth: 100.0, minHeight: 10.0, maxHeight: 10.0)
-                HStack(spacing: 5.0) {
-                    Rectangle().frame(width: 10.0, height: 100.0).opacity(0.0)
-                    RoundedRectangle(cornerRadius: 5.0)
-                        .fill(.gray)
-                        .frame(width: 10.0, height: 30.0)
-                    ForEach(plates.plates) { plate in
-                        ZStack {
-                            RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / 4.0)
-                                .stroke(Color(uiColor: UIColor.label), lineWidth: 2.0)
-                                .fill(Color(uiColor: UIColor.systemBackground))
-                                .frame(width:  rectangleSizes[plate.weight]!.width, height: rectangleSizes[plate.weight]!.height)
-                            Text("\(plate.weight.clean)")
-                        }.onTapGesture {
-                            withAnimation {
-                                removePlate(plate.id)
-                            }
-                        }
-                        
-                    }
-                    
-                    Spacer()
-                }.padding(2.0)
-                
+        if rendering {
+           innerView
+        } else {
+            ScrollView(.horizontal) {
+                innerView
             }
+            .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
         }
     }
         
@@ -86,7 +94,7 @@ struct PlatesEditorView: View {
                 Spacer()
                 Text(plates.weight == 1.0 ? "**1** \(units.singleUnit)" : "**\(plates.weight.clean)** \(units.singleUnit)s")
             }
-            PlatesView(plates: plates, removePlate: removePlate)
+            PlatesView(plates: plates, removePlate: removePlate, rendering: false)
             HStack {
                 Spacer()
                 VStack {

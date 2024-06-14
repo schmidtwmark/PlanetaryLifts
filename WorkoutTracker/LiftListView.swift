@@ -25,8 +25,17 @@ struct AnimatingCellHeight: AnimatableModifier {
 struct LiftSetView: View {
     var liftSet: LiftSet
     var lift: Lift
+    var rendering: Bool
     
     @State var expanded: Bool = false
+    
+    var platesToShow: WeightPlates? {
+        if case let .plates(plates) = liftSet.weight.data, expanded || rendering {
+            plates
+        } else {
+            nil
+        }
+    }
     
     var body: some View {
         
@@ -35,19 +44,19 @@ struct LiftSetView: View {
              {
                 Text(liftSet.reps == 1 ? "**1** rep" : "**\(liftSet.reps)** reps")
                 Spacer()
-                if lift.weighted {
-                    Text(try! AttributedString(markdown: "\(liftSet.weight.displayString)"))
-                }
-                if case .plates(_) = liftSet.weight.data {
-                    Image(systemName: "chevron.down").rotationEffect(Angle(degrees: expanded ? 0.0 : -90.0))
-                        .imageScale(.small)
-                }
+                 if lift.weighted {
+                     Text(try! AttributedString(markdown: "\(liftSet.weight.displayString)"))
+                     if case .plates(_) = liftSet.weight.data, !rendering {
+                         Image(systemName: "chevron.down").rotationEffect(Angle(degrees: expanded ? 0.0 : -90.0))
+                             .imageScale(.small)
+                     }
+                 }
             }
-            if case let .plates(plates) = liftSet.weight.data, expanded {
-                PlatesView(plates: plates, removePlate: {_ in })
+            if let plates = platesToShow {
+                PlatesView(plates: plates, removePlate: {_ in }, rendering: rendering)
             }
         }
-        .modifier(AnimatingCellHeight(height: expanded ? 150 : 40))
+        .modifier(AnimatingCellHeight(height: platesToShow != nil ? 150 : 40))
         .onTapGesture {
             if case .plates(_) = liftSet.weight.data {
                 withAnimation {
@@ -62,6 +71,7 @@ struct SetsView: View {
     
     var lift: Lift
     @AppStorage(PALETTE) var palette: Palette = .main
+    var rendering: Bool
     
     
     var body: some View {
@@ -72,7 +82,7 @@ struct SetsView: View {
              {
                 if lift.allSetsSame() {
                     Text("\(lift.sets.count)x").font(.title)
-                    LiftSetView(liftSet: lift.sets.first!, lift: lift)
+                    LiftSetView(liftSet: lift.sets.first!, lift: lift, rendering: rendering)
                         .font(.title3)
                         .padding()
                         .background(lift.type.category.getColor(for: palette))
@@ -80,7 +90,7 @@ struct SetsView: View {
                 } else {
                     VStack {
                         ForEach(lift.sets) { liftSet in
-                            LiftSetView(liftSet: liftSet, lift: lift)
+                            LiftSetView(liftSet: liftSet, lift: lift, rendering: rendering)
                             if liftSet.id != lift.sets.last?.id {
                                 Divider()
                             }
@@ -97,6 +107,7 @@ struct SetsView: View {
     }
 }
 
+
 struct LiftListItem: View {
     @State var lift: Lift
     @Binding var editingLift: Lift?
@@ -105,7 +116,17 @@ struct LiftListItem: View {
     @AppStorage(PALETTE) var palette: Palette = .main
     var onDelete: (Lift) -> ()
     
-    var body: some View {
+    @MainActor 
+    func render() -> Image {
+        let RENDER_WIDTH = 400.0
+        let renderer = ImageRenderer(content: card(rendering: true))
+        renderer.scale = 3.0
+        renderer.proposedSize = .init(width: RENDER_WIDTH, height: nil)
+        return Image(uiImage: renderer.uiImage!)
+    }
+    
+    @ViewBuilder
+    func card(rendering: Bool) -> some View {
         VStack {
             HStack {
                 Text(lift.type.string)
@@ -122,13 +143,13 @@ struct LiftListItem: View {
                             .padding(10)
                             .background(lift.type.category.getColor(for: palette))
                             .clipShape(RoundedRectangle(cornerRadius: 10.0))
-
+                        
                         
                     }
                     Spacer()
                 }
             }
-            SetsView(lift: lift)
+            SetsView(lift: lift, rendering: rendering)
             if !lift.notes.isEmpty {
                 HStack {
                     Text(lift.notes)
@@ -139,7 +160,16 @@ struct LiftListItem: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10.0))
             }
         }
+        .padding([.top, .bottom], 5.0)
+        .padding()
+        .background(lift.type.category.getColor(for: palette).opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 24.0))
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0))
+        .buttonStyle(.plain)
         
+    }
+    var body: some View {
+        card(rendering: false)
         .contextMenu(menuItems: {
             Button {
                 editingLift = lift
@@ -152,7 +182,8 @@ struct LiftListItem: View {
                                        timestamp: Date.now,
                                        modifiers:
                                         lift.modifiers,
-                                       notes: lift.notes)
+                                       notes: lift.notes,
+                                   weighted: lift.weighted)
 
                 withAnimation {
                     modelContext.insert(newLift)
@@ -163,18 +194,16 @@ struct LiftListItem: View {
             } label: {
                 Label("Repeat Now", systemImage: "arrow.circlepath")
             }
+            NavigationLink(value: lift.type, label:  {
+                Label("Stats", systemImage: "chart.dots.scatter")
+            })
+            ShareLink("Share", item: render(), preview: SharePreview(lift.type.string, image: render()))
             Button(role: .destructive) {
                 onDelete(lift)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
         })
-        .padding([.top, .bottom], 5.0)
-        .padding()
-        .background(lift.type.category.getColor(for: palette).opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 24.0))
-        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0))
-        .buttonStyle(.plain)
     }
 }
 
@@ -279,6 +308,9 @@ struct LiftListView: View {
                             }
                         }
                     }
+                    .navigationDestination(for: LiftType.self, destination: { type in
+                        StatItem(type: type, lifts: lifts.filter({$0.type == type}))
+                    })
                     .navigationTitle("Lifts")
                     .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
                     .toolbar() {

@@ -403,6 +403,7 @@ struct AddLiftView: View {
                                     lift.timestamp = timestamp
                                     lift.modifiers = modifiers
                                     lift.notes = notes
+                                    lift.weighted = isWeighted
                                     print("Updated lift \(lift)")
                                     break
                                 }
