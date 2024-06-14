@@ -9,45 +9,64 @@ import SwiftUI
 import SwiftData
 
 struct PlatesView: View {
-    let rectangleSizes = [2.5: CGSize(width: 35.0, height: 35.0),
-                          5.0: CGSize(width: 35.0, height: 50.0),
-                          10.0: CGSize(width: 35.0, height: 65.0),
-                          15.0: CGSize(width: 35.0, height: 80.0),
-                          25.0: CGSize(width: 35.0, height: 100.0),
-                          35.0: CGSize(width: 45.0, height: 100.0),
-                          45.0: CGSize(width: 55.0, height: 100.0),
-                          55.0: CGSize(width: 65.0, height: 100.0)
+    let rectangleSizes = [2.5: CGSize(width: 30.0, height: 35.0),
+                          5.0: CGSize(width: 30.0, height: 50.0),
+                          10.0: CGSize(width: 30.0, height: 65.0),
+                          15.0: CGSize(width: 30.0, height: 80.0),
+                          25.0: CGSize(width: 30.0, height: 100.0),
+                          35.0: CGSize(width: 35.0, height: 100.0),
+                          45.0: CGSize(width: 40.0, height: 100.0),
+                          55.0: CGSize(width: 45.0, height: 100.0)
     ]
+    
+    @Environment(\.colorScheme) private var colorScheme
+
     
     var plates: WeightPlates
     var removePlate: (UUID) -> ()
     var rendering: Bool
+    var accentColor: Color
+    
+    let BAR_CORNER_RADIUS = 3.0
+    let BAR_COLOR = Color.gray.lighter(by: 10.0)
+    
+    let WEIGHT_CORNER_RATIO = 8.0
+    var weightColor: Color {
+        switch colorScheme {
+        case .light:
+            Color.gray.lighter(by: 30.0)
+        case .dark:
+            Color.gray.darker(by: 30.0)
+        @unknown default:
+            Color.gray.darker(by: 30.0)
+        }
+    }
+    let WEIGHT_STROKE = 4.0
+    
 
     var innerView: some View {
         ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 5.0)
-                .fill(.gray)
+            RoundedRectangle(cornerRadius: BAR_CORNER_RADIUS)
+                .fill(BAR_COLOR)
                 .frame(minWidth: 100.0, minHeight: 10.0, maxHeight: 10.0)
-            HStack(spacing: 5.0) {
+            HStack(spacing: 8.0) {
                 Rectangle().frame(width: 10.0, height: 100.0).opacity(0.0)
-                RoundedRectangle(cornerRadius: 5.0)
-                    .fill(.gray)
+                RoundedRectangle(cornerRadius: BAR_CORNER_RADIUS)
+                    .fill(BAR_COLOR)
                     .frame(width: 10.0, height: 30.0)
                 ForEach(plates.plates) { plate in
                     ZStack {
-                        RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / 4.0)
-                            .stroke(Color(uiColor: UIColor.label), lineWidth: 2.0)
-                            .fill(Color(uiColor: UIColor.systemBackground))
+                        RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / WEIGHT_CORNER_RATIO)
+                            .stroke(accentColor, lineWidth: WEIGHT_STROKE)
+                            .fill(weightColor)
                             .frame(width:  rectangleSizes[plate.weight]!.width, height: rectangleSizes[plate.weight]!.height)
-                        Text("\(plate.weight.clean)")
+                        Text("\(plate.weight.clean)").font(.footnote).foregroundStyle(.white)
                     }.onTapGesture {
                         withAnimation {
                             removePlate(plate.id)
                         }
                     }
-                    
                 }
-                
                 Spacer()
             }.padding(2.0)
         }
@@ -72,6 +91,7 @@ struct PlatesEditorView: View {
     
     var removePlate: (UUID) -> ()
     var addPlate: (Double) -> ()
+    var accentColor: Color
     
     var units: WeightUnits = .pounds
     
@@ -87,6 +107,7 @@ struct PlatesEditorView: View {
     
     
     
+    
     var body: some View {
         VStack {
             HStack {
@@ -94,7 +115,7 @@ struct PlatesEditorView: View {
                 Spacer()
                 Text(plates.weight == 1.0 ? "**1** \(units.singleUnit)" : "**\(plates.weight.clean)** \(units.singleUnit)s")
             }
-            PlatesView(plates: plates, removePlate: removePlate, rendering: false)
+            PlatesView(plates: plates, removePlate: removePlate, rendering: false, accentColor: accentColor)
             HStack {
                 Spacer()
                 VStack {
@@ -106,7 +127,6 @@ struct PlatesEditorView: View {
                                         addPlate(plateWeight)
                                     }
                                 } label: {
-                                    
                                     Text("\(plateWeight.clean)")
                                 }.buttonStyle(StepperButtonStyle(frame: CGSize(width: 60.0, height: 40.0)))
                             }
@@ -124,9 +144,6 @@ struct PlatesEditorView: View {
                                   onDecrement: {return max(1.0, roundedDecrement($0))}, frame: CGSize(width: 70, height: 35), formatter: formatter)
             }
             Toggle("Mirrored", isOn: $plates.mirrored)
-
-            
-            
         }
     }
 }
@@ -149,9 +166,11 @@ struct PlatesEditorContainer: View {
                     plates.plates.sort { $0 > $1 }
                     print("Added plates: \(plates.plates.count)")
                 
-            })
+            },
+                             accentColor: Color.green
+            )
                     .environmentObject(editState)
-        }
+        }.tint(Color.green)
     }
 }
 

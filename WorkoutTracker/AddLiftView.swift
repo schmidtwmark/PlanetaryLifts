@@ -292,7 +292,9 @@ struct AddLiftView: View {
                                                     liftSet.weight.data = .plates(editablePlates)
                                                 }
 
-                                            })
+                                            },
+                                            accentColor: liftType.category.getColor(for: palette)
+                                            )
                                             //, weightUnits: liftSet.weight.units)
                                         } else {
                                             Spacer()

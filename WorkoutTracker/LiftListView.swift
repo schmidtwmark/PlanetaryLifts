@@ -28,6 +28,7 @@ struct LiftSetView: View {
     var rendering: Bool
     
     @State var expanded: Bool = false
+    @AppStorage(PALETTE) var palette: Palette = .main
     
     var platesToShow: WeightPlates? {
         if case let .plates(plates) = liftSet.weight.data, expanded || rendering {
@@ -53,7 +54,7 @@ struct LiftSetView: View {
                  }
             }
             if let plates = platesToShow {
-                PlatesView(plates: plates, removePlate: {_ in }, rendering: rendering)
+                PlatesView(plates: plates, removePlate: {_ in }, rendering: rendering, accentColor: .white)
             }
         }
         .modifier(AnimatingCellHeight(height: platesToShow != nil ? 150 : 40))
@@ -163,13 +164,13 @@ struct LiftListItem: View {
         .padding([.top, .bottom], 5.0)
         .padding()
         .background(lift.type.category.getColor(for: palette).opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 24.0))
-        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0))
+        .clipShape(RoundedRectangle(cornerRadius: 24.0, style: .continuous))
         .buttonStyle(.plain)
         
     }
     var body: some View {
         card(rendering: false)
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0, style: .continuous))
         .contextMenu(menuItems: {
             Button {
                 editingLift = lift
@@ -290,23 +291,36 @@ struct LiftListView: View {
         TabView {
             NavigationStack {
                 ScrollViewReader { proxy in
-                    List {
+
+                    ScrollView {
                         EmptyView().id(0)
-                        ForEach(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
-                            Section("\(date.format())") {
-                                ForEach(liftsForDate) { lift in
-                                    VStack {
-                                        LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy, onDelete: {
-                                              modelContext.delete($0)
-                                            }
-                                        )
-                                        Spacer(minLength: 10.0)
+                        LazyVGrid(
+                            columns: [GridItem(.adaptive(minimum: 200))]
+                        ) {
+                            ForEach(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
+                                VStack {
+                                    HStack {
+                                        Text("\(date.format())".uppercased())
+                                            .font(.subheadline)
+                                            .fontWeight(.bold)
+                                            .foregroundStyle(liftsForDate.first!.type.category.getColor(for: palette))
+                                        Spacer()
+                                    }.padding([.horizontal], 24)
+                                    ForEach(liftsForDate) { lift in
+                                        VStack {
+                                            LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy, onDelete: {
+                                                modelContext.delete($0)
+                                            })
+                                            
+                                            Spacer(minLength: 10.0)
+                                        }
+//                                        .listRowInsets(EdgeInsets())
+//                                        .listRowBackground(Color.clear)
                                     }
-                                    .listRowInsets(EdgeInsets())
-                                    .listRowBackground(Color.clear)
                                 }
+                                Spacer(minLength: 30.0)
                             }
-                        }
+                        }.padding([.horizontal], 20)
                     }
                     .navigationDestination(for: LiftType.self, destination: { type in
                         StatItem(type: type, lifts: lifts.filter({$0.type == type}))
