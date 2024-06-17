@@ -112,10 +112,24 @@ struct SetsView: View {
 struct LiftListItem: View {
     @State var lift: Lift
     @Binding var editingLift: Lift?
-    @Environment(\.modelContext) private var modelContext
-    var scrollViewProxy: ScrollViewProxy
     @AppStorage(PALETTE) var palette: Palette = .main
+
+    var scrollViewProxy: ScrollViewProxy
     var onDelete: (Lift) -> ()
+        
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var textColor: Color {
+        switch colorScheme {
+        case .light:
+            Color.black
+        case .dark:
+            Color.white
+        @unknown default:
+            Color.white
+        }
+    }
     
     @MainActor 
     func render() -> Image {
@@ -126,16 +140,20 @@ struct LiftListItem: View {
         return Image(uiImage: renderer.uiImage!)
     }
     
+    
+    
     @ViewBuilder
     func card(rendering: Bool) -> some View {
         VStack {
             HStack {
                 Text(lift.type.string)
                     .font(.title)
+                    .foregroundStyle(textColor)
                 Spacer()
                 Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
                     .font(.caption)
-                
+                    .foregroundStyle(textColor)
+
             }
             if lift.modifiers.count > 0 {
                 HStack {
@@ -144,27 +162,29 @@ struct LiftListItem: View {
                             .padding(10)
                             .background(lift.type.category.getColor(for: palette))
                             .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                        
-                        
+                            .foregroundStyle(textColor)
                     }
                     Spacer()
                 }
             }
             SetsView(lift: lift, rendering: rendering)
+                .foregroundStyle(textColor)
             if !lift.notes.isEmpty {
                 HStack {
                     Text(lift.notes)
+                        .foregroundStyle(textColor)
                         .padding(10)
                     Spacer()
                 }
                 .background(lift.type.category.getColor(for: palette))
                 .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                
             }
         }
         .padding([.top, .bottom], 5.0)
         .padding()
-        .background(lift.type.category.getColor(for: palette).opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 24.0, style: .continuous))
+        .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 24.0, style: rendering ? .circular : .continuous))
         .buttonStyle(.plain)
         
     }
@@ -314,8 +334,6 @@ struct LiftListView: View {
                                             
                                             Spacer(minLength: 10.0)
                                         }
-//                                        .listRowInsets(EdgeInsets())
-//                                        .listRowBackground(Color.clear)
                                     }
                                 }
                                 Spacer(minLength: 30.0)

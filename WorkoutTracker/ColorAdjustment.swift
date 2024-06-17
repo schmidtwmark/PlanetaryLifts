@@ -121,4 +121,15 @@ extension Color {
     var brightness : CGFloat {
         self.hsv.value
     }
+    
+    func background(scheme: ColorScheme) -> Color {
+        switch scheme {
+        case .light:
+            self.lighter(by: 30.0)
+        case .dark:
+            self.darker(by: 30.0)
+        @unknown default:
+            self
+        }
+    }
 }
