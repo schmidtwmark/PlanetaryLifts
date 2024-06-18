@@ -70,6 +70,7 @@ struct LiftSetView: View {
 
 struct SetsView: View {
     
+    @Environment(\.colorScheme) var colorScheme
     var lift: Lift
     @AppStorage(PALETTE) var palette: Palette = .main
     var rendering: Bool
@@ -86,7 +87,7 @@ struct SetsView: View {
                     LiftSetView(liftSet: lift.sets.first!, lift: lift, rendering: rendering)
                         .font(.title3)
                         .padding()
-                        .background(lift.type.category.getColor(for: palette))
+                        .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
                         .clipShape(RoundedRectangle(cornerRadius: 10.0))
                 } else {
                     VStack {
@@ -99,7 +100,7 @@ struct SetsView: View {
                     }
                     .font(.title3)
                     .padding()
-                    .background(lift.type.category.getColor(for: palette))
+                    .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
                 }
             }
@@ -160,7 +161,7 @@ struct LiftListItem: View {
                     ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
                         Text(modifier.rawValue)
                             .padding(10)
-                            .background(lift.type.category.getColor(for: palette))
+                            .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
                             .clipShape(RoundedRectangle(cornerRadius: 10.0))
                             .foregroundStyle(textColor)
                     }
@@ -176,14 +177,14 @@ struct LiftListItem: View {
                         .padding(10)
                     Spacer()
                 }
-                .background(lift.type.category.getColor(for: palette))
+                .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
                 .clipShape(RoundedRectangle(cornerRadius: 10.0))
                 
             }
         }
         .padding([.top, .bottom], 5.0)
         .padding()
-        .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
+        .background(lift.type.category.getColor(for: palette))
         .clipShape(RoundedRectangle(cornerRadius: 24.0, style: rendering ? .circular : .continuous))
         .buttonStyle(.plain)
         
@@ -253,17 +254,6 @@ struct LiftListView: View {
         var output : [(TimelessDate, [Lift])] = []
         
         for lift in lifts{
-            if searchText != "" &&
-                !lift.type.string.containsIgnoringCase(searchText) &&
-                !lift.type.category.rawValue.containsIgnoringCase(searchText) &&
-                !lift.notes.containsIgnoringCase(searchText) &&
-                !lift.modifiers.contains(where: {$0.rawValue.containsIgnoringCase(searchText)})
-                {
-                continue
-            }
-            if let filterType = filterSelection, filterType != lift.type {
-                continue
-            }
             let currentDate = lift.timestamp.timeless()
             if let lastDate = maybeLastDate {
                 if lastDate != currentDate {
@@ -277,7 +267,6 @@ struct LiftListView: View {
                 maybeLastDate = currentDate
             }
             todayLifts.append(lift)
-            
         }
         
         // Clear out the last chunk
@@ -305,6 +294,20 @@ struct LiftListView: View {
         }
         return LiftCategory.allCases.first!.getColor(for: palette)
     }
+    
+    func filterLifts(_ lifts: [Lift]) -> [Lift] {
+        lifts.filter({ lift in
+            let passesSearch = searchText == "" ||
+                lift.type.string.containsIgnoringCase(searchText) ||
+                lift.type.category.rawValue.containsIgnoringCase(searchText) ||
+                lift.notes.containsIgnoringCase(searchText) ||
+                lift.modifiers.contains(where: {$0.rawValue.containsIgnoringCase(searchText)})
+            
+            let passesFilter = filterSelection == nil || filterSelection == lift.type
+            return passesSearch && passesFilter
+        })
+
+    }
 
     
     var body: some View {
@@ -318,25 +321,28 @@ struct LiftListView: View {
                             columns: [GridItem(.adaptive(minimum: 200))]
                         ) {
                             ForEach(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
-                                VStack {
-                                    HStack {
-                                        Text("\(date.format())".uppercased())
-                                            .font(.subheadline)
-                                            .fontWeight(.bold)
-                                            .foregroundStyle(liftsForDate.first!.type.category.getColor(for: palette))
-                                        Spacer()
-                                    }.padding([.horizontal], 24)
-                                    ForEach(liftsForDate) { lift in
-                                        VStack {
-                                            LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy, onDelete: {
-                                                modelContext.delete($0)
-                                            })
-                                            
-                                            Spacer(minLength: 10.0)
+                                let filteredLifts = filterLifts(liftsForDate)
+                                if !filteredLifts.isEmpty {
+                                    VStack {
+                                        HStack {
+                                            Text("\(date.format())".uppercased())
+                                                .font(.subheadline)
+                                                .fontWeight(.bold)
+                                                .foregroundStyle(liftsForDate.first!.type.category.getColor(for: palette))
+                                            Spacer()
+                                        }.padding([.horizontal], 24)
+                                        ForEach(filteredLifts) { lift in
+                                            VStack {
+                                                LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy, onDelete: {
+                                                    modelContext.delete($0)
+                                                })
+                                                
+                                                Spacer(minLength: 10.0)
+                                            }
                                         }
                                     }
+                                    Spacer(minLength: 30.0)
                                 }
-                                Spacer(minLength: 30.0)
                             }
                         }.padding([.horizontal], 20)
                     }
