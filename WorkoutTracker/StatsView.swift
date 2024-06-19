@@ -42,30 +42,42 @@ enum Granularity: String, Codable, CaseIterable {
 }
 
 @Observable final class ChartViewModel<T: Hashable & Comparable>{
-    var selectedCategory: T? = nil
     
-    var categories: [T]
-    var categoryCounts: [T: Double]
-    var categoryWeight: [T: Double]
+    enum ChartData {
+        case loading
+        case loaded(categories: [T], categoryCounts: [T: Double], categoryWeight: [T: Double])
+    }
+    
+    var selectedCategory: T? = nil
+    var chartData: ChartData = .loading
+    var liftsByCategory : [T: [Lift]]
     
     init(liftsByCategory: [T: [Lift]]) {
-        categories = liftsByCategory.keys.sorted(by: <)
-        categoryCounts = liftsByCategory.mapValues({Double($0.count)})
-        categoryWeight = liftsByCategory.mapValues({totalWeight($0)})
+        self.liftsByCategory = liftsByCategory
+    }
+    
+    func load() {
+        let categories = liftsByCategory.keys.sorted(by: <)
+        let categoryCounts = liftsByCategory.mapValues({Double($0.count)})
+        let categoryWeight = liftsByCategory.mapValues({totalWeight($0)})
+        chartData = .loaded(categories: categories, categoryCounts: categoryCounts, categoryWeight: categoryWeight)
+
     }
     
     func getCategoryBy(count: Double, statsType: StatsType) -> T? {
-        var sum = 0.0
-        for category in categories {
-            let delta = switch statsType {
-            case .count:
-                categoryCounts[category]!
-            case .weight:
-                categoryWeight[category]!
-            }
-            sum += delta
-            if count <= sum {
-                return category
+        if case .loaded(let categories, let categoryCounts, let categoryWeight) = chartData {
+            var sum = 0.0
+            for category in categories {
+                let delta = switch statsType {
+                case .count:
+                    categoryCounts[category]!
+                case .weight:
+                    categoryWeight[category]!
+                }
+                sum += delta
+                if count <= sum {
+                    return category
+                }
             }
         }
         return nil
@@ -73,7 +85,7 @@ enum Granularity: String, Codable, CaseIterable {
 }
 
 
-struct CategoryPieChart<T: Hashable & Comparable & Identifiable>: View {
+struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
     @Binding var statsType: StatsType
@@ -90,24 +102,65 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable>: View {
         self.stringMapping = stringMapping
     }
     
-    func getSector(category: T, statsType: StatsType) -> some ChartContent {
-        let isSelected = viewModel.selectedCategory == category
-        let value : PlottableValue<Double> = switch statsType {
-        case .count:
-                .value("Count", viewModel.categoryCounts[category]!)
-        case .weight:
-                .value("Weight", viewModel.categoryWeight[category]!)
+    @ViewBuilder func legend(categories: [T]) -> some View {
+        ForEach(Array(categories.chunked(into: 2).enumerated()), id: \.offset) { offset, chunk in
+            VStack(alignment: .leading) {
+                ForEach(chunk) { category in
+                    let isSelected = category == viewModel.selectedCategory
+                    HStack {
+                        let string = stringMapping(category)
+                        colorMapping(string).clipShape(Circle())
+                        Text(string)
+                    }
+                    .padding(5)
+                    .background(isSelected ? Color.gray : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 5.0))
+                    .fixedSize()
+                    .onTapGesture(perform: {
+                        withAnimation {
+                            if isSelected {
+                                viewModel.selectedCategory = nil
+                            } else {
+                                viewModel.selectedCategory = category
+                            }
+                        }
+                    })
+                }
+            }.tag(offset)
         }
-        
-        return SectorMark(angle: value, innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
-            .cornerRadius(PIE_MARK_CORNER_RADIUS)
-            .foregroundStyle(by: .value("Category", stringMapping(category)))
     }
+    
     
     var body: some View {
         ScrollViewReader { scrollProxy in
-            Chart(viewModel.categories) { category in
-                getSector(category: category, statsType: statsType)
+            ZStack {
+                Chart {
+                    if case .loaded(let categories, let categoryCounts, let categoryWeight) = viewModel.chartData {
+                        ForEach(categories) { category in
+                            let isSelected = viewModel.selectedCategory == category
+                            let value : PlottableValue<Double> = switch statsType {
+                            case .count:
+                                    .value("Count", categoryCounts[category]!)
+                            case .weight:
+                                    .value("Weight", categoryWeight[category]!)
+                            }
+                            
+                            SectorMark(angle: value, innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
+                                .cornerRadius(PIE_MARK_CORNER_RADIUS)
+                                .foregroundStyle(by: .value("Category", stringMapping(category)))
+                        }
+                    } else {
+                        SectorMark(angle: .value("Count", 0.8), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(0.9), angularInset: PIE_ANGULAR_INSET)
+                            .cornerRadius(PIE_MARK_CORNER_RADIUS)
+                            .foregroundStyle(by: .value("Category", stringMapping(T())))
+                        SectorMark(angle: .value("Count", 0.2), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(0.9), angularInset: PIE_ANGULAR_INSET)
+                            .cornerRadius(PIE_MARK_CORNER_RADIUS)
+                            .foregroundStyle(by: .value("Category", stringMapping(T())))
+                    }
+                }
+                if case .loading = viewModel.chartData {
+                    ProgressView()
+                }
             }
             .chartOverlay { proxy in
                 GeometryReader { geometry in
@@ -130,24 +183,26 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable>: View {
                                                         viewModel.selectedCategory = nil
                                                     } else {
                                                         viewModel.selectedCategory = category
-                                                        if let idx = viewModel.categories.firstIndex(of: category) {
-                                                            scrollProxy.scrollTo(idx / 2)
+                                                        if case .loaded(let categories, _, _) = viewModel.chartData {
+                                                            if let idx = categories.firstIndex(of: category) {
+                                                                scrollProxy.scrollTo(idx / 2)
+                                                            }
+                                                            
                                                         }
-                                                        
                                                     }
                                                 }
                                             }
                                         }
                                     }
                             )
-                        if let category = viewModel.selectedCategory {
+                        if let category = viewModel.selectedCategory, case .loaded(_, let categoryCounts, let categoryWeight) = viewModel.chartData {
                             VStack {
                                 Text(stringMapping(category))
                                 switch statsType {
                                 case .count:
-                                    Text(displayString(number: viewModel.categoryCounts[category]!, singleUnit: "lift"))
+                                    Text(displayString(number: categoryCounts[category]!, singleUnit: "lift"))
                                 case .weight:
-                                    Text(displayString(number: viewModel.categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
+                                    Text(displayString(number: categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
                                 }
                             }
                             
@@ -161,35 +216,19 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable>: View {
             .padding()
             ScrollView(.horizontal) {
                 HStack(alignment: .top) {
-                    ForEach(Array(viewModel.categories.chunked(into: 2).enumerated()), id: \.offset) { offset, chunk in
-                        VStack(alignment: .leading) {
-                            ForEach(chunk) { category in
-                                let isSelected = category == viewModel.selectedCategory
-                                HStack {
-                                    let string = stringMapping(category)
-                                    colorMapping(string).clipShape(Circle())
-                                    Text(string)
-                                }
-                                .padding(5)
-                                .background(isSelected ? Color.gray : Color.clear)
-                                .clipShape(RoundedRectangle(cornerRadius: 5.0))
-                                .fixedSize()
-                                .onTapGesture(perform: {
-                                    withAnimation {
-                                        if isSelected {
-                                            viewModel.selectedCategory = nil
-                                        } else {
-                                            viewModel.selectedCategory = category
-                                        }
-                                    }
-                                })
-                            }
-                        }.tag(offset)
+                    if case .loaded(let categories, _, _) = viewModel.chartData {
+                        legend(categories: categories)
+                    } else {
+                        legend(categories: [T(), T()]).redacted(reason: .placeholder)
                     }
                 }
+                
+                .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
+                .scrollIndicators(.hidden)
             }
-            .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
-            .scrollIndicators(.hidden)
+        }.task {
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            viewModel.load()
         }
     }
 }

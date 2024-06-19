@@ -102,3 +102,19 @@ extension LiftType : Identifiable {
     }
     
 }
+
+protocol Defaultable {
+    init()
+}
+
+extension LiftType: Defaultable {
+    init() {
+        self = .backSquat
+    }
+}
+
+extension LiftCategory: Defaultable {
+    init() {
+        self = .back
+    }
+}
