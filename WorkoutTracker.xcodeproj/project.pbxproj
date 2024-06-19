@@ -31,6 +31,7 @@
 		EDFE3FA52C13CABB0035F065 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FA42C13CABB0035F065 /* Palette.swift */; };
 		EDFE3FA72C13CB5B0035F065 /* ColorAdjustment.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FA62C13CB5B0035F065 /* ColorAdjustment.swift */; };
 		EDFE3FAB2C13CD2D0035F065 /* AppStorageKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FAA2C13CD2D0035F065 /* AppStorageKeys.swift */; };
+		EDFE3FB12C2271350035F065 /* SectionedQuery in Frameworks */ = {isa = PBXBuildFile; productRef = EDFE3FB02C2271350035F065 /* SectionedQuery */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,6 +69,7 @@
 			files = (
 				ED65CC512B9F523E0029FF5A /* Shiny in Frameworks */,
 				ED50D4D62B9E20CC00BD3F77 /* CrookedText in Frameworks */,
+				EDFE3FB12C2271350035F065 /* SectionedQuery in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,6 +150,7 @@
 			packageProductDependencies = (
 				ED50D4D52B9E20CC00BD3F77 /* CrookedText */,
 				ED65CC502B9F523E0029FF5A /* Shiny */,
+				EDFE3FB02C2271350035F065 /* SectionedQuery */,
 			);
 			productName = WorkoutTracker;
 			productReference = EDA682F02B90E9F4002015CA /* WorkoutTracker.app */;
@@ -180,6 +183,7 @@
 			packageReferences = (
 				ED50D4D42B9E20CC00BD3F77 /* XCRemoteSwiftPackageReference "CrookedText" */,
 				ED65CC4F2B9F523E0029FF5A /* XCRemoteSwiftPackageReference "shiny" */,
+				EDFE3FAF2C2271350035F065 /* XCRemoteSwiftPackageReference "swiftdata-sectionedquery" */,
 			);
 			productRefGroup = EDA682F12B90E9F4002015CA /* Products */;
 			projectDirPath = "";
@@ -456,6 +460,14 @@
 				kind = branch;
 			};
 		};
+		EDFE3FAF2C2271350035F065 /* XCRemoteSwiftPackageReference "swiftdata-sectionedquery" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/beechtom/swiftdata-sectionedquery?source=post_page-----b1e23c733f26--------------------------------";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -468,6 +480,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = ED65CC4F2B9F523E0029FF5A /* XCRemoteSwiftPackageReference "shiny" */;
 			productName = Shiny;
+		};
+		EDFE3FB02C2271350035F065 /* SectionedQuery */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EDFE3FAF2C2271350035F065 /* XCRemoteSwiftPackageReference "swiftdata-sectionedquery" */;
+			productName = SectionedQuery;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

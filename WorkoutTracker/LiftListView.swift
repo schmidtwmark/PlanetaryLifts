@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import SectionedQuery
 
 struct AnimatingCellHeight: AnimatableModifier {
     var height: CGFloat = 0
@@ -211,8 +212,9 @@ struct LiftListItem: View {
                     modelContext.insert(newLift)
                 }
                 withAnimation {
-                    scrollViewProxy.scrollTo(0)
+                    scrollViewProxy.scrollTo("Top of List")
                 }
+
             } label: {
                 Label("Repeat Now", systemImage: "arrow.circlepath")
             }
@@ -234,7 +236,7 @@ struct LiftListView: View {
 
     @Environment(\.modelContext) private var modelContext
     
-    @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
+    @SectionedQuery(\.date, sort: [SortDescriptor(\.timestamp, order: .reverse)]) var liftsByDate: SectionedResults<TimelessDate, Lift>
     @Query var userGeneratedTypes: [UserGeneratedLiftType]
     
     var allLiftsByCategory: [LiftCategory: [LiftType]] {
@@ -248,34 +250,6 @@ struct LiftListView: View {
     
     @AppStorage(PALETTE) var palette : Palette = .main
     
-    private var liftsByDate: [(TimelessDate, [Lift])] {
-        var maybeLastDate : TimelessDate? = nil
-        var todayLifts : [Lift] = []
-        var output : [(TimelessDate, [Lift])] = []
-        
-        for lift in lifts{
-            let currentDate = lift.timestamp.timeless()
-            if let lastDate = maybeLastDate {
-                if lastDate != currentDate {
-                    if !todayLifts.isEmpty {
-                        output.append((lastDate, todayLifts.sorted(by: {$0.timestamp > $1.timestamp})))
-                    }
-                    maybeLastDate = currentDate
-                    todayLifts = []
-                }
-            } else {
-                maybeLastDate = currentDate
-            }
-            todayLifts.append(lift)
-        }
-        
-        // Clear out the last chunk
-        if let lastDate = maybeLastDate {
-            output.append((lastDate, todayLifts.sorted(by: {$0.timestamp > $1.timestamp})))
-        }
-        return output
-    }
-    
     var filterImageName: String {
         if let _ = filterSelection {
             return "line.3.horizontal.decrease.circle.fill"
@@ -285,7 +259,7 @@ struct LiftListView: View {
     }
     
     func getMostRecentLiftType() -> LiftType? {
-        return lifts.first?.type
+        return liftsByDate.first?.first?.type
     }
     
     func getTintColor() -> Color {
@@ -314,40 +288,34 @@ struct LiftListView: View {
         TabView {
             NavigationStack {
                 ScrollViewReader { proxy in
-
-                    ScrollView {
-                        EmptyView().id(0)
-                        LazyVGrid(
-                            columns: [GridItem(.adaptive(minimum: 200))]
-                        ) {
-                            ForEach(liftsByDate, id: \.0.hashValue) { (date, liftsForDate) in
+                        List {
+                            EmptyView().id("Top of List")
+                            ForEach(liftsByDate) { section in
+                                let liftsForDate = section.elements
+                                let date = section.id
                                 let filteredLifts = filterLifts(liftsForDate)
                                 if !filteredLifts.isEmpty {
-                                    VStack {
+                                    Section(content: {
+                                        ForEach(filteredLifts) {lift in
+                                            LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy, onDelete: {modelContext.delete($0)})
+                                                .padding([.bottom], 10)
+                                        }
+                                        .listRowBackground(Color.clear)
+                                        .listRowInsets(EdgeInsets())
+                                    }, header: {
                                         HStack {
                                             Text("\(date.format())".uppercased())
                                                 .font(.subheadline)
                                                 .fontWeight(.bold)
                                                 .foregroundStyle(liftsForDate.first!.type.category.getColor(for: palette))
                                             Spacer()
-                                        }.padding([.horizontal], 24)
-                                        ForEach(filteredLifts) { lift in
-                                            VStack {
-                                                LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy, onDelete: {
-                                                    modelContext.delete($0)
-                                                })
-                                                
-                                                Spacer(minLength: 10.0)
-                                            }
                                         }
-                                    }
-                                    Spacer(minLength: 30.0)
+                                    })
                                 }
                             }
-                        }.padding([.horizontal], 20)
-                    }
+                        }
                     .navigationDestination(for: LiftType.self, destination: { type in
-                        StatItem(type: type, lifts: lifts.filter({$0.type == type}))
+                        StatItem(type: type)
                     })
                     .navigationTitle("Lifts")
                     .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))

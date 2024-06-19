@@ -1,4 +1,5 @@
 {
+  "originHash" : "b2610c0cadff90fa13e563b6f5ef56e90a06afb408640390d8e9712883a607d5",
   "pins" : [
     {
       "identity" : "crookedtext",
@@ -17,7 +18,16 @@
         "branch" : "master",
         "revision" : "862360b8ab6b9ea9eb1156569a30f154b22625a5"
       }
+    },
+    {
+      "identity" : "swiftdata-sectionedquery?source=post_page-----b1e23c733f26--------------------------------",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/beechtom/swiftdata-sectionedquery?source=post_page-----b1e23c733f26--------------------------------",
+      "state" : {
+        "revision" : "af2451407fe4f3cf06ff52318cd81a1d26df52bd",
+        "version" : "1.2.0"
+      }
     }
   ],
-  "version" : 2
+  "version" : 3
 }

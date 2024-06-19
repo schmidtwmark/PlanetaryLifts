@@ -394,7 +394,7 @@ struct AddLiftView: View {
                             if editState.setEditMode == .none {
                                 switch mode {
                                 case .add:
-                                    let newLift = Lift(liftType: liftType, sets: liftSets, timestamp: timestamp, modifiers: modifiers, notes: notes)
+                                    let newLift = Lift(liftType: liftType, sets: liftSets, timestamp: timestamp, modifiers: modifiers, notes: notes, weighted: isWeighted)
                                     modelContext.insert(newLift)
                                     break
                                     

@@ -58,6 +58,14 @@ final class Lift {
             result[liftSet.reps] = liftSet.weight.roundedWeight
         })
     }
+    
+    var date: TimelessDate {
+        self.timestamp.timeless()
+    }
+    
+    public var description: String {
+        "Lift: \(type.string)"
+    }
 }
 
 struct WeightPlates : Codable, Equatable, CustomStringConvertible {

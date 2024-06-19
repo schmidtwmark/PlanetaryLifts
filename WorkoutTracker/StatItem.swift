@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Charts
+import SwiftData
 import Observation
 
 func repToString(_ reps: Int) -> String {
@@ -80,7 +81,9 @@ struct MaxesBarChart : View {
 
 struct StatItem: View {
     var type: LiftType
-    var lifts: [Lift]
+    
+    @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
+
     
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @AppStorage(PALETTE) var palette: Palette = .main
@@ -111,18 +114,32 @@ struct StatItem: View {
     }
     
     @Observable final class ViewModel {
-        var maxes: [Int: Double]
-        var shadeIndexByRepCount: [String: Int]
-        var allTimeMax: Double?
+        
+        enum StatItemData {
+            case loading
+            case loaded(maxes: [Int: Double], shadeIndexByRepCount: [String: Int], allTimeMax: Double?, filteredLifts: [Lift])
+        }
         var type: LiftType
+        var data: StatItemData = .loading
 
         func colorByRepCount(_ string: String, _ palette: Palette) -> Color {
-            type.category.getColor(for: palette).shades(count: maxes.count)[ shadeIndexByRepCount[string]!]
+            if case .loaded(let maxes, let shadeIndexByRepCount, _, _) = data {
+                type.category.getColor(for: palette).shades(count: maxes.count)[ shadeIndexByRepCount[string]!]
+            } else {
+                Color.gray
+            }
+        }
+            
+        
+        init(type: LiftType) {
+            self.type = type
         }
         
-        init(lifts: [Lift], type: LiftType) {
-            self.type = type
-            let maxes = lifts.reduce(into: [Int: Double](), { result, lift in
+        func load(lifts: [Lift]) {
+            
+            let filteredLifts = lifts.filter({$0.type == type})
+            
+            let maxes = filteredLifts.reduce(into: [Int: Double](), { result, lift in
                 let liftMaxes = lift.maxes()
                 for (reps, maxWeight) in liftMaxes {
                     if let maxForReps = result[reps], maxWeight < maxForReps {
@@ -131,95 +148,104 @@ struct StatItem: View {
                     result[reps] = maxWeight
                 }
             })
-            shadeIndexByRepCount = zip((0..<maxes.count), maxes.sorted(by: <)).reduce(into: [String: Int](), { dict, values in
+            let shadeIndexByRepCount = zip((0..<maxes.count), maxes.sorted(by: <)).reduce(into: [String: Int](), { dict, values in
                 let (index, (reps, _)) = values
                 dict[repToString(reps)] = index
             })
             
-            allTimeMax = maxes.values.max()
-            self.maxes = maxes
+            let allTimeMax = maxes.values.max()
+            self.data = .loaded(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, filteredLifts: filteredLifts)
         }
     }
     
-    init(type: LiftType, lifts: [Lift]) {
+    init(type: LiftType) {
         self.type = type
-        self.lifts = lifts
-        self.viewModel = ViewModel(lifts: lifts, type: type)
+        self.viewModel = ViewModel(type: type)
     }
 
 
     var body: some View {
         List {
-            if let max = viewModel.allTimeMax {
-                Section {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading) {
-                        StatBlock(description: "All Time Max", unit: weightUnits.shortSingleUnit, number: max)
-                        StatBlock(description: "Total Weight", unit: weightUnits.shortSingleUnit, number: totalWeight(lifts))
-                        StatBlock(description: "Total Reps", unit: "Rep", number: Double(totalReps(lifts)))
-                        StatBlock(description: "Total Lifts", unit: "Lift", number: Double(lifts.count))
-                        
-                    }
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                }
-                
-                // Only show this
-                if viewModel.maxes.count > 1 {
-                    Section("Maxes") {
-                        MaxesBarChart(maxes: viewModel.maxes,
-                                      colorByRepCount: viewModel.colorByRepCount,
-                                      selection: $selection)
-                        .frame(minWidth: 150, minHeight: 200)
-                    }
-                }
-                
-                Section("Progress") {
-                    VStack {
-                        Picker("Time Window", selection: $timeWindow) {
-                            ForEach(TimeWindow.allCases, id: \.rawValue) {
-                                Text($0.rawValue).tag($0)
-                            }
-                        }.pickerStyle(.segmented)
-                        Chart(lifts) { lift in
-                            ForEach(lift.maxes().sorted(by: <), id: \.key) { reps, maximum in
-                                PointMark(x: .value("Date", lift.timestamp, unit: .day), y:
-                                        .value(repToString(reps), maximum))
-                                .symbol(.circle)
-                                .foregroundStyle(by: .value("Reps", repToString(reps)))
-                            }
+            switch viewModel.data {
+            case .loading:
+                ProgressView()
+            case .loaded(let maxes, _, let allTimeMax, let filteredLifts):
+                if let max = allTimeMax {
+                    Section {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading) {
+                            StatBlock(description: "All Time Max", unit: weightUnits.shortSingleUnit, number: max)
+                            StatBlock(description: "Total Weight", unit: weightUnits.shortSingleUnit, number: totalWeight(lifts))
+                            StatBlock(description: "Total Reps", unit: "Rep", number: Double(totalReps(lifts)))
+                            StatBlock(description: "Total Lifts", unit: "Lift", number: Double(lifts.count))
+                            
                         }
-                        .chartForegroundStyleScale(mapping: { data in
-                            return viewModel.colorByRepCount(data, palette)
-                        })
-                        .chartXVisibleDomain(length: timeWindow.timeRange)
-                        .chartYScale(domain: 0...max * 1.4)
-                        .chartScrollPosition(initialX: Date().addingTimeInterval(TimeInterval(-1 * timeWindow.timeRange)))
-                        .chartScrollableAxes(.horizontal)
-                        .chartScrollTargetBehavior(
-                            .valueAligned(matching: .init(day: 0))
-                        )
-                        .frame(minWidth: 150, minHeight: 200)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                    }
+                    
+                    // Only show this
+                    if maxes.count > 1 {
+                        Section("Maxes") {
+                            MaxesBarChart(maxes: maxes,
+                                          colorByRepCount: viewModel.colorByRepCount,
+                                          selection: $selection)
+                            .frame(minWidth: 150, minHeight: 200)
+                        }
+                    }
+                    
+                    Section("Progress") {
+                        VStack {
+                            Picker("Time Window", selection: $timeWindow) {
+                                ForEach(TimeWindow.allCases, id: \.rawValue) {
+                                    Text($0.rawValue).tag($0)
+                                }
+                            }.pickerStyle(.segmented)
+                            Chart(filteredLifts) { lift in
+                                ForEach(lift.maxes().sorted(by: <), id: \.key) { reps, maximum in
+                                    PointMark(x: .value("Date", lift.timestamp, unit: .day), y:
+                                            .value(repToString(reps), maximum))
+                                    .symbol(.circle)
+                                    .foregroundStyle(by: .value("Reps", repToString(reps)))
+                                }
+                            }
+                            .chartForegroundStyleScale(mapping: { data in
+                                return viewModel.colorByRepCount(data, palette)
+                            })
+                            .chartXVisibleDomain(length: timeWindow.timeRange)
+                            .chartYScale(domain: 0...max * 1.4)
+                            .chartScrollPosition(initialX: Date().addingTimeInterval(TimeInterval(-1 * timeWindow.timeRange)))
+                            .chartScrollableAxes(.horizontal)
+                            .chartScrollTargetBehavior(
+                                .valueAligned(matching: .init(day: 0))
+                            )
+                            .frame(minWidth: 150, minHeight: 200)
+                        }
                     }
                 }
             }
+        }.task {
+            viewModel.load(lifts: lifts)
         }
         .navigationTitle(type.string)
     }
 }
 
 #Preview {
-    var lifts: [Lift] = []
+    
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    
     
     for days in 0...50 {
         let lift = Lift(liftType: .benchPress, timestamp: Date.now.addingTimeInterval(TimeInterval(-60*60*24*days)),  modifiers: [.incline])
-        lifts.append(lift)
-        
+        container.mainContext.insert(lift)
+
         lift.addSet(5, weight: Double.random(in: 150...250), units: .pounds)
         lift.addSet(10, weight: Double.random(in: 100...200), units: .pounds)
         lift.addSet(15, weight: Double.random(in: 50...150), units: .pounds)
     }
     
     return NavigationStack {
-        StatItem(type: .benchPress, lifts: lifts)
+        StatItem(type: .benchPress).modelContainer(container)
     }
 }
