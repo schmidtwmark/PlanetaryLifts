@@ -181,28 +181,27 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
                     ProgressView()
                 }
             }
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    ZStack {
-                        Rectangle().fill(.clear).contentShape(Rectangle())
-                            .gesture(
-                                SpatialTapGesture()
-                                    .onEnded{ value in
-                                        // Convert the gesture location to the coordiante space of the plot area.
-                                        let origin = geometry[proxy.plotFrame!].origin
-                                        let location = CGPoint(
-                                            x: value.location.x - origin.x,
-                                            y: value.location.y - origin.y
-                                        )
-                                        let angle = proxy.angle(at: location)
-                                        if let item = proxy.value(atAngle: angle, as: Double.self) {
-                                            if let category = viewModel.getCategoryBy(count: item, statsType: statsType) {
-                                                withAnimation {
-                                                    if category == viewModel.selectedCategory {
-                                                        viewModel.selectedCategory = nil
-                                                    } else {
-                                                        viewModel.selectedCategory = category
-                                                        if case .loaded(let categories, _, _) = viewModel.chartData {
+            .chartOverlay { proxy in                                                      if case .loaded(let categories, _, _) = viewModel.chartData {
+                    GeometryReader { geometry in
+                        ZStack {
+                            Rectangle().fill(.clear).contentShape(Rectangle())
+                                .gesture(
+                                    SpatialTapGesture()
+                                        .onEnded{ value in
+                                            // Convert the gesture location to the coordiante space of the plot area.
+                                            let origin = geometry[proxy.plotFrame!].origin
+                                            let location = CGPoint(
+                                                x: value.location.x - origin.x,
+                                                y: value.location.y - origin.y
+                                            )
+                                            let angle = proxy.angle(at: location)
+                                            if let item = proxy.value(atAngle: angle, as: Double.self) {
+                                                if let category = viewModel.getCategoryBy(count: item, statsType: statsType) {
+                                                    withAnimation {
+                                                        if category == viewModel.selectedCategory {
+                                                            viewModel.selectedCategory = nil
+                                                        } else {
+                                                            viewModel.selectedCategory = category
                                                             if let idx = categories.firstIndex(of: category) {
                                                                 scrollProxy.scrollTo(idx / 2)
                                                             }
@@ -212,8 +211,8 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
                                                 }
                                             }
                                         }
-                                    }
-                            )
+                                )
+                        }
                         if let category = viewModel.selectedCategory, case .loaded(_, let categoryCounts, let categoryWeight) = viewModel.chartData {
                             VStack {
                                 Text(stringMapping(category))
