@@ -292,34 +292,34 @@ struct LiftListView: View {
         TabView {
             NavigationStack {
                 ScrollViewReader { proxy in
-                    List {
-                        EmptyView().id("Top of List")
-                        ForEach(liftsByDate) { section in
-                            let liftsForDate = section.elements
-                            let date = section.id
-                            let filteredLifts = filterLifts(liftsForDate)
-                            if !filteredLifts.isEmpty {
-                                Section(content: {
-                                    ForEach(filteredLifts) {lift in
-                                        LiftListItem(lift: lift, editingLift: $editingLift, showStatsForType: $showStatsForType, scrollViewProxy: proxy, onDelete: {modelContext.delete($0)})
-                                            .padding([.bottom], 10)
-                                    }
-                                    .listRowBackground(Color.clear)
-                                    .listRowInsets(EdgeInsets())
-                                }, header: {
-                                    HStack {
-                                        Text("\(date.format())".uppercased())
-                                            .font(.subheadline)
-                                            .fontWeight(.bold)
-                                            .foregroundStyle(liftsForDate.first!.type.category.getColor(for: palette))
-                                        Spacer()
-                                    }
-                                })
+                    ScrollView {
+                        LazyVStack {
+                            EmptyView().id("Top of List")
+                            ForEach(liftsByDate) { section in
+                                let liftsForDate = section.elements
+                                let date = section.id
+                                let filteredLifts = filterLifts(liftsForDate)
+                                if !filteredLifts.isEmpty {
+                                    Section(content: {
+                                        ForEach(filteredLifts) {lift in
+                                            LiftListItem(lift: lift, editingLift: $editingLift, showStatsForType: $showStatsForType, scrollViewProxy: proxy, onDelete: {modelContext.delete($0)})
+                                        }
+                                    }, header: {
+                                        HStack {
+                                            Text("\(date.format())".uppercased())
+                                                .font(.subheadline)
+                                                .fontWeight(.bold)
+                                                .foregroundStyle(liftsForDate.first!.type.category.getColor(for: palette))
+                                            Spacer()
+                                        }.padding([.horizontal], 20)
+                                    })
+                                    Spacer(minLength: 40.0)
+                                }
                             }
                         }
+                        .padding([.horizontal], 20)
                     }
                     .navigationTitle("Lifts")
-                    .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
                     .toolbar() {
                         ToolbarItemGroup(placement: .primaryAction, content: {
                             Button {
@@ -365,6 +365,8 @@ struct LiftListView: View {
                         AddLiftView(lift: lift)
                     }
                 }
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+
             }.tabItem {
                 Label("Lifts", systemImage: "dumbbell")
             }

@@ -30,7 +30,7 @@ struct TimelessDate : Hashable, Equatable {
         let dateFormatter = DateFormatter()
         let weekdayString = dateFormatter.weekdaySymbols[self.weekday - 1]
         let monthString = dateFormatter.monthSymbols[self.month - 1]
-        return "\(weekdayString), \(monthString) \(day.ordinal!)"
+        return "\(weekdayString) \(monthString) \(day.ordinal!)"
     }
     
     func date() -> Date {
