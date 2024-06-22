@@ -114,6 +114,7 @@ struct SetsView: View {
 struct LiftListItem: View {
     @State var lift: Lift
     @Binding var editingLift: Lift?
+    @Binding var showStatsForType: LiftType?
     @AppStorage(PALETTE) var palette: Palette = .main
 
     var scrollViewProxy: ScrollViewProxy
@@ -218,9 +219,11 @@ struct LiftListItem: View {
             } label: {
                 Label("Repeat Now", systemImage: "arrow.circlepath")
             }
-            NavigationLink(value: lift.type, label:  {
+            Button {
+                showStatsForType = lift.type
+            } label: {
                 Label("Stats", systemImage: "chart.dots.scatter")
-            })
+            }
             ShareLink("Share", item: render(), preview: SharePreview(lift.type.string, image: render()))
             Button(role: .destructive) {
                 onDelete(lift)
@@ -247,6 +250,7 @@ struct LiftListView: View {
 
     @State var editingLift: Lift? = nil
     @State var addingLift: Bool = false
+    @State var showStatsForType: LiftType? = nil
     
     @AppStorage(PALETTE) var palette : Palette = .main
     
@@ -297,7 +301,7 @@ struct LiftListView: View {
                                 if !filteredLifts.isEmpty {
                                     Section(content: {
                                         ForEach(filteredLifts) {lift in
-                                            LiftListItem(lift: lift, editingLift: $editingLift, scrollViewProxy: proxy, onDelete: {modelContext.delete($0)})
+                                            LiftListItem(lift: lift, editingLift: $editingLift, showStatsForType: $showStatsForType, scrollViewProxy: proxy, onDelete: {modelContext.delete($0)})
                                                 .padding([.bottom], 10)
                                         }
                                         .listRowBackground(Color.clear)
@@ -314,9 +318,6 @@ struct LiftListView: View {
                                 }
                             }
                         }
-                    .navigationDestination(for: LiftType.self, destination: { type in
-                        StatItem(type: type)
-                    })
                     .navigationTitle("Lifts")
                     .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
                     .toolbar() {
@@ -353,6 +354,9 @@ struct LiftListView: View {
                                 }
                             })
                         })
+                    }
+                    .sheet(item: $showStatsForType) { type in
+                        StatItem(type: type)
                     }
                     .sheet(isPresented: $addingLift, content: {
                         AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress)

@@ -121,33 +121,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
         self.stringMapping = stringMapping
     }
     
-    @ViewBuilder func legend(categories: [T]) -> some View {
-        ForEach(Array(categories.chunked(into: 2).enumerated()), id: \.offset) { offset, chunk in
-            VStack(alignment: .leading) {
-                ForEach(chunk) { category in
-                    let isSelected = category == viewModel.selectedCategory
-                    HStack {
-                        let string = stringMapping(category)
-                        colorMapping(string).clipShape(Circle())
-                        Text(string)
-                    }
-                    .padding(5)
-                    .background(isSelected ? Color.gray : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 5.0))
-                    .fixedSize()
-                    .onTapGesture(perform: {
-                        withAnimation {
-                            if isSelected {
-                                viewModel.selectedCategory = nil
-                            } else {
-                                viewModel.selectedCategory = category
-                            }
-                        }
-                    })
-                }
-            }.tag(offset)
-        }
-    }
+   
     
     
     var body: some View {
@@ -178,12 +152,24 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
                     }
                 }
                 if case .loading = viewModel.chartData {
-                    ProgressView()
+                    ProgressView().tint(.gray)
                 }
+                if let category = viewModel.selectedCategory, case .loaded(_, let categoryCounts, let categoryWeight) = viewModel.chartData {
+                    VStack {
+                        Text(stringMapping(category))
+                        switch statsType {
+                        case .count:
+                            Text(displayString(number: categoryCounts[category]!, singleUnit: "lift"))
+                        case .weight:
+                            Text(displayString(number: categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
+                        }
+                    }
+                }
+
             }
             .chartOverlay { proxy in                                                      if case .loaded(let categories, _, _) = viewModel.chartData {
                     GeometryReader { geometry in
-                        ZStack {
+                        ZStack(alignment: .center) {
                             Rectangle().fill(.clear).contentShape(Rectangle())
                                 .gesture(
                                     SpatialTapGesture()
@@ -213,18 +199,6 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
                                         }
                                 )
                         }
-                        if let category = viewModel.selectedCategory, case .loaded(_, let categoryCounts, let categoryWeight) = viewModel.chartData {
-                            VStack {
-                                Text(stringMapping(category))
-                                switch statsType {
-                                case .count:
-                                    Text(displayString(number: categoryCounts[category]!, singleUnit: "lift"))
-                                case .weight:
-                                    Text(displayString(number: categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
-                                }
-                            }
-                            
-                        }
                     }
                 }
             }
@@ -235,9 +209,13 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
             ScrollView(.horizontal) {
                 HStack(alignment: .top) {
                     if case .loaded(let categories, _, _) = viewModel.chartData {
-                        legend(categories: categories)
+                        StatsLegend(
+                                    chunkSize: 2,
+                                    categories: categories,
+                                    selectedCategory: $viewModel.selectedCategory,
+                                    stringMapping: stringMapping,
+                                    colorMapping: colorMapping)
                     }
-//                        legend(categories: [T()]).redacted(reason: .placeholder)
                 }
                 
                 .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
@@ -256,6 +234,7 @@ struct StatsView: View {
     @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
     @Environment(\.modelContext) private var modelContext
     @State var searchText = ""
+    @State var showStatsForType: LiftType?
     
     @SectionedQuery(\Lift.type) var liftsByType: SectionedResults<LiftType, Lift>
     @SectionedQuery(\Lift.type.category) var liftsByCategory: SectionedResults<LiftCategory, Lift>
@@ -352,19 +331,26 @@ struct StatsView: View {
                     Section(category.rawValue) {
                         ForEach(allLiftsByCategory[category]!, id: \.string) { liftType in
                             if presentTypes.contains(liftType) {
-                                NavigationLink(destination: {
-                                    StatItem(type: liftType)
-                                }, label: {
+                                HStack {
                                     Text("\(liftType.string)")
+                                    Spacer()
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture(perform: {
+                                    showStatsForType = liftType
                                 })
+                                
                             }
                         }
                     }
                 }
+                .sheet(item: $showStatsForType) { type in
+                    StatItem(type: type)
+                }
+                .navigationTitle("Stats")
             }
-            .navigationTitle("Stats")
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
         }
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
     }
 }
 

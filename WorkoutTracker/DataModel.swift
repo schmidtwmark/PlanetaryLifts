@@ -55,7 +55,11 @@ final class Lift {
             if let maxForReps = result[liftSet.reps], liftSet.weight.roundedWeight < maxForReps {
                 return
             }
-            result[liftSet.reps] = liftSet.weight.roundedWeight
+            if self.weighted {
+                result[liftSet.reps] = liftSet.weight.roundedWeight
+            } else {
+                result[liftSet.reps] = 0
+            }
         })
     }
     

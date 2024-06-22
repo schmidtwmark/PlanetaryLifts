@@ -32,6 +32,7 @@
 		EDFE3FA72C13CB5B0035F065 /* ColorAdjustment.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FA62C13CB5B0035F065 /* ColorAdjustment.swift */; };
 		EDFE3FAB2C13CD2D0035F065 /* AppStorageKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FAA2C13CD2D0035F065 /* AppStorageKeys.swift */; };
 		EDFE3FB12C2271350035F065 /* SectionedQuery in Frameworks */ = {isa = PBXBuildFile; productRef = EDFE3FB02C2271350035F065 /* SectionedQuery */; };
+		EDFE3FB32C2513950035F065 /* StatsLegend.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDFE3FB22C2513950035F065 /* StatsLegend.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,6 +61,7 @@
 		EDFE3FA42C13CABB0035F065 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		EDFE3FA62C13CB5B0035F065 /* ColorAdjustment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorAdjustment.swift; sourceTree = "<group>"; };
 		EDFE3FAA2C13CD2D0035F065 /* AppStorageKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStorageKeys.swift; sourceTree = "<group>"; };
+		EDFE3FB22C2513950035F065 /* StatsLegend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsLegend.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +100,7 @@
 				EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */,
 				EDA682F52B90E9F4002015CA /* ContentView.swift */,
 				EDA6830F2B9186DE002015CA /* StatsView.swift */,
+				EDFE3FB22C2513950035F065 /* StatsLegend.swift */,
 				ED76D7BF2BBE1BE900C46300 /* StatItem.swift */,
 				ED749DC02BF5769200A3AA3E /* StatBlock.swift */,
 				EDA6830B2B91469D002015CA /* DataModel.swift */,
@@ -219,6 +222,7 @@
 				EDFE3FAB2C13CD2D0035F065 /* AppStorageKeys.swift in Sources */,
 				ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */,
 				EDA6830C2B91469D002015CA /* DataModel.swift in Sources */,
+				EDFE3FB32C2513950035F065 /* StatsLegend.swift in Sources */,
 				ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */,
 				ED30C2512BE6997D000303F9 /* LiftTypesGenerated.swift in Sources */,
 				ED320A362B92A0BF003A6628 /* Date.swift in Sources */,
