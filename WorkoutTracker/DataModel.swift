@@ -103,6 +103,9 @@ struct WeightPlates : Codable, Equatable, CustomStringConvertible {
         barWeight + (mirrored ? 2.0 : 1.0) * plates.reduce(0, { return $0 + $1.weight})
     }
     
+    static func * (multiplier: Double, plates: WeightPlates) -> WeightPlates {
+        return WeightPlates(barWeight: plates.barWeight * multiplier, plates: plates.plates.map({Plate(id: $0.id, weight: $0.weight * multiplier)}), mirrored: plates.mirrored)
+    }
 }
 
 struct Weight : Equatable, Codable{
@@ -117,6 +120,13 @@ struct Weight : Equatable, Codable{
                 return .rawWeight(rawWeight)
             case .plates(let plates):
                 return .plates(plates.clone())
+            }
+        }
+        
+        static func * (multiplier: Double, data: WeightData) -> WeightData {
+            switch data {
+            case .plates(let plates): WeightData.plates(multiplier * plates)
+            case .rawWeight(let weight): WeightData.rawWeight(multiplier * weight)
             }
         }
     }
@@ -236,13 +246,12 @@ struct LiftSet : Codable, Identifiable, Equatable {
     
     
     func convert(to: WeightUnits) -> LiftSet {
-        let newWeight = switch (weight.units, to) {
-        case (.pounds, .kilograms): 0.453592 * weight.weight
-        case (.kilograms, .pounds): 2.20462 * weight.weight
-        default: weight.weight
+        let newWeightData = switch (weight.units, to) {
+        case (.pounds, .kilograms): 0.453592 * weight.data
+        case (.kilograms, .pounds): 2.20462 * weight.data
+        default: weight.data
         }
-        
-        return LiftSet(reps: reps, weight: newWeight, units: to)
+        return LiftSet(reps: reps, weight: Weight(data: newWeightData, units: to))
     }
 }
 

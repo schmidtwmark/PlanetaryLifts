@@ -102,11 +102,20 @@ struct PlatesEditorView: View {
             return formatter
     }
     
-    let topRowWeights = [2.5, 5.0, 10.0, 15.0]
-    let bottomRowWeights =  [25.0, 35.0, 45.0, 55.0]
+    var topRowWeights: [Double] {
+        switch units {
+        case .pounds: [2.5, 5.0, 10.0, 15.0]
+        case .kilograms: [1.1, 2.3, 4.5, 6.8]
+        }
+    }
     
-    
-    
+    var bottomRowWeights: [Double] {
+        switch units {
+        case .pounds: [25.0, 35.0, 45.0, 55.0]
+        case .kilograms: [11.3, 15.9, 20.4, 25.0]
+        }
+
+    }
     
     var body: some View {
         VStack {
@@ -158,7 +167,6 @@ struct PlatesEditorContainer: View {
         NavigationStack {
             PlatesEditorView(plates: $plates, removePlate: { removeId in
                     plates.plates.removeAll(where: {$0.id == removeId})
-                
             }, addPlate: {plateWeight  in
                     print("Adding plate: \(plates.plates.count)")
                     plates.plates.append(WeightPlates.Plate(weight: plateWeight))
@@ -166,10 +174,8 @@ struct PlatesEditorContainer: View {
                     plates.plates.sort { $0 > $1 }
                     print("Added plates: \(plates.plates.count)")
                 
-            },
-                             accentColor: Color.green
-            )
-                    .environmentObject(editState)
+            }, accentColor: Color.green
+            ).environmentObject(editState)
         }.tint(Color.green)
     }
 }

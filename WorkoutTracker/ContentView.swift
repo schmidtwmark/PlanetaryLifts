@@ -20,5 +20,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Lift.self], inMemory: true)
+        .modelContainer(for: [Lift.self, UserGeneratedLiftType.self], inMemory: true)
 }

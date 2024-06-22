@@ -86,7 +86,8 @@ struct MaxesBarChart : View {
     
     enum StatItemData {
         case loading
-        case loaded(maxes: [Int: Double],
+        case loaded(
+                    maxes: [Int: Double],
                     shadeIndexByRepCount: [String: Int],
                     allTimeMax: Double,
                     filteredLifts: [Lift],
@@ -114,7 +115,7 @@ struct MaxesBarChart : View {
     func load(lifts: [Lift]) {
         
         let filteredLifts = lifts.filter({$0.type == type})
-        
+
         let maxes = filteredLifts.reduce(into: [Int: Double](), { result, lift in
             let liftMaxes = lift.maxes()
             for (reps, maxWeight) in liftMaxes {
@@ -129,9 +130,13 @@ struct MaxesBarChart : View {
             dict[repToString(reps)] = index
         })
         
-        let allTimeMax = maxes.values.max()!
+        let allTimeMax = maxes.values.max() ?? 0
         
-        let daysRange = Int(filteredLifts.first!.timestamp.timeIntervalSince(filteredLifts.last!.timestamp))
+        let daysRange = if let first = filteredLifts.first, let last = filteredLifts.last {
+            Int(first.timestamp.timeIntervalSince(last.timestamp))
+        } else {
+            0
+        }
         self.data = .loaded(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, filteredLifts: filteredLifts, daysRange: daysRange)
     }
 }
@@ -149,6 +154,7 @@ struct StatItem: View {
     @State var selectedRepCount: String?
     
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     init(type: LiftType) {
         self.type = type
@@ -163,13 +169,13 @@ struct StatItem: View {
                 switch viewModel.data {
                 case .loading:
                     ProgressView()
-                case .loaded(let maxes, _, let allTimeMax, _, _):
+                case .loaded(let maxes, _, let allTimeMax, let filteredLifts, _):
                     Section {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading) {
                             StatBlock(description: "All Time Max", unit: weightUnits.shortSingleUnit, number: allTimeMax)
-                            StatBlock(description: "Total Weight", unit: weightUnits.shortSingleUnit, number: totalWeight(lifts))
-                            StatBlock(description: "Total Reps", unit: "Rep", number: Double(totalReps(lifts)))
-                            StatBlock(description: "Total Lifts", unit: "Lift", number: Double(lifts.count))
+                            StatBlock(description: "Total Weight", unit: weightUnits.shortSingleUnit, number: totalWeight(filteredLifts))
+                            StatBlock(description: "Total Reps", unit: "Rep", number: Double(totalReps(filteredLifts)))
+                            StatBlock(description: "Total Lifts", unit: "Lift", number: Double(filteredLifts.count))
                             
                         }
                         .listRowInsets(EdgeInsets())
@@ -193,7 +199,7 @@ struct StatItem: View {
                 }
             }
             .toolbar {
-                if case .loaded(let maxes, _, _, _, _) = viewModel.data, maxes.count > 1 {
+                if case .loaded(let maxes, _, _, _, _) = viewModel.data {
                     ToolbarItem(placement: .bottomBar) {
                         ScrollView(.horizontal) {
                             HStack(alignment: .top) {
@@ -210,6 +216,9 @@ struct StatItem: View {
                     }
                 }
             }
+            .task {
+                viewModel.load(lifts: lifts)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -218,10 +227,6 @@ struct StatItem: View {
                         Text("Close")
                     }
                 }
-            }
-            
-            .task {
-                viewModel.load(lifts: lifts)
             }
             .navigationTitle(type.string)
             .tint(type.category.getColor(for: palette))
@@ -305,10 +310,6 @@ struct WeightProgressView: View {
         VStack {
             if case .loaded(_, _, let allTimeMax, let filteredLifts, let daysRange) = viewModel.data {
                 progressTimeWindowPicker(daysRange: daysRange)
-//                if let date = selectedDate, let weight = selectedWeight {
-//                    Text("Selected date: \(date), selectedWeight \(weight)")
-//                }
-
                 Chart(filteredLifts) { lift in
                     ForEach(lift.maxes().sorted(by: <), id: \.key) { reps, maximum in
                         PointMark(x: .value("Date", lift.timestamp, unit: .day), y:
@@ -323,26 +324,6 @@ struct WeightProgressView: View {
                 })
                 .chartXSelection(value: $selectedDate)
                 .chartYSelection(value: $selectedWeight)
-                .chartXAxis {
-                    switch timeWindow {
-                    case .week:
-                        AxisMarks(values: .automatic(minimumStride: 1)) { date in
-                            AxisValueLabel(format: .dateTime.day())
-                        }
-                    case .month:
-                        AxisMarks(values: .automatic(minimumStride: 1)) { date in
-                            AxisValueLabel(format: .dateTime.week())
-                        }
-                    case .ninetyDays:
-                        AxisMarks(values: .automatic(minimumStride: 1)) { date in
-                            AxisValueLabel(format: .dateTime.week())
-                        }
-                    case .year:
-                        AxisMarks(values: .automatic(minimumStride: 1)) { date in
-                            AxisValueLabel(format: .dateTime.month())
-                        }
-                    }
-                }
                 .chartXVisibleDomain(length: timeWindow.timeRange)
                 .chartYScale(domain: 0...allTimeMax * 1.4)
                 .chartScrollPosition(initialX: Date().addingTimeInterval(TimeInterval(-1 * timeWindow.timeRange)))

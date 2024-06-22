@@ -234,7 +234,7 @@ struct StatsView: View {
     @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
     @Environment(\.modelContext) private var modelContext
     @State var searchText = ""
-    @State var showStatsForType: LiftType?
+    @State var showStatsForType: LiftType? = nil
     
     @SectionedQuery(\Lift.type) var liftsByType: SectionedResults<LiftType, Lift>
     @SectionedQuery(\Lift.type.category) var liftsByCategory: SectionedResults<LiftCategory, Lift>
@@ -337,6 +337,7 @@ struct StatsView: View {
                                 }
                                 .contentShape(Rectangle())
                                 .onTapGesture(perform: {
+                                    print("Tapped on \(liftType)")
                                     showStatsForType = liftType
                                 })
                                 
@@ -344,11 +345,11 @@ struct StatsView: View {
                         }
                     }
                 }
-                .sheet(item: $showStatsForType) { type in
-                    StatItem(type: type)
-                }
-                .navigationTitle("Stats")
+            }                
+            .sheet(item: $showStatsForType) { type in
+                StatItem(type: type)
             }
+            .navigationTitle("Stats")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
         }
     }

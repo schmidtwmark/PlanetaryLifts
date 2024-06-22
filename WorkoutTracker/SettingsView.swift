@@ -42,19 +42,18 @@ struct SettingsView: View {
         return map
     }
     
-    @AppStorage(WEIGHT_UNITS) var weight: WeightUnits = .pounds
+    @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     
     var body: some View {
         NavigationStack {
             List {
                 Section("Units") {
-                    Picker("Weight", selection: $weight, content:  {
+                    Picker("Weight", selection: $weightUnits, content:  {
                         Text("Pounds").tag(WeightUnits.pounds)
                         Text("Kilograms").tag(WeightUnits.kilograms)
                     })
-                    .onChange(of: weight, { (old, new) in
+                    .onChange(of: weightUnits, { (old, new) in
                         // TODO: figure out how to do this in the background and show progress
-                        print("Weight changed")
                         let lifts = try! modelContext.fetch(FetchDescriptor<Lift>())
                         for lift in lifts {
                             let newSets = lift.sets.map({$0.convert(to: new)})
@@ -62,7 +61,6 @@ struct SettingsView: View {
                         }
                     })
                 }
-                
                 #if DEBUG
                 Section("Debug Stuff") {
                     NavigationLink("Sticker Generator") {
@@ -104,7 +102,22 @@ struct SettingsView: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: UserGeneratedLiftType.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    
+    
+    for type in [LiftType.benchPress, LiftType.backSquat, LiftType.frontSquat] {
+        for days in 0...Int.random(in: 30...70) {
+            let lift = Lift(liftType: type, timestamp: Date.now.addingTimeInterval(TimeInterval(-60*60*24*days)),  modifiers: [.incline])
+            container.mainContext.insert(lift)
+            
+            for _ in 0...Int.random(in: 1...5) {
+                let reps = [5, 10, 15].randomElement()!
+                lift.addSet(reps, weight: Double.random(in: 150...250), units: .pounds)
+                lift.addSet(reps, weight: Double.random(in: 100...200), units: .pounds)
+            }
+        }
+            
+    }
     
     container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms))
     container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type 2", category: .legs))
