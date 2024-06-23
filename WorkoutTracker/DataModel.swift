@@ -49,6 +49,21 @@ final class Lift {
         }
     }
     
+    struct LiftPoint : Hashable {
+        var reps: Int
+        var weight: Double
+    }
+    
+    func uniqueSets() -> [LiftSet] {
+        let uniqueSets = sets.reduce(into: Set<LiftPoint>(), { result, liftSet in
+            result.insert(LiftPoint(reps: liftSet.reps, weight: liftSet.weight.weight))
+        })
+        
+        return sets.filter({liftSet in
+            uniqueSets.contains(LiftPoint(reps: liftSet.reps, weight: liftSet.weight.weight))
+        })
+    }
+    
     // Maps rep count to the maximum weight for that rep count in the given sets
     func maxes() -> [Int: Double] {
         return sets.reduce(into: [Int: Double](), { result, liftSet in

@@ -58,7 +58,7 @@ enum Granularity: String, Codable, CaseIterable {
     }
     
     func load() async {
-        let start = ContinuousClock.now
+//        let start = ContinuousClock.now
         let categories = liftsByCategory.sections.sorted(by: {$0.id < $1.id}).map({$0.id})
         let categoryCounts = liftsByCategory.sections.reduce(into: [T: Double](), { output, section in
             output[section.id] = Double(section.elements.count)
@@ -69,7 +69,7 @@ enum Granularity: String, Codable, CaseIterable {
             output[section.id] = totalWeight(section.elements)
         })
         
-        try? await Task.sleep(until: start + .milliseconds(1000))
+//        try? await Task.sleep(until: start + .milliseconds(1000))
         chartData = .loaded(categories: categories, categoryCounts: categoryCounts, categoryWeight: categoryWeight)
 
     }
@@ -346,11 +346,11 @@ struct StatsView: View {
                     }
                 }
             }                
-            .sheet(item: $showStatsForType) { type in
-                StatItem(type: type)
-            }
             .navigationTitle("Stats")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+        }
+        .sheet(item: $showStatsForType) { type in
+            StatItem(type: type)
         }
     }
 }

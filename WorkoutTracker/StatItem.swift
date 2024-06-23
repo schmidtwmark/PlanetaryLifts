@@ -139,6 +139,50 @@ struct MaxesBarChart : View {
         }
         self.data = .loaded(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, filteredLifts: filteredLifts, daysRange: daysRange)
     }
+    
+    func getClosestToSelection(selectedDate: Date, selectedWeight: Double) -> (LiftSet, Date)? {
+        // Binary search over filtered lifts
+        // Then select closest by weight
+        switch self.data {
+        case .loading:
+            return nil
+        case .loaded(_, _, _, let filteredLifts, _):
+            guard !filteredLifts.isEmpty else { return nil }
+            
+            
+            var closestTimeDistance = Double.infinity
+            var closestLift: Lift? = nil
+            for lift in filteredLifts {
+                let distance = abs(selectedDate.timeIntervalSince(lift.timestamp))
+                if distance > closestTimeDistance {
+                    // Distance is increasing, we passed the closest
+                    break
+                }
+                closestTimeDistance = distance
+                closestLift = lift
+            }
+            
+            guard let lift = closestLift else { return nil }
+            
+            var closestSet: LiftSet? = nil
+            var closestWeightDistance = Double.infinity
+            for liftSet in lift.sets {
+                let distance = abs(liftSet.weight.weight - selectedWeight)
+                if distance < closestWeightDistance {
+                    closestSet = liftSet
+                    closestWeightDistance = distance
+                }
+            }
+            
+            
+            
+            guard let closest = closestSet else { return nil }
+            return (closest, lift.timestamp)
+            
+                
+        }
+        
+    }
 }
 
 
@@ -165,6 +209,14 @@ struct StatItem: View {
 
     var body: some View {
         NavigationStack {
+            #if targetEnvironment(simulator)
+            // Weirdly, there's a bug with @Observable where without this, loading does not retrigger
+            if case .loading = viewModel.data {
+                Text("Loading")
+            } else {
+                Text("Loaded")
+            }
+            #endif
             List {
                 switch viewModel.data {
                 case .loading:
@@ -194,7 +246,7 @@ struct StatItem: View {
                     }
                     
                     Section("Progress") {
-                        WeightProgressView(viewModel: viewModel, selectedReps: $selectedRepCount)
+                        WeightProgressView(viewModel: $viewModel, selectedReps: $selectedRepCount)
                     }
                 }
             }
@@ -216,9 +268,6 @@ struct StatItem: View {
                     }
                 }
             }
-            .task {
-                viewModel.load(lifts: lifts)
-            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -230,6 +279,9 @@ struct StatItem: View {
             }
             .navigationTitle(type.string)
             .tint(type.category.getColor(for: palette))
+        }
+        .task {
+            viewModel.load(lifts: lifts)
         }
     }
 }
@@ -256,14 +308,13 @@ struct StatItem: View {
 
 struct WeightProgressView: View {
     
-    var viewModel: ViewModel    
+    @Binding var viewModel: ViewModel
     @State var timeWindow: TimeWindow = .week
     @AppStorage(PALETTE) var palette: Palette = .main
     @Binding var selectedReps: String?
     
-    @State var selectedDate: Date?
-    @State var selectedWeight: Double?
-
+    @State var selectedLiftSet: (LiftSet, Date)?
+    @State var annotationPosition: AnnotationPosition = .top
     
     enum TimeWindow : String, CaseIterable {
         case week = "Week"
@@ -303,7 +354,6 @@ struct WeightProgressView: View {
         } else {
             EmptyView()
         }
-
     }
     
     var body: some View {
@@ -311,19 +361,83 @@ struct WeightProgressView: View {
             if case .loaded(_, _, let allTimeMax, let filteredLifts, let daysRange) = viewModel.data {
                 progressTimeWindowPicker(daysRange: daysRange)
                 Chart(filteredLifts) { lift in
-                    ForEach(lift.maxes().sorted(by: <), id: \.key) { reps, maximum in
-                        PointMark(x: .value("Date", lift.timestamp, unit: .day), y:
-                                .value(repToString(reps), maximum))
+                    let unique = lift.uniqueSets()
+                    ForEach(unique) { liftSet in
+                        PointMark(
+                            x: .value("Date", lift.timestamp, unit: .day),
+                            y: .value(repToString(liftSet.reps), liftSet.weight.weight))
                         .symbol(.circle)
-                        .symbolSize(repToString(reps) == selectedReps ? 100.0 : 40.0)
-                        .foregroundStyle(by: .value("Reps", repToString(reps)))
+                        .symbolSize(
+                            repToString(liftSet.reps) == selectedReps ? 100.0 : 40.0)
+                        .foregroundStyle(by: .value("Reps", repToString(liftSet.reps)))
+                    }
+                    
+                    if let (selectedSet, selectedDate) = selectedLiftSet {
+                        PointMark(
+                            x: .value("Date", selectedDate, unit: .day),
+                            y: .value(repToString(selectedSet.reps), selectedSet.weight.weight))
+                        .annotation(
+                            position: annotationPosition,
+                            spacing: annotationPosition == .top ? nil : 2.0,
+                            content: {
+                                Text(displayString(number: selectedSet.weight.weight, singleUnit: selectedSet.weight.units.shortSingleUnit))
+                                    .padding(4)
+                                    .background(viewModel.colorByRepCount(repToString(selectedSet.reps), palette))
+                                    .clipShape(Capsule())
+                            }
+                        )
+                        .symbol(.circle)
+                        .symbolSize(150.0)
+                        .foregroundStyle(by: .value("Reps", repToString(selectedSet.reps)))
+                    }
+                    
+                }
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        ZStack(alignment: .center) {
+                            Rectangle().fill(.clear).contentShape(Rectangle())
+                                .gesture(
+                                    SpatialTapGesture()
+                                        .onEnded{ value in
+                                            // Convert the gesture location to the coordiante space of the plot area.
+                                            let origin = geometry[proxy.plotFrame!].origin
+                                            let location = CGPoint(
+                                                x: value.location.x - origin.x,
+                                                y: value.location.y - origin.y
+                                            )
+                                            guard let (date, weight) = proxy.value(at: location, as: (Date, Double).self) else { return }
+                                            guard let (closestSet, closestDate) = viewModel.getClosestToSelection(selectedDate: date, selectedWeight: weight) else {
+                                                withAnimation {
+                                                    selectedLiftSet = nil
+                                                }
+                                                return
+                                            }
+                                            if abs(weight - closestSet.weight.weight) < (allTimeMax * 0.3) && abs(date.timeIntervalSince(closestDate)) < Double(timeWindow.timeRange / 5) {
+
+                                                withAnimation {
+                                                    selectedLiftSet = (closestSet, closestDate)
+                                                    if value.location.x < (geometry.size.width / 4.0) {
+                                                        annotationPosition = .topTrailing
+                                                    } else if value.location.x > (geometry.size.width * 0.75) {
+                                                        annotationPosition = .topLeading
+                                                    } else {
+                                                        annotationPosition = .top
+                                                    }
+                                                }
+                                            } else {
+                                                withAnimation {
+                                                    selectedLiftSet = nil
+                                                }
+                                            }
+                                            
+                                        }
+                                )
+                        }
                     }
                 }
                 .chartForegroundStyleScale(mapping: { data in
                     return viewModel.colorByRepCount(data, palette)
                 })
-                .chartXSelection(value: $selectedDate)
-                .chartYSelection(value: $selectedWeight)
                 .chartXVisibleDomain(length: timeWindow.timeRange)
                 .chartYScale(domain: 0...allTimeMax * 1.4)
                 .chartScrollPosition(initialX: Date().addingTimeInterval(TimeInterval(-1 * timeWindow.timeRange)))
