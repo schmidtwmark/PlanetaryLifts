@@ -298,7 +298,7 @@ enum LiftType: Hashable, Codable{
 
 		// MARK: Back
 		case .backSquat: [.barbell, .dumbbell]
-		case .deadlift: [.narrowGrip, .wideGrip, .barbell, .hexBar]
+		case .deadlift: [.narrowGrip, .wideGrip, .barbell, .hexBar, .deficit]
 		case .latPulldowns: [.narrowGrip, .wideGrip, .cable]
 		case .row: [.oneArm, .barbell, .dumbbell, .cable]
 		case .chestSupportedRow: [.incline, .narrowGrip, .wideGrip, .oneArm, .barbell, .dumbbell]
@@ -340,6 +340,31 @@ enum LiftType: Hashable, Codable{
 		case .frontRaise: [.oneArm, .dumbbell, .cable]
 
 		default: []
+		}
+	}
+
+	var weights: LiftWeights {
+		return switch self {
+		// MARK: Arms
+		case .bicepCurl: LiftWeights([(.biceps, 0.75), (.forearms, 0.5), (.deltoid, 0.5)])
+		case .hammerCurl: LiftWeights([(.biceps, 0.75), (.forearms, 0.25), (.deltoid, 0.25)])
+
+		// MARK: Back
+
+		// MARK: Chest
+		case .benchPress: LiftWeights([(.triceps, 0.75), (.forearms, 0.25), (.abs, 0.5), (.chest, 0.75), (.deltoid, 0.5)])
+
+		// MARK: Core
+		case .legRaises: LiftWeights([(.abs, 0.75)])
+
+		// MARK: Glutes
+
+		// MARK: Legs
+		case .frontSquat: LiftWeights([(.forearms, 0.5), (.glutes, 0.75), (.hamstrings, 0.75), (.quadriceps, 0.75), (.calves, 0.75), (.abs, 0.5), (.lowerBack, 0.5)])
+
+		// MARK: Shoulders
+
+		default: LiftWeights()
 		}
 	}
 

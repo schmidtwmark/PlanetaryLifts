@@ -17,6 +17,21 @@ where
     }
 }
 
+fn deserialize_impact<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
+    match s.to_lowercase().as_ref() {
+        "none" => Ok(0.0),
+        "small" => Ok(0.25),
+        "medium" => Ok(0.5),
+        "large" => Ok(0.75),
+        "massive" => Ok(0.75),
+        _ => Ok(0.0),
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct Lift {
     lift_name: String,
@@ -43,6 +58,37 @@ struct Lift {
     multi_grip_bar: bool,
     #[serde(deserialize_with = "deserialize_bool")]
     cable: bool,
+    #[serde(deserialize_with = "deserialize_bool")]
+    deficit: bool,
+
+    #[serde(deserialize_with = "deserialize_impact")]
+    biceps: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    triceps: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    trapezius: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    latissmus_dorsi: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    forearms: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    glutes: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    hamstrings: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    quadriceps: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    calves: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    abs: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    obliques: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    chest: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    deltoid: f64,
+    #[serde(deserialize_with = "deserialize_impact")]
+    lower_back: f64,
 }
 
 impl Lift {
@@ -133,6 +179,9 @@ fn modifiers_computed_parameter(category_map: &CategoryMap) -> String {
             if lift.cable {
                 modifiers.push(".cable")
             }
+            if lift.deficit {
+                modifiers.push(".deficit")
+            }
             if !modifiers.is_empty() {
                 output += &format!(
                     "\t\tcase .{lift_name}: [{mods}]\n",
@@ -145,6 +194,75 @@ fn modifiers_computed_parameter(category_map: &CategoryMap) -> String {
         output += "\n"
     }
     output += "\t\tdefault: []\n";
+    output += COMPUTED_PARAMETER_FOOTER;
+    output
+}
+
+fn lift_weights_computed_parameter(category_map: &CategoryMap) -> String {
+    let mut output = computed_parameter_header("weights", "LiftWeights");
+    for (category, lifts) in category_map {
+        output += &format!("\t\t// MARK: {}\n", category);
+        for lift in lifts {
+            let mut nonzero_weights: Vec<(&'static str, f64)> = Vec::new();
+            if lift.biceps > 0.0 {
+                nonzero_weights.push((".biceps", lift.biceps))
+            }
+            if lift.triceps > 0.0 {
+                nonzero_weights.push((".triceps", lift.triceps))
+            }
+            if lift.trapezius > 0.0 {
+                nonzero_weights.push((".trapezius", lift.trapezius))
+            }
+            if lift.latissmus_dorsi > 0.0 {
+                nonzero_weights.push((".latissmusDorsi", lift.latissmus_dorsi))
+            }
+            if lift.forearms > 0.0 {
+                nonzero_weights.push((".forearms", lift.forearms))
+            }
+            if lift.glutes > 0.0 {
+                nonzero_weights.push((".glutes", lift.glutes))
+            }
+            if lift.hamstrings > 0.0 {
+                nonzero_weights.push((".hamstrings", lift.hamstrings))
+            }
+            if lift.quadriceps > 0.0 {
+                nonzero_weights.push((".quadriceps", lift.quadriceps))
+            }
+            if lift.calves > 0.0 {
+                nonzero_weights.push((".calves", lift.calves))
+            }
+            if lift.abs > 0.0 {
+                nonzero_weights.push((".abs", lift.abs))
+            }
+            if lift.obliques > 0.0 {
+                nonzero_weights.push((".obliques", lift.obliques))
+            }
+            if lift.chest > 0.0 {
+                nonzero_weights.push((".chest", lift.chest))
+            }
+            if lift.deltoid > 0.0 {
+                nonzero_weights.push((".deltoid", lift.deltoid))
+            }
+            if lift.lower_back > 0.0 {
+                nonzero_weights.push((".lowerBack", lift.lower_back))
+            }
+
+            if !nonzero_weights.is_empty() {
+                output += &format!(
+                    "\t\tcase .{lift_name}: LiftWeights([{weights}])\n",
+                    lift_name = lift.camel_name(),
+                    weights = nonzero_weights
+                        .iter()
+                        .map(|(name, weight)| format!("({name}, {weight})"))
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                );
+            }
+        }
+        output += "\n"
+    }
+
+    output += "\t\tdefault: LiftWeights()\n";
     output += COMPUTED_PARAMETER_FOOTER;
     output
 }
@@ -190,7 +308,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let mut rdr = csv::Reader::from_reader(csv_data.as_bytes());
         let mut category_map: CategoryMap = CategoryMap::new();
         rdr.deserialize::<Lift>()
-            .filter_map(|result| result.ok())
+            .filter_map(|result| match result {
+                Ok(res) => Some(res),
+                Err(e) => {
+                    println!("Parse error: {e}");
+                    None
+                }
+            })
             .for_each(|lift| {
                 let category = &lift.category;
                 if !category_map.contains_key(category) {
@@ -207,6 +331,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", to_string_computed_parameter(&category_map));
         println!("{}", category_computed_parameter(&category_map));
         println!("{}", modifiers_computed_parameter(&category_map));
+        println!("{}", lift_weights_computed_parameter(&category_map));
         println!("}}\n");
     } else {
         println!("Error downloading sheet: {}", response.status());

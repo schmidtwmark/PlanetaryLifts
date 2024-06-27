@@ -373,6 +373,10 @@ struct LiftListView: View {
             StatsView().tabItem {
                 Label("Stats", systemImage: "chart.xyaxis.line")
             }
+            MuscleGroupView()
+                .tabItem {
+                Label("Muscles", systemImage: "figure.strengthtraining.traditional")
+            }
             SettingsView().tabItem {
                 Label("Settings", systemImage: "gear")
             }

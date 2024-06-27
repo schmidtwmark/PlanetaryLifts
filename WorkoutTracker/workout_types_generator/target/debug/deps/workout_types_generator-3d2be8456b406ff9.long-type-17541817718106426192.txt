@@ -1,1 +1,0 @@
-(std::string::String, Group<'_, std::string::String, FilterMap<DeserializeRecordsIter<'_, &[u8], Lift>, {closure@src/main.rs:61:25: 61:33}>, {closure@src/main.rs:62:23: 62:29}>)

@@ -51,6 +51,7 @@ enum LiftModifier: String, Codable, CaseIterable {
     case hexBar = "Hex Bar"
     case multiGripBar = "Multi Grip Bar"
     case cable = "Cable"
+    case deficit = "Deficit"
     
     // For any given modifier, returns the set of modifiers that cannot also be set
     // You can't do Incline Decline Bench
@@ -116,5 +117,46 @@ extension LiftType: Defaultable {
 extension LiftCategory: Defaultable {
     init() {
         self = .back
+    }
+}
+
+struct LiftWeights {
+    var map: [MuscleGroup: Double]
+    
+    init(_ sparse: [(MuscleGroup, Double)] = []) {
+        map = sparse.reduce(into: [MuscleGroup: Double](), {result, item in
+            result[item.0] = item.1
+        })
+        MuscleGroup.allCases.forEach({ group in
+            if let _ = map[group] { return }
+            map[group] = 0.0
+        })
+    }
+    
+    mutating func add(_ muscleGroup: MuscleGroup, score: Double) {
+        map[muscleGroup]! += score
+    }
+    
+    func getWeight(_ muscleGroup: MuscleGroup) -> Double {
+        return map[muscleGroup]!
+    }
+    
+    func normalize() -> LiftWeights {
+        guard let max = map.max(by: {$0.value < $1.value}), max.value != 0.0 else { return LiftWeights() }
+        
+        return LiftWeights(map.map({group, weight in
+            (group, weight / max.value)
+        }))
+    }
+    
+    var mean: Double {
+        map.map({$1}).reduce(0.0, +) / Double(map.count)
+    }
+    
+    func affects(_ muscleGroup: MuscleGroup?) -> Bool {
+        if let group = muscleGroup {
+            return getWeight(group) != 0.0
+        }
+        return true
     }
 }

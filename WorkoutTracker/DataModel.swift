@@ -85,6 +85,24 @@ final class Lift {
     public var description: String {
         "Lift: \(type.string)"
     }
+    
+    static func lastWeek() -> Predicate<Lift> {
+        
+        let now = Date()
+        let oneWeekAgo = now.addingTimeInterval(-1 * 60 * 60 * 24 * 7)
+//        let calendar = Calendar.autoupdatingCurrent
+//        let oneWeekAgo = calendar.date(byAdding: .init(day: -7), to: Date())!
+        
+        return #Predicate<Lift> { lift in
+            lift.timestamp > oneWeekAgo
+        }
+    }
+    
+    func getLiftWeights() -> LiftWeights {
+        // Overrides
+        
+        return type.weights
+    }
 }
 
 struct WeightPlates : Codable, Equatable, CustomStringConvertible {

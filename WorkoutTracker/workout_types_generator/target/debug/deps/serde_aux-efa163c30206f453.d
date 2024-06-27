@@ -1,8 +1,0 @@
-/Users/markschmidt/Documents/WorkoutTracker/WorkoutTracker/workout_types_generator/target/debug/deps/libserde_aux-efa163c30206f453.rmeta: /Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/lib.rs /Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/container_attributes.rs /Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/field_attributes.rs /Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/serde_introspection.rs
-
-/Users/markschmidt/Documents/WorkoutTracker/WorkoutTracker/workout_types_generator/target/debug/deps/serde_aux-efa163c30206f453.d: /Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/lib.rs /Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/container_attributes.rs /Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/field_attributes.rs /Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/serde_introspection.rs
-
-/Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/lib.rs:
-/Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/container_attributes.rs:
-/Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/field_attributes.rs:
-/Users/markschmidt/.cargo/registry/src/index.crates.io-6f17d22bba15001f/serde-aux-4.5.0/src/serde_introspection.rs:
