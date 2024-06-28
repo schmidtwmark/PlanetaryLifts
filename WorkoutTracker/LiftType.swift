@@ -159,4 +159,11 @@ struct LiftWeights {
         }
         return true
     }
+    
+    // Muscle groups with weights sorted by largest to smallest impact
+    var sortedGroups: [(MuscleGroup, Double)] {
+        map.filter({$0.value > 0.0}).map({($0.key, $0.value)}).sorted(by: {
+            ($0.1, $0.0) > ($1.1, $1.0)
+        })
+    }
 }

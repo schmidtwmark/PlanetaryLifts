@@ -110,12 +110,110 @@ struct SetsView: View {
     }
 }
 
+@Observable
+class LiftListItemMuscleGroupSelector : MuscleGroupSelector {
+    var lift: Lift
+    var selectedMuscleGroup: MuscleGroup? = nil
+    
+    func getWeight(_ muscleGroup: MuscleGroup) -> Double {
+        return lift.getLiftWeights().getWeight(muscleGroup)
+    }
+    
+    init(lift: Lift) {
+        self.lift = lift
+    }
+    
+}    
+
+func weightDisplayString(_ weight: Double) -> String {
+    if weight >= 1.0 {
+        return "High Impact"
+    } else if weight >= 0.75 {
+        return "Medium Impact"
+    } else if weight >= 0.50 {
+        return "Small Impact"
+    } else if weight >= 0.25 {
+       return "Minor Impact"
+    } else {
+        return "No Impact"
+    }
+}
+
+struct LiftMuscleSelectionView: View {
+    var weight: Double
+    var muscleGroup: MuscleGroup
+    
+    @AppStorage(PALETTE) var palette: Palette = .main
+    var lift: Lift
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        HStack {
+            Text(muscleGroup.rawValue)
+            Spacer()
+            Text(weightDisplayString(weight))
+        }
+        .font(.title3)
+        .padding()
+        .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 10.0))
+    }
+}
+
+struct LiftMuscleGroupSilhouetteView: View {
+    @Binding var selector: LiftListItemMuscleGroupSelector
+    var lift: Lift
+    @AppStorage(PALETTE) var palette: Palette = .main
+    
+    var body: some View {
+            HStack {
+                MuscleGroupFrontView(selector: $selector)
+                MuscleGroupBackView(selector: $selector)
+            }
+            .tint(lift.type.category.getColor(for: palette))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation {
+                    selector.selectedMuscleGroup = nil
+                }
+            }
+
+    }
+}
+
+struct LiftMuscleGroupView : View {
+    @State var selector: LiftListItemMuscleGroupSelector
+    var lift: Lift
+    
+    var body: some View {
+        VStack {
+            LiftMuscleGroupSilhouetteView(selector: $selector, lift: lift)
+            if let selected = selector.selectedMuscleGroup {
+                Spacer(minLength: 20.0)
+                LiftMuscleSelectionView(weight: selector.getWeight(selected), muscleGroup: selected, lift: lift)
+            }
+        }
+    }
+    
+    init(lift: Lift) {
+        selector = LiftListItemMuscleGroupSelector(lift: lift)
+        self.lift = lift
+    }
+    
+}
+
 
 struct LiftListItem: View {
     @State var lift: Lift
     @Binding var editingLift: Lift?
     @Binding var showStatsForType: LiftType?
     @AppStorage(PALETTE) var palette: Palette = .main
+    
+    enum CardState {
+        case liftInfo
+        case muscleGroups
+    }
+    @State var cardState : CardState = .liftInfo
 
     var scrollViewProxy: ScrollViewProxy
     var onDelete: (Lift) -> ()
@@ -153,47 +251,88 @@ struct LiftListItem: View {
                     .font(.title)
                     .foregroundStyle(textColor)
                 Spacer()
+//                Group {
+//                    Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
+//                        .font(.caption)
+//                        .foregroundStyle(textColor)
+//                    if !rendering {
+//                        let showMuscleGroups = cardState == .muscleGroups
+//                        Label(showMuscleGroups ? "Show Muscle Groups" : "Show Lift Info", systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle").labelStyle(.iconOnly)
+//                    }
+//                }.onTapGesture {
+//                    withAnimation {
+//                        cardState = switch cardState {
+//                        case .liftInfo:
+//                                .muscleGroups
+//                        case .muscleGroups:
+//                                .liftInfo
+//                        }
+//                    }
+//                    
+//                }
+            }
+            if case .muscleGroups = cardState, !rendering {
+                LiftMuscleGroupView(lift: lift)
+            } else {
+                if lift.modifiers.count > 0 {
+                    HStack {
+                        ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
+                            Text(modifier.rawValue)
+                                .padding(10)
+                                .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
+                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                                .foregroundStyle(textColor)
+                        }
+                        Spacer()
+                    }
+                }
+                SetsView(lift: lift, rendering: rendering)
+                    .foregroundStyle(textColor)
+                if !lift.notes.isEmpty {
+                    HStack {
+                        Text(lift.notes)
+                            .foregroundStyle(textColor)
+                            .padding(10)
+                        Spacer()
+                    }
+                    .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
+                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                    
+                }
+            }
+            Spacer(minLength: 10.0)
+            HStack(alignment: .bottom) {
                 Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
                     .font(.caption)
                     .foregroundStyle(textColor)
-
-            }
-            if lift.modifiers.count > 0 {
-                HStack {
-                    ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
-                        Text(modifier.rawValue)
-                            .padding(10)
-                            .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
-                            .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                            .foregroundStyle(textColor)
+                Spacer()
+                if !rendering {
+                    let showMuscleGroups = cardState == .muscleGroups
+                    Label(showMuscleGroups ? "Show Muscle Groups" : "Show Lift Info", systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle").labelStyle(.iconOnly)
+                }
+            }.onTapGesture {
+                withAnimation {
+                    cardState = switch cardState {
+                    case .liftInfo:
+                            .muscleGroups
+                    case .muscleGroups:
+                            .liftInfo
                     }
-                    Spacer()
                 }
-            }
-            SetsView(lift: lift, rendering: rendering)
-                .foregroundStyle(textColor)
-            if !lift.notes.isEmpty {
-                HStack {
-                    Text(lift.notes)
-                        .foregroundStyle(textColor)
-                        .padding(10)
-                    Spacer()
-                }
-                .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
-                .clipShape(RoundedRectangle(cornerRadius: 10.0))
                 
             }
+
         }
-        .padding([.top, .bottom], 5.0)
+//        .padding([.top, .bottom], 5.0)
         .padding()
         .background(lift.type.category.getColor(for: palette))
         .clipShape(RoundedRectangle(cornerRadius: 24.0, style: rendering ? .circular : .continuous))
         .buttonStyle(.plain)
-        
     }
+    
     var body: some View {
         card(rendering: false)
-            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0, style: .continuous))
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0, style: .continuous))
         .contextMenu(menuItems: {
             Button {
                 editingLift = lift

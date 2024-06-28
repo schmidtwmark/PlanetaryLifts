@@ -41,7 +41,7 @@ struct LiftTypeSelector: View {
         List {
             ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
                 Section(category.rawValue) {
-                    ForEach(allLiftsByCategory[category]!, id: \.string) { lift in
+                    ForEach(allLiftsByCategory[category]!.sorted(), id: \.string) { lift in
                         if searchText == "" ||
                             category.rawValue.containsIgnoringCase(searchText) || 
                             lift.string.containsIgnoringCase(searchText) {

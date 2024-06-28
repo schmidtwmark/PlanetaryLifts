@@ -83,6 +83,28 @@ func roundedDecrement(_ current: Double) -> Double {
     return roundGranularDecrement(current - granularity)
 }
 
+struct AddLiftMuscleGroupView: View {
+    @State var selector: LiftListItemMuscleGroupSelector
+    var lift: Lift
+    var body: some View {
+        LiftMuscleGroupSilhouetteView(selector: $selector, lift: lift)
+        
+        if let selected = selector.selectedMuscleGroup {
+            HStack {
+                Text(selected.rawValue)
+                Spacer()
+                Text(weightDisplayString(selector.getWeight(selected)))
+            }
+        }
+    }
+    
+    init(lift: Lift) {
+        selector = .init(lift: lift)
+        self.lift = lift
+    }
+
+}
+
 
 struct AddLiftView: View {
     
@@ -124,6 +146,7 @@ struct AddLiftView: View {
     
     @Environment(\.modelContext) private var modelContext
     @State var showSetSettings = false
+    @State var showMuscleGroups = false
     
     @StateObject var editState: EditState = EditState()
     @Environment(\.dismiss) var dismiss
@@ -361,13 +384,21 @@ struct AddLiftView: View {
             }.padding()
         }
     }
-
+    
+    func liftFromEdits() -> Lift {
+        return Lift(liftType: liftType, sets: liftSets, timestamp: timestamp, modifiers: modifiers, notes: notes, weighted: isWeighted)
+    }
+    
+    
     
     var body: some View {
         NavigationView {
             VStack {
                 List {
                     mainSection
+                    if showMuscleGroups {
+                       AddLiftMuscleGroupView(lift: liftFromEdits())
+                    }
                     setSection
                     if liftType.modifiers.count > 0 {
                         modifiersSection
@@ -384,6 +415,15 @@ struct AddLiftView: View {
                             Text("Cancel")
                         }
                     }
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            withAnimation {
+                                showMuscleGroups.toggle()
+                            }
+                        } label: {
+                            Label("Show/Hide Muscle Groups", systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle").labelStyle(.iconOnly)
+                        }
+                    }
                 }
                 .environmentObject(editState)
                 .navigationTitle(navigationTitle)
@@ -394,8 +434,7 @@ struct AddLiftView: View {
                             if editState.setEditMode == .none {
                                 switch mode {
                                 case .add:
-                                    let newLift = Lift(liftType: liftType, sets: liftSets, timestamp: timestamp, modifiers: modifiers, notes: notes, weighted: isWeighted)
-                                    modelContext.insert(newLift)
+                                    modelContext.insert(liftFromEdits())
                                     break
                                     
                                 case .edit(let lift):

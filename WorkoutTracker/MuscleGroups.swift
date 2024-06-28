@@ -7,7 +7,11 @@
 
 import Foundation
 
-enum MuscleGroup: String, CaseIterable, Identifiable {
+enum MuscleGroup: String, CaseIterable, Identifiable, Comparable {
+    static func < (lhs: MuscleGroup, rhs: MuscleGroup) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+    
     case biceps = "Biceps"
     case triceps = "Triceps"
     case trapezius = "Trapezius"

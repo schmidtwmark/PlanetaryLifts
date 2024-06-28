@@ -14,7 +14,9 @@ import Observation
 func totalWeight(_ lifts: [Lift]) -> Double {
     return lifts.reduce(into: 0, { sum, lift in
         sum += lift.sets.reduce(into: 0, { innerSum, liftSet in
-            innerSum += Double(liftSet.reps) * liftSet.weight.weight
+            if lift.weighted {
+                innerSum += Double(liftSet.reps) * liftSet.weight.weight
+            }
         })
     })
 }
@@ -131,16 +133,26 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
                     if case .loaded(let categories, let categoryCounts, let categoryWeight) = viewModel.chartData {
                         ForEach(categories) { category in
                             let isSelected = viewModel.selectedCategory == category
-                            let value : PlottableValue<Double> = switch statsType {
+                            let value = switch statsType {
                             case .count:
-                                    .value("Count", categoryCounts[category]!)
+                                categoryCounts[category]!
                             case .weight:
-                                    .value("Weight", categoryWeight[category]!)
+                                categoryWeight[category]!
+                                
+                            }
+                            let label: String = switch statsType {
+                            case .count:
+                                    "Count"
+                            case .weight:
+                                    "Weight"
                             }
                             
-                            SectorMark(angle: value, innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
+                            if value > 0.0 {
+                                SectorMark(angle: .value(label, value), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
                                 .cornerRadius(PIE_MARK_CORNER_RADIUS)
                                 .foregroundStyle(by: .value("Category", stringMapping(category)))
+      
+                            }
                         }
                     } else {
                         SectorMark(angle: .value("Count", 0.8), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(0.9), angularInset: PIE_ANGULAR_INSET)

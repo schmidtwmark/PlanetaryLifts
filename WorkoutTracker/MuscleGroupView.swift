@@ -14,25 +14,21 @@ enum MuscleLocation {
 }
 
 
-struct MuscleView<S: Shape> : View{
+struct MuscleView<Selector: MuscleGroupSelector, S: Shape> : View{
     var muscleGroup: MuscleGroup
     var mirrored: Bool = false
     
     var isSelected: Bool {
-        muscleGroupState.selectedMuscleGroup == muscleGroup
+        selector.selectedMuscleGroup == muscleGroup
     }
     
     var percentage: Double {
-        if case .loaded(let stats) = muscleGroupState.stats {
-            return stats.normalizedWeight.getWeight(muscleGroup)
-        } else {
-            return 0.0
-        }
+        selector.getWeight(muscleGroup)
     }
     
     
     @ViewBuilder var shape: S
-    @Environment(MuscleGroupState.self) var muscleGroupState: MuscleGroupState
+    @Binding var selector: Selector
     @AppStorage(PALETTE) var palette: Palette = .main
     
     var body: some View {
@@ -44,9 +40,9 @@ struct MuscleView<S: Shape> : View{
                 .onTapGesture {
                     withAnimation {
                         if isSelected {
-                            muscleGroupState.selectedMuscleGroup = nil
+                            selector.selectedMuscleGroup = nil
                         } else {
-                            muscleGroupState.selectedMuscleGroup = muscleGroup
+                            selector.selectedMuscleGroup = muscleGroup
                         }
                     }
                 }
@@ -55,8 +51,22 @@ struct MuscleView<S: Shape> : View{
     }
 }
 
+protocol MuscleGroupSelector {
+    var selectedMuscleGroup: MuscleGroup? { get set }
+    func getWeight(_ muscleGroup: MuscleGroup) -> Double
+}
+
 @Observable
-class MuscleGroupState {
+class MuscleGroupState : MuscleGroupSelector {
+    func getWeight(_ muscleGroup: MuscleGroup) -> Double {
+        if case .loaded(let stats) = self.stats {
+           return stats.normalizedWeight.getWeight(muscleGroup)
+        } else {
+            return 0.0
+        }
+        
+    }
+    
     var selectedMuscleGroup: MuscleGroup? = nil
     
     enum MuscleGroupStats {
@@ -90,56 +100,59 @@ class MuscleGroupState {
     }
 }
 
-struct MuscleGroupFrontView: View {
+struct MuscleGroupFrontView<Selector: MuscleGroupSelector>: View {
+    @Binding
+    var selector: Selector
     
     var body: some View {
         ZStack {
             Silhouette().fill(.gray)
-            MuscleView(muscleGroup: .abs, shape: {Abs()})
-            MuscleView(muscleGroup: .abs, mirrored: true, shape: {Abs()})
-            MuscleView(muscleGroup: .calves, shape: {FrontCalf()})
-            MuscleView(muscleGroup: .calves, mirrored: true, shape: {FrontCalf()})
-            MuscleView(muscleGroup: .quadriceps, shape: {Quads()})
-            MuscleView(muscleGroup: .quadriceps, mirrored: true, shape: {Quads()})
-            MuscleView(muscleGroup: .obliques, shape: {Obliques()})
-            MuscleView(muscleGroup: .obliques, mirrored: true, shape: {Obliques()})
-            MuscleView(muscleGroup: .chest, shape: {Chest()})
-            MuscleView(muscleGroup: .chest, mirrored: true, shape: {Chest()})
-            MuscleView(muscleGroup: .forearms, shape: {Forearm()})
-            MuscleView(muscleGroup: .forearms, mirrored: true, shape: {Forearm()})
-            MuscleView(muscleGroup: .biceps, shape: {Bicep()})
-            MuscleView(muscleGroup: .biceps, mirrored: true, shape: {Bicep()})
-            MuscleView(muscleGroup: .deltoid, shape: {Deltoid()})
-            MuscleView(muscleGroup: .deltoid, mirrored: true, shape: {Deltoid()})
+            MuscleView(muscleGroup: .abs, shape: {Abs()}, selector: $selector)
+            MuscleView(muscleGroup: .abs, mirrored: true, shape: {Abs()}, selector: $selector)
+            MuscleView(muscleGroup: .calves, shape: {FrontCalf()}, selector: $selector)
+            MuscleView(muscleGroup: .calves, mirrored: true, shape: {FrontCalf()}, selector: $selector)
+            MuscleView(muscleGroup: .quadriceps, shape: {Quads()}, selector: $selector)
+            MuscleView(muscleGroup: .quadriceps, mirrored: true, shape: {Quads()}, selector: $selector)
+            MuscleView(muscleGroup: .obliques, shape: {Obliques()}, selector: $selector)
+            MuscleView(muscleGroup: .obliques, mirrored: true, shape: {Obliques()}, selector: $selector)
+            MuscleView(muscleGroup: .chest, shape: {Chest()}, selector: $selector)
+            MuscleView(muscleGroup: .chest, mirrored: true, shape: {Chest()}, selector: $selector)
+            MuscleView(muscleGroup: .forearms, shape: {Forearm()}, selector: $selector)
+            MuscleView(muscleGroup: .forearms, mirrored: true, shape: {Forearm()}, selector: $selector)
+            MuscleView(muscleGroup: .biceps, shape: {Bicep()}, selector: $selector)
+            MuscleView(muscleGroup: .biceps, mirrored: true, shape: {Bicep()}, selector: $selector)
+            MuscleView(muscleGroup: .deltoid, shape: {Deltoid()}, selector: $selector)
+            MuscleView(muscleGroup: .deltoid, mirrored: true, shape: {Deltoid()}, selector: $selector)
         }
         .aspectRatio(66.70126342773438 / 143.2188720703125, contentMode: .fit)
     }
 }
 
 
-struct MuscleGroupBackView: View {
-    
+struct MuscleGroupBackView<Selector: MuscleGroupSelector>: View {
+    @Binding
+    var selector: Selector
     
     var body: some View {
         ZStack {
             Silhouette().fill(.gray)
-            MuscleView(muscleGroup: .lowerBack, shape: {LowerBack()})
-            MuscleView(muscleGroup: .deltoid, shape: {RearDeltoid()})
-            MuscleView(muscleGroup: .deltoid, mirrored: true, shape: {RearDeltoid()})
-            MuscleView(muscleGroup: .triceps, shape: {Tricep()})
-            MuscleView(muscleGroup: .triceps, mirrored: true, shape: {Tricep()})
-            MuscleView(muscleGroup: .forearms, shape: {RearForearm()})
-            MuscleView(muscleGroup: .forearms, mirrored: true, shape: {RearForearm()})
-            MuscleView(muscleGroup: .trapezius, shape: {Trapezius()})
-            MuscleView(muscleGroup: .trapezius, mirrored: true, shape: {Trapezius()})
-            MuscleView(muscleGroup: .latissmusDorsi, shape: {Lats()})
-            MuscleView(muscleGroup: .latissmusDorsi, mirrored: true, shape: {Lats()})
-            MuscleView(muscleGroup: .glutes, shape: {Glute()})
-            MuscleView(muscleGroup: .glutes, mirrored: true, shape: {Glute()})
-            MuscleView(muscleGroup: .hamstrings, shape: {Hamstring()})
-            MuscleView(muscleGroup: .hamstrings, mirrored: true, shape: {Hamstring()})
-            MuscleView(muscleGroup: .calves, shape: {RearCalf()})
-            MuscleView(muscleGroup: .calves, mirrored: true, shape: {RearCalf()})
+            MuscleView(muscleGroup: .lowerBack, shape: {LowerBack()}, selector: $selector)
+            MuscleView(muscleGroup: .deltoid, shape: {RearDeltoid()}, selector: $selector)
+            MuscleView(muscleGroup: .deltoid, mirrored: true, shape: {RearDeltoid()}, selector: $selector)
+            MuscleView(muscleGroup: .triceps, shape: {Tricep()}, selector: $selector)
+            MuscleView(muscleGroup: .triceps, mirrored: true, shape: {Tricep()}, selector: $selector)
+            MuscleView(muscleGroup: .forearms, shape: {RearForearm()}, selector: $selector)
+            MuscleView(muscleGroup: .forearms, mirrored: true, shape: {RearForearm()}, selector: $selector)
+            MuscleView(muscleGroup: .trapezius, shape: {Trapezius()}, selector: $selector)
+            MuscleView(muscleGroup: .trapezius, mirrored: true, shape: {Trapezius()}, selector: $selector)
+            MuscleView(muscleGroup: .latissmusDorsi, shape: {Lats()}, selector: $selector)
+            MuscleView(muscleGroup: .latissmusDorsi, mirrored: true, shape: {Lats()}, selector: $selector)
+            MuscleView(muscleGroup: .glutes, shape: {Glute()}, selector: $selector)
+            MuscleView(muscleGroup: .glutes, mirrored: true, shape: {Glute()}, selector: $selector)
+            MuscleView(muscleGroup: .hamstrings, shape: {Hamstring()}, selector: $selector)
+            MuscleView(muscleGroup: .hamstrings, mirrored: true, shape: {Hamstring()}, selector: $selector)
+            MuscleView(muscleGroup: .calves, shape: {RearCalf()}, selector: $selector)
+            MuscleView(muscleGroup: .calves, mirrored: true, shape: {RearCalf()}, selector: $selector)
         }
         .aspectRatio(66.70126342773438 / 143.2188720703125, contentMode: .fit)
     }
@@ -178,8 +191,8 @@ struct MuscleGroupView: View {
             List {
                 Section {
                     HStack {
-                        MuscleGroupFrontView()
-                        MuscleGroupBackView()
+                        MuscleGroupFrontView(selector: $muscleGroupState)
+                        MuscleGroupBackView(selector: $muscleGroupState)
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -187,11 +200,10 @@ struct MuscleGroupView: View {
                     }
                     label
                 }
-                #if DEBUG
+                #if targetEnvironment(simulator)
                 ColorPicker(selection: $tintColor, supportsOpacity: false, label: {
                     Text("Color")
                 })
-                
                 #endif
                 Section("Lifts") {
                     ForEach(lastWeekLifts) { lift in
@@ -214,6 +226,7 @@ struct MuscleGroupView: View {
             .environment(muscleGroupState)
             .navigationTitle("Muscle Saturation")
             .toolbar {
+                #if targetEnvironment(simulator)
                 ToolbarItem(placement: .automatic, content: {
                     Button {
                         showInfoSheet.toggle()
@@ -221,12 +234,12 @@ struct MuscleGroupView: View {
                         Label("Info", systemImage: showInfoSheet ? "info.circle.filled" : "info.circle")
                     }
                 })
+                #endif
             }
             .sheet(isPresented: $showInfoSheet, content: {
                 NavigationStack {
-                    VStack {
-                        Text("Each lift you perform affects certain muscle groups.")
-                        Text("This page looks at your last week of lifts to highlight muscle groups that are overworked or underworked.")
+                    VStack{
+                        Text("Each lift you perform affects certain muscle groups.\nThis page looks at your last week of lifts to highlight muscle groups that are overworked or underworked.")
                         
                     }
                     .padding()

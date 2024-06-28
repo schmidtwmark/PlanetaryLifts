@@ -25,9 +25,9 @@ where
     match s.to_lowercase().as_ref() {
         "none" => Ok(0.0),
         "small" => Ok(0.25),
-        "medium" => Ok(0.5),
+        "medium" => Ok(0.50),
         "large" => Ok(0.75),
-        "massive" => Ok(0.75),
+        "massive" => Ok(1.0),
         _ => Ok(0.0),
     }
 }
