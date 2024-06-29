@@ -22,6 +22,7 @@
 		ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7BF2BBE1BE900C46300 /* StatItem.swift */; };
 		ED76D7C22BBF9D4200C46300 /* BindingPlayground.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */; };
 		ED76D7C42BBF9F9500C46300 /* NumberPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */; };
+		ED8C374B2C2FAABE00834F1D /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = ED8C374A2C2FAABE00834F1D /* Collections */; };
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
 		EDA682FA2B90E9F5002015CA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EDA682F92B90E9F5002015CA /* Assets.xcassets */; };
@@ -77,6 +78,7 @@
 			files = (
 				ED65CC512B9F523E0029FF5A /* Shiny in Frameworks */,
 				ED50D4D62B9E20CC00BD3F77 /* CrookedText in Frameworks */,
+				ED8C374B2C2FAABE00834F1D /* Collections in Frameworks */,
 				EDFE3FB12C2271350035F065 /* SectionedQuery in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -84,11 +86,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		ED8C37492C2FAABE00834F1D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		EDA682E72B90E9F4002015CA = {
 			isa = PBXGroup;
 			children = (
 				EDA682F22B90E9F4002015CA /* WorkoutTracker */,
 				EDA682F12B90E9F4002015CA /* Products */,
+				ED8C37492C2FAABE00834F1D /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -163,6 +173,7 @@
 				ED50D4D52B9E20CC00BD3F77 /* CrookedText */,
 				ED65CC502B9F523E0029FF5A /* Shiny */,
 				EDFE3FB02C2271350035F065 /* SectionedQuery */,
+				ED8C374A2C2FAABE00834F1D /* Collections */,
 			);
 			productName = WorkoutTracker;
 			productReference = EDA682F02B90E9F4002015CA /* WorkoutTracker.app */;
@@ -196,6 +207,7 @@
 				ED50D4D42B9E20CC00BD3F77 /* XCRemoteSwiftPackageReference "CrookedText" */,
 				ED65CC4F2B9F523E0029FF5A /* XCRemoteSwiftPackageReference "shiny" */,
 				EDFE3FAF2C2271350035F065 /* XCRemoteSwiftPackageReference "swiftdata-sectionedquery" */,
+				ED8C37482C2FAA7000834F1D /* XCRemoteSwiftPackageReference "swift-collections" */,
 			);
 			productRefGroup = EDA682F12B90E9F4002015CA /* Products */;
 			projectDirPath = "";
@@ -313,6 +325,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
 			};
 			name = Debug;
 		};
@@ -368,6 +381,7 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -476,6 +490,14 @@
 				kind = branch;
 			};
 		};
+		ED8C37482C2FAA7000834F1D /* XCRemoteSwiftPackageReference "swift-collections" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-collections.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
 		EDFE3FAF2C2271350035F065 /* XCRemoteSwiftPackageReference "swiftdata-sectionedquery" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/beechtom/swiftdata-sectionedquery?source=post_page-----b1e23c733f26--------------------------------";
@@ -496,6 +518,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = ED65CC4F2B9F523E0029FF5A /* XCRemoteSwiftPackageReference "shiny" */;
 			productName = Shiny;
+		};
+		ED8C374A2C2FAABE00834F1D /* Collections */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ED8C37482C2FAA7000834F1D /* XCRemoteSwiftPackageReference "swift-collections" */;
+			productName = Collections;
 		};
 		EDFE3FB02C2271350035F065 /* SectionedQuery */ = {
 			isa = XCSwiftPackageProductDependency;

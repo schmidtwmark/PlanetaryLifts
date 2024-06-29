@@ -10,6 +10,7 @@ import SwiftData
 import Charts
 import SectionedQuery
 import Observation
+import Collections
 
 func totalWeight(_ lifts: [Lift]) -> Double {
     return lifts.reduce(into: 0, { sum, lift in
@@ -44,51 +45,58 @@ enum Granularity: String, Codable, CaseIterable {
     case type = "Lift Type"
 }
 
-@Observable final class ChartViewModel<T: Hashable & Comparable>{
+@Observable final class ChartViewModel<T: Hashable & Comparable & Sendable>{
     
     enum ChartData {
         case loading
-        case loaded(categories: [T], categoryCounts: [T: Double], categoryWeight: [T: Double])
+        case loaded(categoryCounts: [ChartItem])
     }
     
-    var selectedCategory: T? = nil
+    struct ChartItem : Comparable, Identifiable, Hashable {
+        var category: T
+        var count: Double
+        
+        var id: Int {
+            category.hashValue
+        }
+        
+        static func < (lhs: Self, rhs: Self) -> Bool {
+            return lhs.count < rhs.count
+        }
+    }
+    
+    var selectedItem: ChartItem? = nil
     var chartData: ChartData = .loading
-    var liftsByCategory : SectionedResults<T, Lift>
     
-    init(liftsByCategory: SectionedResults<T, Lift>) {
-        self.liftsByCategory = liftsByCategory
-    }
-    
-    func load() async {
-//        let start = ContinuousClock.now
-        let categories = liftsByCategory.sections.sorted(by: {$0.id < $1.id}).map({$0.id})
-        let categoryCounts = liftsByCategory.sections.reduce(into: [T: Double](), { output, section in
-            output[section.id] = Double(section.elements.count)
+    func load(liftsByCategory: SectionedResults<T, Lift>, countFn: (SectionedResults<T, Lift>.Section) -> Double) {
+        
+        var categoryHeap = liftsByCategory.sections.reduce(into: Heap<ChartItem>(), { output, section in
+            let count = countFn(section)
+            
+            if output.count < 20 {
+                output.insert(ChartItem(category: section.id, count: count))
+            } else if let min = output.min, min.count < count {
+                let _ = output.popMin()
+                output.insert(ChartItem(category: section.id, count: count))
+            }
         })
         
-        let categoryWeight = liftsByCategory.sections.reduce(into: [T: Double](), {
-            output, section in
-            output[section.id] = totalWeight(section.elements)
-        })
-        
-//        try? await Task.sleep(until: start + .milliseconds(1000))
-        chartData = .loaded(categories: categories, categoryCounts: categoryCounts, categoryWeight: categoryWeight)
-
+        var categoryCounts: [ChartItem] = []
+        while !categoryHeap.isEmpty {
+            if let max = categoryHeap.popMax() {
+              categoryCounts.append(max)
+            }
+        }
+        chartData = .loaded(categoryCounts: categoryCounts)
     }
     
-    func getCategoryBy(count: Double, statsType: StatsType) -> T? {
-        if case .loaded(let categories, let categoryCounts, let categoryWeight) = chartData {
+    func getCategoryBy(count: Double) -> ChartItem? {
+        if case .loaded(let categoryCounts) = chartData {
             var sum = 0.0
-            for category in categories {
-                let delta = switch statsType {
-                case .count:
-                    categoryCounts[category]!
-                case .weight:
-                    categoryWeight[category]!
-                }
-                sum += delta
+            for item in categoryCounts {
+                sum += item.count
                 if count <= sum {
-                    return category
+                    return item
                 }
             }
         }
@@ -97,13 +105,13 @@ enum Granularity: String, Codable, CaseIterable {
 }
 
 
-struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: View {
+struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & Sendable>: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
-    @Binding var statsType: StatsType
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @State var viewModel: ChartViewModel<T>
     
+    var title: String
     
     func color(_ string: String)  -> Color {
         if string == "first" {
@@ -113,14 +121,26 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
         }
         return colorMapping(string)
     }
+    
+    var statsType: StatsType
+    var countFn: (SectionedResults<T, Lift>.Section) -> Double
     var colorMapping: (String) -> Color
     var stringMapping: (T) -> String
+    var liftsByCategory: SectionedResults<T, Lift>
     
-    init(liftsByCategory: SectionedResults<T, Lift>, statsType: Binding<StatsType>, colorMapping: @escaping (String) -> Color, stringMapping: @escaping (T) -> String) {
-        self.viewModel = ChartViewModel<T>(liftsByCategory: liftsByCategory)
-        self._statsType = statsType
+    init(title: String,
+         liftsByCategory: SectionedResults<T, Lift>,
+         statsType: StatsType,
+         colorMapping: @escaping (String) -> Color,
+         stringMapping: @escaping (T) -> String,
+         countFn: @escaping (SectionedResults<T, Lift>.Section) -> Double) {
+        self.liftsByCategory = liftsByCategory
+        self.viewModel = ChartViewModel<T>()
         self.colorMapping = colorMapping
         self.stringMapping = stringMapping
+        self.title = title
+        self.statsType = statsType
+        self.countFn = countFn
     }
     
    
@@ -128,58 +148,53 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
     
     var body: some View {
         ScrollViewReader { scrollProxy in
-            ZStack {
-                Chart {
-                    if case .loaded(let categories, let categoryCounts, let categoryWeight) = viewModel.chartData {
-                        ForEach(categories) { category in
-                            let isSelected = viewModel.selectedCategory == category
-                            let value = switch statsType {
-                            case .count:
-                                categoryCounts[category]!
-                            case .weight:
-                                categoryWeight[category]!
+            VStack {
+                Text(title).font(.headline)
+                ZStack {
+                    Chart {
+                        if case .loaded(let categoryCounts) = viewModel.chartData {
+                            ForEach(categoryCounts) { chartItem in
+                                let isSelected = viewModel.selectedItem == chartItem
+                                let label: String = switch statsType {
+                                case .count:
+                                    "Count"
+                                case .weight:
+                                    "Weight"
+                                }
+                                
+                                SectorMark(angle: .value(label, chartItem.count), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
+                                    .cornerRadius(PIE_MARK_CORNER_RADIUS)
+                                    .foregroundStyle(by: .value("Category", stringMapping(chartItem.category)))
                                 
                             }
-                            let label: String = switch statsType {
-                            case .count:
-                                    "Count"
-                            case .weight:
-                                    "Weight"
-                            }
-                            
-                            if value > 0.0 {
-                                SectorMark(angle: .value(label, value), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(isSelected ? 1.0 : 0.9), angularInset: PIE_ANGULAR_INSET)
+                        } else {
+                            SectorMark(angle: .value("Count", 0.8), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(0.9), angularInset: PIE_ANGULAR_INSET)
                                 .cornerRadius(PIE_MARK_CORNER_RADIUS)
-                                .foregroundStyle(by: .value("Category", stringMapping(category)))
-      
+                                .foregroundStyle(by: .value("Category", "first"))
+                            SectorMark(angle: .value("Count", 0.2), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(0.9), angularInset: PIE_ANGULAR_INSET)
+                                .cornerRadius(PIE_MARK_CORNER_RADIUS)
+                                .foregroundStyle(by: .value("Category", "second"))
+                        }
+                    }
+                    .frame(width: 275, height: 275)
+                    if case .loading = viewModel.chartData {
+                        ProgressView().tint(.gray)
+                    }
+                    if let item = viewModel.selectedItem {
+                        VStack {
+                            Text(stringMapping(item.category))
+                            switch statsType {
+                            case .count:
+                                Text(displayString(number: item.count, singleUnit: "lift"))
+                            case .weight:
+                                Text(displayString(number: item.count, singleUnit: weightUnits.shortSingleUnit ))
                             }
                         }
-                    } else {
-                        SectorMark(angle: .value("Count", 0.8), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(0.9), angularInset: PIE_ANGULAR_INSET)
-                            .cornerRadius(PIE_MARK_CORNER_RADIUS)
-                            .foregroundStyle(by: .value("Category", "first"))
-                        SectorMark(angle: .value("Count", 0.2), innerRadius: INNER_RADIUS_RATIO, outerRadius: .ratio(0.9), angularInset: PIE_ANGULAR_INSET)
-                            .cornerRadius(PIE_MARK_CORNER_RADIUS)
-                            .foregroundStyle(by: .value("Category", "second"))
                     }
                 }
-                if case .loading = viewModel.chartData {
-                    ProgressView().tint(.gray)
-                }
-                if let category = viewModel.selectedCategory, case .loaded(_, let categoryCounts, let categoryWeight) = viewModel.chartData {
-                    VStack {
-                        Text(stringMapping(category))
-                        switch statsType {
-                        case .count:
-                            Text(displayString(number: categoryCounts[category]!, singleUnit: "lift"))
-                        case .weight:
-                            Text(displayString(number: categoryWeight[category]!, singleUnit: weightUnits.shortSingleUnit ))
-                        }
-                    }
-                }
-
             }
-            .chartOverlay { proxy in                                                      if case .loaded(let categories, _, _) = viewModel.chartData {
+            .chartOverlay { proxy in
+                if case .loaded(_) = viewModel.chartData {
                     GeometryReader { geometry in
                         ZStack(alignment: .center) {
                             Rectangle().fill(.clear).contentShape(Rectangle())
@@ -194,15 +209,15 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
                                             )
                                             let angle = proxy.angle(at: location)
                                             if let item = proxy.value(atAngle: angle, as: Double.self) {
-                                                if let category = viewModel.getCategoryBy(count: item, statsType: statsType) {
+                                                if let item = viewModel.getCategoryBy(count: item) {
                                                     withAnimation {
-                                                        if category == viewModel.selectedCategory {
-                                                            viewModel.selectedCategory = nil
+                                                        if item == viewModel.selectedItem{
+                                                            viewModel.selectedItem = nil
                                                         } else {
-                                                            viewModel.selectedCategory = category
-                                                            if let idx = categories.firstIndex(of: category) {
-                                                                scrollProxy.scrollTo(idx / 2)
-                                                            }
+                                                            viewModel.selectedItem = item
+//                                                            if let idx = categoryCounts.firstIndex(of: item) {
+//                                                                scrollProxy.scrollTo(idx / 2)
+//                                                            }
                                                             
                                                         }
                                                     }
@@ -216,16 +231,15 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
             }
             .chartLegend(.hidden)
             .chartForegroundStyleScale(mapping: color)
-            .scaledToFit()
             .padding()
             ScrollView(.horizontal) {
                 HStack(alignment: .top) {
-                    if case .loaded(let categories, _, _) = viewModel.chartData {
+                    if case .loaded(let categoryCounts) = viewModel.chartData {
                         StatsLegend(
                                     chunkSize: 2,
-                                    categories: categories,
-                                    selectedCategory: $viewModel.selectedCategory,
-                                    stringMapping: stringMapping,
+                                    categories: categoryCounts,
+                                    selectedCategory: $viewModel.selectedItem,
+                                    stringMapping: {stringMapping($0.category)},
                                     colorMapping: colorMapping)
                     }
                 }
@@ -233,8 +247,13 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable>: 
                 .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
                 .scrollIndicators(.hidden)
             }
-        }.task {
-            await viewModel.load()
+        }
+        .frame(width: 275)
+        .padding()
+        .background(Color(uiColor: UIColor.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 24.0))
+        .task {
+            viewModel.load(liftsByCategory: liftsByCategory, countFn: countFn)
         }
     }
 }
@@ -261,8 +280,8 @@ struct StatsView: View {
             !allLiftsByCategory[category]!.isEmpty &&
             // passes search
             (searchText == "" ||
-            category.rawValue.containsIgnoringCase(searchText) ||
-            allLiftsByCategory[category]!.contains(where: { liftType in
+             category.rawValue.containsIgnoringCase(searchText) ||
+             allLiftsByCategory[category]!.contains(where: { liftType in
                 liftType.string.containsIgnoringCase(searchText)
             })) &&
             // there are lifts for some lifttype in this category
@@ -292,77 +311,85 @@ struct StatsView: View {
             })
         })
     }
-
-    @State
-    var statsType: StatsType = .count
     
     @State
     var granularity: Granularity = .category
     
     @AppStorage(PALETTE) var palette: Palette = .main
     
-  
+    
     var body: some View {
         
         NavigationStack {
-            List {
                 if searchText.isEmpty {
-                    Section("General Stats") {
-                        VStack {
-                            Picker("", selection: $granularity.animation()) {
-                                ForEach(Granularity.allCases, id: \.rawValue) { granularity in
-                                    Text(granularity.rawValue).tag(granularity)}
-                                
-                            }.pickerStyle(.segmented)
-                            Picker("", selection: $statsType.animation()) {
-                                ForEach(StatsType.allCases, id: \.rawValue) { type in
-                                    Text(type.rawValue).tag(type)
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 20.0) {
+//                            Spacer(minLength: 5.0)
+                            CategoryPieChart<LiftCategory>(
+                                title: "Lift Count by Category",
+                                liftsByCategory: liftsByCategory,
+                                statsType: .count,
+                                colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
+                                stringMapping: {$0.rawValue},
+                                countFn: {Double($0.elements.count)})
+                            .id("Category Count")
+                            CategoryPieChart<LiftCategory>(
+                                title: "Weight by Category",
+                                liftsByCategory: liftsByCategory,
+                                statsType: .weight,
+                                colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
+                                stringMapping: {$0.rawValue},
+                                countFn: {totalWeight($0.elements)})
+                            .id("Category Weight")
+                            CategoryPieChart<LiftType>(
+                                title: "Lift Count by Lift Type",
+                                liftsByCategory: liftsByType,
+                                statsType: .count,
+                                colorMapping: {colorByTypeString[$0]!},
+                                stringMapping: {$0.string},
+                                countFn: {Double($0.elements.count)})
+                            .id("Lift Count")
+                            CategoryPieChart<LiftType>(
+                                title: "Weight by Lift Type",
+                                liftsByCategory: liftsByType,
+                                statsType: .weight,
+                                colorMapping: {colorByTypeString[$0]!},
+                                stringMapping: {$0.string},
+                                countFn: {totalWeight($0.elements)})
+                            .id("Lift Weight")
+                        }
+                        .scrollTargetLayout()
+                    }
+                    .scrollTargetBehavior(.viewAligned)
+                    .safeAreaPadding(.horizontal, 40)
+                    .scrollIndicators(.hidden)
+                }
+                List {
+                    ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
+                        Section(category.rawValue) {
+                            ForEach(allLiftsByCategory[category]!, id: \.string) { liftType in
+                                if presentTypes.contains(liftType) {
+                                    HStack {
+                                        Text("\(liftType.string)")
+                                        Spacer()
+                                    }
+                                    .contentShape(Rectangle())
+                                    .onTapGesture(perform: {
+                                        print("Tapped on \(liftType)")
+                                        showStatsForType = liftType
+                                    })
+                                    
                                 }
-                            }.pickerStyle(.segmented)
-                            switch granularity {
-                            case .category:
-                                CategoryPieChart<LiftCategory>(
-                                    liftsByCategory: liftsByCategory,
-                                    statsType: $statsType,
-                                    colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
-                                    stringMapping: {$0.rawValue})
-                                
-                            case .type:
-                                CategoryPieChart<LiftType>(
-                                    liftsByCategory: liftsByType,
-                                    statsType: $statsType,
-                                    colorMapping: {colorByTypeString[$0]!},
-                                    stringMapping: {$0.string})
                             }
-                            
                         }
                     }
                 }
-                
-                ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
-                    Section(category.rawValue) {
-                        ForEach(allLiftsByCategory[category]!, id: \.string) { liftType in
-                            if presentTypes.contains(liftType) {
-                                HStack {
-                                    Text("\(liftType.string)")
-                                    Spacer()
-                                }
-                                .contentShape(Rectangle())
-                                .onTapGesture(perform: {
-                                    print("Tapped on \(liftType)")
-                                    showStatsForType = liftType
-                                })
-                                
-                            }
-                        }
-                    }
-                }
-            }                
+            }
             .navigationTitle("Stats")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-        }
-        .sheet(item: $showStatsForType) { type in
-            StatItem(type: type)
+            .sheet(item: $showStatsForType) { type in
+                StatItem(type: type)
+
         }
     }
 }
@@ -385,6 +412,27 @@ struct StatsView: View {
         }
             
     }
+    return StatsView().modelContainer(container)
+}
+
+
+#Preview("Overloaded") {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
+    
+    for type in LiftType.allCases {
+        for days in 0...Int.random(in: 30...35) {
+            let lift = Lift(liftType: type, timestamp: Date.now.addingTimeInterval(TimeInterval(-60*60*24*days)),  modifiers: [.incline])
+            container.mainContext.insert(lift)
+            
+            for _ in 0...Int.random(in: 1...5) {
+                let reps = [5, 10, 15].randomElement()!
+                lift.addSet(reps, weight: Double.random(in: 150...250), units: .pounds)
+                lift.addSet(reps, weight: Double.random(in: 100...200), units: .pounds)
+            }
+        }
+            
+    }
     return StatsView().modelContainer(container)
 }

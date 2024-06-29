@@ -268,7 +268,7 @@ fn lift_weights_computed_parameter(category_map: &CategoryMap) -> String {
 }
 
 fn all_cases(category_map: &CategoryMap) -> String {
-    let mut output = "\tstatic var allCases: [LiftType] = [\n".to_string();
+    let mut output = "\tstatic let allCases: [LiftType] = [\n".to_string();
     for (category, lifts) in category_map {
         output += &format!("\t\t// MARK: {}\n", category);
         for lift in lifts {
@@ -325,7 +325,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         println!("// This code is automatically generated. DO NOT EDIT.\n\n");
         println!("import Foundation\n\n");
-        println!("enum LiftType: Hashable, Codable{{\n");
+        println!("enum LiftType: Hashable, Codable, Sendable {{\n");
         println!("{}", cases(&category_map));
         println!("{}", all_cases(&category_map));
         println!("{}", to_string_computed_parameter(&category_map));

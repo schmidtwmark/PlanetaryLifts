@@ -4,7 +4,7 @@
 import Foundation
 
 
-enum LiftType: Hashable, Codable{
+enum LiftType: Hashable, Codable, Sendable {
 
 	// MARK: Arms
 	case bicepCurl
@@ -71,7 +71,7 @@ enum LiftType: Hashable, Codable{
 	case other(name: String, category: LiftCategory, id: UUID)
 
 
-	static var allCases: [LiftType] = [
+	static let allCases: [LiftType] = [
 		// MARK: Arms
 		.bicepCurl,
 		.hammerCurl,

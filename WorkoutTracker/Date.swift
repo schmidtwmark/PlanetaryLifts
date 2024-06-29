@@ -7,7 +7,7 @@
 
 import Foundation
 
-private var ordinalFormatter: NumberFormatter = {
+private let ordinalFormatter: NumberFormatter = {
     let formatter = NumberFormatter()
     formatter.numberStyle = .ordinal
     return formatter
