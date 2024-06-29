@@ -89,9 +89,7 @@ class MuscleGroupState : MuscleGroupSelector {
             let weights = lift.getLiftWeights()
             for (group, weight) in weights.map {
                 let totalReps = Double(lift.sets.reduce(0, {sum, liftSet in sum + liftSet.reps}))
-                let daysSince = Date().timeIntervalSince(lift.timestamp) / (60 * 60 * 24)
-                let recencyFactor = (-1.0 / 7.0) * daysSince + 1.0
-                let score = weight * totalReps * recencyFactor
+                let score = weight * totalReps * lift.recencyFactor
                 scores.add(group, score: score)
             }
         })
@@ -163,12 +161,11 @@ struct MuscleGroupView: View {
     var muscleGroupState = MuscleGroupState()
     
     @State var showInfoSheet = false
-    
-    
     @Query(filter: Lift.lastWeek(), sort: \Lift.timestamp, order: .reverse) var lastWeekLifts: [Lift]
     @Environment(\.modelContext) var modelContext
     
     @State var tintColor: Color = .init(hex: .init("06F3FF", radix: 16)!)
+    @State var showImpactForLift: Lift? = nil
     
     var label: some View {
         HStack {
@@ -188,37 +185,100 @@ struct MuscleGroupView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    HStack {
-                        MuscleGroupFrontView(selector: $muscleGroupState)
-                        MuscleGroupBackView(selector: $muscleGroupState)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        muscleGroupState.selectedMuscleGroup = nil
-                    }
-                    label
-                }
-                #if targetEnvironment(simulator)
-                ColorPicker(selection: $tintColor, supportsOpacity: false, label: {
-                    Text("Color")
-                })
-                #endif
-                Section("Lifts") {
-                    ForEach(lastWeekLifts) { lift in
-                        let liftWeights = lift.getLiftWeights()
-                        if liftWeights.affects(muscleGroupState.selectedMuscleGroup) {
-                            HStack {
-                                Text(lift.type.string)
-                                Spacer()
-                                Text(lift.timestamp.timeless().format())
+            ScrollView {
+                VStack(spacing: 20.0) {
+                    if case .loaded(let stats) = muscleGroupState.stats {
+                        HStack {
+                            MuscleGroupFrontView(selector: $muscleGroupState)
+                            MuscleGroupBackView(selector: $muscleGroupState)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            muscleGroupState.selectedMuscleGroup = nil
+                        }
+                        let percentage = { if let selected = muscleGroupState.selectedMuscleGroup {
+                            stats.normalizedWeight.getWeight(selected)
+                        } else {
+                            stats.normalizedWeight.mean
+                        }}()
+                        HStack {
+                            if let selected = muscleGroupState.selectedMuscleGroup {
+                                Text(selected.rawValue)
+                            } else {
+                                Text("Overall")
+                            }
+                            Spacer()
+                            Text("\((percentage * 100).clean)%")
+                        }
+                        .font(.title3)
+                        .padding()
+                        .background(ZStack {
+                            Rectangle().fill(.black)
+                            Rectangle().fill(tintColor).opacity((percentage / 2) + 0.5)
+                        })
+                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                        VStack {
+                            let contributingLifts = lastWeekLifts.filter({$0.getLiftWeights().affects(muscleGroupState.selectedMuscleGroup)})
+                            if contributingLifts.count > 0 {
+                                HStack {
+                                    Text("CONTRIBUTING LIFTS")
+                                    Spacer()
+                                }
+                                .font(.subheadline)
+                                .foregroundStyle(.gray)
+                                .padding(.leading, 15.0)
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 24.0).fill(.black)
+                                    LazyVStack(spacing: 0.0) {
+                                        
+                                        ForEach(contributingLifts) { lift in
+                                            let percentage = {
+                                                if let selectedMuscleGroup = muscleGroupState.selectedMuscleGroup {
+                                                    return lift.getLiftWeights().getWeight(selectedMuscleGroup) * lift.recencyFactor
+                                                } else {
+                                                    return lift.recencyFactor
+                                                }
+                                            }()
+                                            VStack {
+//                                                if lift == contributingLifts.first {
+//                                                    Divider().opacity(0.0)
+//                                                }
+                                                HStack {
+                                                    Text(lift.type.string)
+                                                    Spacer()
+                                                    if showImpactForLift == lift {
+                                                        Text("\((percentage * 100).clean)%")
+                                                    } else {
+                                                        Text(lift.timestamp.formatted(Date.FormatStyle().month(.defaultDigits).day()))
+                                                    }
+                                                }
+                                                .contentShape(Rectangle())
+                                                .onTapGesture(perform: {
+                                                    withAnimation {
+                                                        if showImpactForLift == lift {
+                                                            showImpactForLift = nil
+                                                        } else {
+                                                            showImpactForLift = lift
+                                                        }
+                                                    }
+                                                })
+                                                .padding(.horizontal, 15.0)
+                                                .padding(.vertical, 10.0)
+//                                                Divider().padding(.leading).opacity(contributingLifts.last == lift ? 0.0 : 1.0)
+                                            }
+                                            .background(tintColor.opacity(percentage))
+                                        }
+
+                                    }
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
                             }
                         }
+                    } else {
+                        ProgressView()
                     }
                 }
-                
-                
+                .padding(.horizontal)
             }
             .task {
                 muscleGroupState.load(lifts: lastWeekLifts)
@@ -226,7 +286,6 @@ struct MuscleGroupView: View {
             .environment(muscleGroupState)
             .navigationTitle("Muscle Saturation")
             .toolbar {
-                #if targetEnvironment(simulator)
                 ToolbarItem(placement: .automatic, content: {
                     Button {
                         showInfoSheet.toggle()
@@ -234,18 +293,27 @@ struct MuscleGroupView: View {
                         Label("Info", systemImage: showInfoSheet ? "info.circle.filled" : "info.circle")
                     }
                 })
-                #endif
             }
             .sheet(isPresented: $showInfoSheet, content: {
-                NavigationStack {
-                    VStack{
-                        Text("Each lift you perform affects certain muscle groups.\nThis page looks at your last week of lifts to highlight muscle groups that are overworked or underworked.")
-                        
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack {
+                        Text("Info").font(.title)
+                        Spacer()
+                        Button {
+                            showInfoSheet = false
+                        } label: {
+                            Label("Close", systemImage: "xmark.circle").labelStyle(.titleOnly)
+                        }
                     }
-                    .padding()
-                    .navigationTitle("Info")
+                    Spacer()
+                    Text("Each lift you perform affects certain muscle groups")
+                    Text("This page looks at your last week of lifts to highlight muscle groups that are overworked or underworked.")
+                    Text("Older lifts contribute less to muscle saturation.")
+                    Text("The suggestions provided are not a substitute for a certified personal trainer. Consult an expert before attempting new lifts.")
                 }
+                .padding( 20)
                 .presentationDetents([.medium])
+                
             })
             .tint(tintColor)
         }
@@ -263,11 +331,9 @@ struct MuscleGroupView: View {
             let lift = Lift(liftType: type, timestamp: Date.now.addingTimeInterval(TimeInterval(-60*60*24*days)),  modifiers: [.incline])
             container.mainContext.insert(lift)
             
-            for _ in 0...Int.random(in: 1...5) {
-                let reps = [5, 10, 15].randomElement()!
-                lift.addSet(reps, weight: Double.random(in: 150...250), units: .pounds)
-                lift.addSet(reps, weight: Double.random(in: 100...200), units: .pounds)
-            }
+            let weight = Double.random(in: 150...250)
+            let reps = [5, 10, 15].randomElement()!
+            lift.addSet(reps, weight: weight, units: .pounds)
         }
             
     }

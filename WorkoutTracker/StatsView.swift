@@ -241,9 +241,16 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
                                     selectedCategory: $viewModel.selectedItem,
                                     stringMapping: {stringMapping($0.category)},
                                     colorMapping: colorMapping)
+                    } else {
+                        StatsLegend(
+                                    chunkSize: 2,
+                                    categories: ["Placeholder 1", "Placeholder 2"],
+                                    selectedCategory: Binding.constant(nil),
+                                    stringMapping: {$0},
+                                    colorMapping: {_ in Color.gray})
+                        .redacted(reason: .placeholder)
                     }
                 }
-                
                 .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
                 .scrollIndicators(.hidden)
             }
@@ -321,9 +328,8 @@ struct StatsView: View {
     var body: some View {
         
         NavigationStack {
-            List {
-                
-                Section {
+            ScrollView(.vertical) {
+                VStack {
                     ScrollView(.horizontal) {
                         HStack(spacing: 20.0) {
                             CategoryPieChart<LiftCategory>(
@@ -364,33 +370,46 @@ struct StatsView: View {
                     .scrollTargetBehavior(.viewAligned)
                     .safeAreaPadding(.horizontal, 40)
                     .scrollIndicators(.hidden)
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-                ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
-                    Section(category.rawValue) {
-                        ForEach(allLiftsByCategory[category]!, id: \.string) { liftType in
-                            if presentTypes.contains(liftType) {
-                                HStack {
-                                    Text("\(liftType.string)")
-                                    Spacer()
+                    VStack(spacing: 20.0){
+                        ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
+                            VStack {
+                                Section {
+                                    HStack {
+                                        Text(category.rawValue.uppercased())
+                                        Spacer()
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundStyle(.gray)
+                                    .padding(.leading, 15.0)
+                                    VStack {
+                                        let types = allLiftsByCategory[category]!.sorted(by: <).filter({presentTypes.contains($0)})
+                                        if types.count > 0 {
+                                            Divider().opacity(0.0)
+                                            ForEach(types, id: \.string) { liftType in
+                                                HStack {
+                                                    Text("\(liftType.string)")
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 15.0)
+                                                .padding(.vertical, 5.0)
+                                                .onTapGesture(perform: {
+                                                    showStatsForType = liftType
+                                                })
+                                                Divider().padding(.leading).opacity(types.last == liftType ? 0.0 : 1.0)
+                                            }
+                                        }
+                                        
+                                    }
+                                    .contentShape(Rectangle())
+                                    .background(Color(UIColor.secondarySystemBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                                    
                                 }
-                                .contentShape(Rectangle())
-                                .listRowBackground(Color(uiColor: UIColor.secondarySystemBackground))
-                                .onTapGesture(perform: {
-                                    print("Tapped on \(liftType)")
-                                    showStatsForType = liftType
-                                })
-                                
                             }
                         }
-                    }
+                    }.padding()
                 }
             }
-            .listRowSeparator(.hidden)
-            .listStyle(.plain)
-//            .contentMargins(.horizontal, 0, for: .scrollContent) // 🟢 uncomment to customize combination of GREEN insets. (Requires iOS 17)
-
             .navigationTitle("Stats")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .sheet(item: $showStatsForType) { type in

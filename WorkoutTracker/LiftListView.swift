@@ -214,10 +214,32 @@ struct LiftListItem: View {
         case muscleGroups
     }
     @State var cardState : CardState = .liftInfo
+    
+    var onLiftsScreen: Bool
+    
+    var scrollViewProxy: ScrollViewProxy?
+    var onDelete: ((Lift) -> ())?
+    
+    // init on lift screen
+    init(lift: Lift, editingLift: Binding<Lift?>, showStatsForType: Binding<LiftType?>, scrollViewProxy: ScrollViewProxy, onDelete: @escaping (Lift) -> ()) {
+        onLiftsScreen = true
+        self.lift = lift
+        _editingLift = editingLift
+        _showStatsForType = showStatsForType
+        self.scrollViewProxy = scrollViewProxy
+        self.onDelete = onDelete
+    }
+    
+    init(lift: Lift, showStatsForType: Binding<LiftType?>) {
+       onLiftsScreen = false
+        self.lift = lift
+        _editingLift = Binding.constant(nil)
+        _showStatsForType = showStatsForType
+        self.scrollViewProxy = nil
+        self.onDelete = nil
+    }
+    // init on muscle group screen
 
-    var scrollViewProxy: ScrollViewProxy
-    var onDelete: (Lift) -> ()
-        
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     
@@ -251,25 +273,6 @@ struct LiftListItem: View {
                     .font(.title)
                     .foregroundStyle(textColor)
                 Spacer()
-//                Group {
-//                    Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
-//                        .font(.caption)
-//                        .foregroundStyle(textColor)
-//                    if !rendering {
-//                        let showMuscleGroups = cardState == .muscleGroups
-//                        Label(showMuscleGroups ? "Show Muscle Groups" : "Show Lift Info", systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle").labelStyle(.iconOnly)
-//                    }
-//                }.onTapGesture {
-//                    withAnimation {
-//                        cardState = switch cardState {
-//                        case .liftInfo:
-//                                .muscleGroups
-//                        case .muscleGroups:
-//                                .liftInfo
-//                        }
-//                    }
-//                    
-//                }
             }
             if case .muscleGroups = cardState, !rendering {
                 LiftMuscleGroupView(lift: lift)
@@ -334,29 +337,33 @@ struct LiftListItem: View {
         card(rendering: false)
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0, style: .continuous))
         .contextMenu(menuItems: {
-            Button {
-                editingLift = lift
-            } label: {
-                Label("Edit Lift", systemImage: "pencil")
+            if onLiftsScreen {
+                Button {
+                    editingLift = lift
+                } label: {
+                    Label("Edit Lift", systemImage: "pencil")
+                }
             }
-            Button {                    
-                let newLift = Lift(liftType: lift.type,
+            if let scroll = scrollViewProxy {
+                Button {
+                    let newLift = Lift(liftType: lift.type,
                                        sets: lift.sets,
                                        timestamp: Date.now,
                                        modifiers:
                                         lift.modifiers,
                                        notes: lift.notes,
-                                   weighted: lift.weighted)
-
-                withAnimation {
-                    modelContext.insert(newLift)
+                                       weighted: lift.weighted)
+                    
+                    withAnimation {
+                        modelContext.insert(newLift)
+                    }
+                    withAnimation {
+                        scroll.scrollTo("Top of List")
+                    }
+                    
+                } label: {
+                    Label("Repeat Now", systemImage: "arrow.circlepath")
                 }
-                withAnimation {
-                    scrollViewProxy.scrollTo("Top of List")
-                }
-
-            } label: {
-                Label("Repeat Now", systemImage: "arrow.circlepath")
             }
             Button {
                 showStatsForType = lift.type
@@ -364,10 +371,12 @@ struct LiftListItem: View {
                 Label("Stats", systemImage: "chart.dots.scatter")
             }
             ShareLink("Share", item: render(), preview: SharePreview(lift.type.string, image: render()))
-            Button(role: .destructive) {
-                onDelete(lift)
-            } label: {
-                Label("Delete", systemImage: "trash")
+            if let delete = onDelete {
+                Button(role: .destructive) {
+                    delete(lift)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
             }
         })
     }
@@ -448,7 +457,7 @@ struct LiftListView: View {
                                             Text("\(date.format())".uppercased())
                                                 .font(.subheadline)
                                                 .fontWeight(.bold)
-                                                .foregroundStyle(liftsForDate.first!.type.category.getColor(for: palette))
+                                                .foregroundStyle(filteredLifts.first!.type.category.getColor(for: palette))
                                             Spacer()
                                         }.padding([.horizontal], 20)
                                     })
@@ -466,23 +475,23 @@ struct LiftListView: View {
                             } label: {
                                 Label("Add Lift", systemImage: "plus")
                             }
-                            Menu("Filter", systemImage: filterImageName, content: {
-                                if let filterType = filterSelection {
-                                    Text ("Filtering \(filterType.string) Lifts")
-                                    Button(role: .destructive, action: {
+                            if let filterType = filterSelection {
+                                Button(role: .destructive, action: {
+                                    withAnimation {
                                         filterSelection = nil
-                                    }) {
-                                        HStack {
-                                            Text("Clear Filter")
-                                            Image(systemName: "xmark.circle")
-                                        }
                                     }
-                                } else {
+                                }) {
+                                    Label("Cancel Filter", systemImage: filterImageName)
+                                }
+                            } else {
+                                Menu("Filter", systemImage: filterImageName, content: {
                                     ForEach(allLiftsByCategory.keys.sorted(by: <), id: \.rawValue) { category in
                                         Menu(category.rawValue, content: {
                                             ForEach(allLiftsByCategory[category]!, id: \.hashValue) { lift in
                                                 Button {
-                                                    filterSelection = lift
+                                                    withAnimation {
+                                                        filterSelection = lift
+                                                    }
                                                 } label: {
                                                     Text(lift.string)
                                                 }
@@ -490,8 +499,8 @@ struct LiftListView: View {
                                         })
                                         
                                     }
-                                }
-                            })
+                                })
+                            }
                         })
                     }
                     .sheet(item: $showStatsForType) { type in

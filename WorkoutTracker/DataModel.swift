@@ -49,6 +49,11 @@ final class Lift {
         }
     }
     
+    var recencyFactor: Double {
+        let daysSince = Date().timeIntervalSince(self.timestamp) / (60 * 60 * 24)
+        return (-1.0 / 7.0) * daysSince + 1.0
+    }
+    
     struct LiftPoint : Hashable {
         var reps: Int
         var weight: Double

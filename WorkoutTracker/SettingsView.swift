@@ -27,6 +27,16 @@ enum WeightUnits : String, Codable, Equatable{
     }
 }
 
+extension Bundle {
+    var releaseVersionNumber: String? {
+        return infoDictionary?["CFBundleShortVersionString"] as? String
+    }
+    var buildVersionNumber: String? {
+        return infoDictionary?["CFBundleVersion"] as? String
+    }
+}
+
+
 struct SettingsView: View {
     @Query var userGeneratedTypes : [UserGeneratedLiftType]
     @Environment(\.modelContext) private var modelContext
@@ -48,9 +58,12 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section("Units") {
-                    Picker("Weight", selection: $weightUnits, content:  {
+                    
+                    Picker(selection: $weightUnits, content:  {
                         Text("Pounds").tag(WeightUnits.pounds)
                         Text("Kilograms").tag(WeightUnits.kilograms)
+                    }, label: {
+                        Label("Weight", systemImage: "scalemass")
                     })
                     .onChange(of: weightUnits, { (old, new) in
                         // TODO: figure out how to do this in the background and show progress
@@ -94,6 +107,28 @@ struct SettingsView: View {
                         
                     }
                 }
+                if let version = Bundle.main.releaseVersionNumber, let build = Bundle.main.buildVersionNumber {
+                    Section("About") {
+                        HStack {
+                            Label("Version Number", systemImage: "calendar")
+                            Spacer()
+                            Text(version)
+                        }
+                        HStack {
+                            Label("Build Number", systemImage: "swift")
+                            Spacer()
+                            Text(build)
+                        }
+                    }
+                }
+                
+                Section("Shameless Self Promotion") {
+                    
+                    Link(destination: URL(string:"https://apps.apple.com/qa/developer/mark-schmidt/id1502505700")!) {
+                        Label("My Other Apps", systemImage: "storefront")
+                    }
+                }
+
             }
             .navigationTitle("Settings")
         }
