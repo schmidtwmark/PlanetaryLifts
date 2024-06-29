@@ -321,10 +321,11 @@ struct StatsView: View {
     var body: some View {
         
         NavigationStack {
-                if searchText.isEmpty {
+            List {
+                
+                Section {
                     ScrollView(.horizontal) {
                         HStack(spacing: 20.0) {
-//                            Spacer(minLength: 5.0)
                             CategoryPieChart<LiftCategory>(
                                 title: "Lift Count by Category",
                                 liftsByCategory: liftsByCategory,
@@ -364,32 +365,38 @@ struct StatsView: View {
                     .safeAreaPadding(.horizontal, 40)
                     .scrollIndicators(.hidden)
                 }
-                List {
-                    ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
-                        Section(category.rawValue) {
-                            ForEach(allLiftsByCategory[category]!, id: \.string) { liftType in
-                                if presentTypes.contains(liftType) {
-                                    HStack {
-                                        Text("\(liftType.string)")
-                                        Spacer()
-                                    }
-                                    .contentShape(Rectangle())
-                                    .onTapGesture(perform: {
-                                        print("Tapped on \(liftType)")
-                                        showStatsForType = liftType
-                                    })
-                                    
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+                ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
+                    Section(category.rawValue) {
+                        ForEach(allLiftsByCategory[category]!, id: \.string) { liftType in
+                            if presentTypes.contains(liftType) {
+                                HStack {
+                                    Text("\(liftType.string)")
+                                    Spacer()
                                 }
+                                .contentShape(Rectangle())
+                                .listRowBackground(Color(uiColor: UIColor.secondarySystemBackground))
+                                .onTapGesture(perform: {
+                                    print("Tapped on \(liftType)")
+                                    showStatsForType = liftType
+                                })
+                                
                             }
                         }
                     }
                 }
             }
+            .listRowSeparator(.hidden)
+            .listStyle(.plain)
+//            .contentMargins(.horizontal, 0, for: .scrollContent) // 🟢 uncomment to customize combination of GREEN insets. (Requires iOS 17)
+
             .navigationTitle("Stats")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .sheet(item: $showStatsForType) { type in
                 StatItem(type: type)
-
+                
+            }
         }
     }
 }
