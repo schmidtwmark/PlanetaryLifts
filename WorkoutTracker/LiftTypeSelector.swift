@@ -90,11 +90,58 @@ struct LiftTypeSelector: View {
     }
 }
 
+@Observable
+class NewLiftTypeMuscleGroupSelector: MuscleGroupSelector {
+    var selectedMuscleGroup: MuscleGroup? = nil
+    var weights: LiftWeights
+    
+    init(weights: LiftWeights) {
+        self.weights = weights
+    }
+    
+    func getWeight(_ muscleGroup: MuscleGroup, userGeneratedTypes: [UserGeneratedLiftType]) -> Double {
+        return weights.getWeight(muscleGroup)
+    }
+}
+
 struct CreateNewTypeView : View {
-    @State var name: String = ""
-    @State var category: LiftCategory = .other
+    @State var name: String
+    @State var category: LiftCategory
+    @State var selector: NewLiftTypeMuscleGroupSelector
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) var dismiss
+    @AppStorage(PALETTE) var palette: Palette = .main
+    @Query var userGeneratedTypes: [UserGeneratedLiftType]
+    
+    
+    enum Mode {
+        case edit(UserGeneratedLiftType)
+        case add
+        
+        var isEditing: Bool {
+            switch self {
+                case .edit(_): true
+                case .add: false
+            }
+        }
+    }
+    
+    var mode: Mode
+    
+    init() {
+        mode = .add
+        name = "Custom Type"
+        category = .other
+        selector = NewLiftTypeMuscleGroupSelector(weights: LiftWeights())
+    }
+    
+    init(type: UserGeneratedLiftType) {
+        mode = .edit(type)
+        name = type.name
+        category = type.category
+        selector = NewLiftTypeMuscleGroupSelector(weights: type.liftWeights)
+    }
+    
     
     var body: some View {
         
@@ -106,11 +153,40 @@ struct CreateNewTypeView : View {
                         Text(category.rawValue).tag(category)
                     }
                 }
+            }.disabled(mode.isEditing)
+            
+            Section {
+                HStack {
+                    MuscleGroupFrontView(selector: $selector)
+                    MuscleGroupBackView(selector: $selector)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    selector.selectedMuscleGroup = nil
+                }
+                if let selected = selector.selectedMuscleGroup {
+                    Picker("Category", selection: Binding(get: {
+                        MuscleGroupImpact(weight: selector.getWeight(selected, userGeneratedTypes: userGeneratedTypes))
+                    }, set: {
+                        selector.weights.map[selected] = $0.weight
+                    })) {
+                        ForEach(MuscleGroupImpact.allCases) { impact in
+                            Text(impact.rawValue).tag(impact)
+                        }
+                    }
+                }
             } footer: {
                 HStack {
                     Spacer()
                     Button {
-                        modelContext.insert(UserGeneratedLiftType(name: name, category: category))
+                        switch mode {
+                        case .add:
+                            let type = UserGeneratedLiftType(name: name, category: category, liftWeights: selector.weights)
+                            modelContext.insert(type)
+                        case .edit(let type):
+                            // Canot update name or category
+                            type.liftWeights = selector.weights
+                        }
                         dismiss()
                     } label: {
                         HStack {
@@ -124,10 +200,11 @@ struct CreateNewTypeView : View {
                     .clipShape(Capsule())
                     Spacer()
                 }
+                .disabled(name == "")
                 .padding()
                 .navigationTitle("New Lift Type")
             }
-        }
+        }.tint(category.getColor(for: palette))
     }
 }
 
@@ -135,12 +212,24 @@ struct CreateNewTypeView : View {
     
     
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: UserGeneratedLiftType.self, configurations: config)
-    
-    container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms))
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+
+    container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms, liftWeights: LiftWeights([(.abs, 5)])))
 
     return NavigationStack {
         LiftTypeSelector(selectedLiftType: .constant(.backSquat))
             .modelContainer(container)
+    }
+}
+
+#Preview {
+    
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+
+
+    return NavigationStack {
+        CreateNewTypeView()
+        .modelContainer(container)
     }
 }

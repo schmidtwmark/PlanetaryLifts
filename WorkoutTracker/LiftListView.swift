@@ -115,8 +115,8 @@ class LiftListItemMuscleGroupSelector : MuscleGroupSelector {
     var lift: Lift
     var selectedMuscleGroup: MuscleGroup? = nil
     
-    func getWeight(_ muscleGroup: MuscleGroup) -> Double {
-        return lift.getLiftWeights().getWeight(muscleGroup)
+    func getWeight(_ muscleGroup: MuscleGroup, userGeneratedTypes: [UserGeneratedLiftType]) -> Double {
+        return lift.getLiftWeights(userGeneratedTypes).getWeight(muscleGroup)
     }
     
     init(lift: Lift) {
@@ -126,17 +126,7 @@ class LiftListItemMuscleGroupSelector : MuscleGroupSelector {
 }    
 
 func weightDisplayString(_ weight: Double) -> String {
-    if weight >= 1.0 {
-        return "High Impact"
-    } else if weight >= 0.75 {
-        return "Medium Impact"
-    } else if weight >= 0.50 {
-        return "Small Impact"
-    } else if weight >= 0.25 {
-       return "Minor Impact"
-    } else {
-        return "No Impact"
-    }
+    return MuscleGroupImpact(weight: weight).rawValue
 }
 
 struct LiftMuscleSelectionView: View {
@@ -184,13 +174,14 @@ struct LiftMuscleGroupSilhouetteView: View {
 struct LiftMuscleGroupView : View {
     @State var selector: LiftListItemMuscleGroupSelector
     var lift: Lift
+    @Query var userGeneratedTypes: [UserGeneratedLiftType]
     
     var body: some View {
         VStack {
             LiftMuscleGroupSilhouetteView(selector: $selector, lift: lift)
             if let selected = selector.selectedMuscleGroup {
                 Spacer(minLength: 20.0)
-                LiftMuscleSelectionView(weight: selector.getWeight(selected), muscleGroup: selected, lift: lift)
+                LiftMuscleSelectionView(weight: selector.getWeight(selected, userGeneratedTypes: userGeneratedTypes), muscleGroup: selected, lift: lift)
             }
         }
     }
@@ -475,7 +466,7 @@ struct LiftListView: View {
                             } label: {
                                 Label("Add Lift", systemImage: "plus")
                             }
-                            if let filterType = filterSelection {
+                            if let _ = filterSelection {
                                 Button(role: .destructive, action: {
                                     withAnimation {
                                         filterSelection = nil
@@ -558,6 +549,27 @@ struct LiftListView: View {
     thirdLift.addSet(10, weight: 250.0, units: .pounds)
     thirdLift.addSet(10, weight: 250.0, units: .pounds)
     thirdLift.addSet(10, weight: 250.0, units: .pounds)
+    
+
+    return LiftListView()
+        .modelContainer(container)
+}
+#Preview("Custom Type") {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    
+    let userType = UserGeneratedLiftType(name: "Custom Type", category: .other, liftWeights: LiftWeights([(.abs, 1.0)]))
+    
+    container.mainContext.insert(userType)
+    
+    
+    let lift = Lift(liftType: .other(name: userType.name, category: userType.category, id: userType.id), timestamp: Date.now, modifiers: [], notes: "Notes notes notes notes notes notes notes")
+    container.mainContext.insert(lift)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
+    
+
     
 
     return LiftListView()

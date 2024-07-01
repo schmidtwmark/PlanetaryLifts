@@ -103,8 +103,16 @@ final class Lift {
         }
     }
     
-    func getLiftWeights() -> LiftWeights {
+    // If this is a user generated type, we need to get the muscle groups from there
+    func getLiftWeights(_ userGeneratedTypes: [UserGeneratedLiftType]) -> LiftWeights {
         // Overrides
+        if case let .other(_, _, id) = type {
+            if let userType = userGeneratedTypes.first(where: {$0.id == id}) {
+                return userType.liftWeights
+            } else {
+                return LiftWeights([])
+            }
+        }
         
         return type.weights
     }
@@ -298,10 +306,12 @@ final class UserGeneratedLiftType  {
     var name: String = ""
     var category: LiftCategory = LiftCategory.chest
     var id: UUID = UUID()
+    var liftWeights: LiftWeights = LiftWeights([])
     
-    init(name: String, category: LiftCategory) {
+    init(name: String, category: LiftCategory, liftWeights: LiftWeights = LiftWeights()) {
         self.name = name
         self.category = category
+        self.liftWeights = liftWeights
     }
 }
 

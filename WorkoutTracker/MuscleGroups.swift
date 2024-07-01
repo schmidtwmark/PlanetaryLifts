@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum MuscleGroup: String, CaseIterable, Identifiable, Comparable {
+enum MuscleGroup: String, CaseIterable, Identifiable, Comparable, Codable {
     static func < (lhs: MuscleGroup, rhs: MuscleGroup) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
@@ -40,6 +40,48 @@ extension MuscleGroup {
         case .glutes: .glutes
         case .hamstrings, .calves, .quadriceps: .legs
         case .lowerBack, .latissmusDorsi: .back
+        }
+    }
+}
+
+enum MuscleGroupImpact: String, CaseIterable, Identifiable {
+    case noImpact = "No Impact"
+    case minorImpact = "Minor Impact"
+    case smallImpact = "Small Impact"
+    case mediumImpact = "Medium Impact"
+    case highImpact = "High Impact"
+    
+    var id: String {
+        self.rawValue
+    }
+    
+    init(weight: Double) {
+        if weight >= 1.0 {
+            self = .highImpact
+        } else if weight >= 0.75 {
+            self = .mediumImpact
+        } else if weight >= 0.50 {
+            self = .smallImpact
+        } else if weight >= 0.25 {
+            self = .minorImpact
+        } else {
+            self = .noImpact
+        }
+    }
+    
+    var weight: Double {
+        switch self {
+            
+        case .noImpact:
+            return 0.0
+        case .minorImpact:
+            return 0.25
+        case .smallImpact:
+            return 0.5
+        case .mediumImpact:
+            return 0.75
+        case .highImpact:
+            return 1.0
         }
     }
 }

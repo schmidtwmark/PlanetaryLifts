@@ -23,13 +23,14 @@ struct MuscleView<Selector: MuscleGroupSelector, S: Shape> : View{
     }
     
     var percentage: Double {
-        selector.getWeight(muscleGroup)
+        selector.getWeight(muscleGroup, userGeneratedTypes: userGeneratedTypes)
     }
     
     
     @ViewBuilder var shape: S
     @Binding var selector: Selector
     @AppStorage(PALETTE) var palette: Palette = .main
+    @Query var userGeneratedTypes: [UserGeneratedLiftType]
     
     var body: some View {
         ZStack {
@@ -53,12 +54,12 @@ struct MuscleView<Selector: MuscleGroupSelector, S: Shape> : View{
 
 protocol MuscleGroupSelector {
     var selectedMuscleGroup: MuscleGroup? { get set }
-    func getWeight(_ muscleGroup: MuscleGroup) -> Double
+    func getWeight(_ muscleGroup: MuscleGroup, userGeneratedTypes: [UserGeneratedLiftType]) -> Double
 }
 
 @Observable
 class MuscleGroupState : MuscleGroupSelector {
-    func getWeight(_ muscleGroup: MuscleGroup) -> Double {
+    func getWeight(_ muscleGroup: MuscleGroup, userGeneratedTypes: [UserGeneratedLiftType]) -> Double {
         if case .loaded(let stats) = self.stats {
            return stats.normalizedWeight.getWeight(muscleGroup)
         } else {
@@ -84,9 +85,9 @@ class MuscleGroupState : MuscleGroupSelector {
     }
     
     var stats : MuscleGroupStats = .loading
-    func load(lifts: [Lift]) {
-        let scores = lifts.reduce(into: LiftWeights(), { scores, lift in
-            let weights = lift.getLiftWeights()
+        func load(lifts: [Lift], userGeneratedTypes: [UserGeneratedLiftType]) {
+            let scores = lifts.reduce(into: LiftWeights(), { scores, lift in
+            let weights = lift.getLiftWeights(userGeneratedTypes)
             for (group, weight) in weights.map {
                 let totalReps = Double(lift.sets.reduce(0, {sum, liftSet in sum + liftSet.reps}))
                 let score = weight * totalReps * lift.recencyFactor
@@ -162,25 +163,47 @@ struct MuscleGroupView: View {
     
     @State var showInfoSheet = false
     @Query(filter: Lift.lastWeek(), sort: \Lift.timestamp, order: .reverse) var lastWeekLifts: [Lift]
+    @Query var userGeneratedTypes: [UserGeneratedLiftType]
     @Environment(\.modelContext) var modelContext
     
     @State var tintColor: Color = .init(hex: .init("06F3FF", radix: 16)!)
     @State var showImpactForLift: Lift? = nil
     
-    var label: some View {
+    @ViewBuilder
+    func muscles(_ stats: MuscleGroupState.MuscleGroupStatsData) -> some View {
         HStack {
-            Text(muscleGroupState.selectedMuscleGroup.map({$0.rawValue}) ?? "Overall")
-            Spacer()
-            if case .loaded(let stats) = muscleGroupState.stats {
-                if let selected = muscleGroupState.selectedMuscleGroup {
-                    Text("\((stats.normalizedWeight.getWeight(selected) * 100).clean)%")
-                } else {
-                    Text("\((stats.normalizedWeight.mean * 100).clean)%")
-                }
-            } else {
-                ProgressView()
-            }
+            MuscleGroupFrontView(selector: $muscleGroupState)
+            MuscleGroupBackView(selector: $muscleGroupState)
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            muscleGroupState.selectedMuscleGroup = nil
+        }
+    }
+    
+    @ViewBuilder
+    func musclesLabel(_ stats: MuscleGroupState.MuscleGroupStatsData) -> some View {
+        let percentage = { if let selected = muscleGroupState.selectedMuscleGroup {
+            stats.normalizedWeight.getWeight(selected)
+        } else {
+            stats.normalizedWeight.mean
+        }}()
+        HStack {
+            if let selected = muscleGroupState.selectedMuscleGroup {
+                Text(selected.rawValue)
+            } else {
+                Text("Overall")
+            }
+            Spacer()
+            Text("\((percentage * 100).clean)%")
+        }
+        .font(.title3)
+        .padding()
+        .background(ZStack {
+            Rectangle().fill(.black)
+            Rectangle().fill(tintColor).opacity((percentage / 2) + 0.5)
+        })
+        .clipShape(RoundedRectangle(cornerRadius: 10.0))
     }
 
     var body: some View {
@@ -188,37 +211,10 @@ struct MuscleGroupView: View {
             ScrollView {
                 VStack(spacing: 20.0) {
                     if case .loaded(let stats) = muscleGroupState.stats {
-                        HStack {
-                            MuscleGroupFrontView(selector: $muscleGroupState)
-                            MuscleGroupBackView(selector: $muscleGroupState)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            muscleGroupState.selectedMuscleGroup = nil
-                        }
-                        let percentage = { if let selected = muscleGroupState.selectedMuscleGroup {
-                            stats.normalizedWeight.getWeight(selected)
-                        } else {
-                            stats.normalizedWeight.mean
-                        }}()
-                        HStack {
-                            if let selected = muscleGroupState.selectedMuscleGroup {
-                                Text(selected.rawValue)
-                            } else {
-                                Text("Overall")
-                            }
-                            Spacer()
-                            Text("\((percentage * 100).clean)%")
-                        }
-                        .font(.title3)
-                        .padding()
-                        .background(ZStack {
-                            Rectangle().fill(.black)
-                            Rectangle().fill(tintColor).opacity((percentage / 2) + 0.5)
-                        })
-                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                        muscles(stats)
+                        musclesLabel(stats)
                         VStack {
-                            let contributingLifts = lastWeekLifts.filter({$0.getLiftWeights().affects(muscleGroupState.selectedMuscleGroup)})
+                            let contributingLifts = lastWeekLifts.filter({$0.getLiftWeights(userGeneratedTypes).affects(muscleGroupState.selectedMuscleGroup)})
                             if contributingLifts.count > 0 {
                                 HStack {
                                     Text("CONTRIBUTING LIFTS")
@@ -228,21 +224,18 @@ struct MuscleGroupView: View {
                                 .foregroundStyle(.gray)
                                 .padding(.leading, 15.0)
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 24.0).fill(.black)
+                                    RoundedRectangle(cornerRadius: 10.0).fill(.black)
                                     LazyVStack(spacing: 0.0) {
                                         
                                         ForEach(contributingLifts) { lift in
                                             let percentage = {
                                                 if let selectedMuscleGroup = muscleGroupState.selectedMuscleGroup {
-                                                    return lift.getLiftWeights().getWeight(selectedMuscleGroup) * lift.recencyFactor
+                                                    return lift.getLiftWeights(userGeneratedTypes).getWeight(selectedMuscleGroup) * lift.recencyFactor
                                                 } else {
                                                     return lift.recencyFactor
                                                 }
                                             }()
                                             VStack {
-//                                                if lift == contributingLifts.first {
-//                                                    Divider().opacity(0.0)
-//                                                }
                                                 HStack {
                                                     Text(lift.type.string)
                                                     Spacer()
@@ -264,7 +257,6 @@ struct MuscleGroupView: View {
                                                 })
                                                 .padding(.horizontal, 15.0)
                                                 .padding(.vertical, 10.0)
-//                                                Divider().padding(.leading).opacity(contributingLifts.last == lift ? 0.0 : 1.0)
                                             }
                                             .background(tintColor.opacity(percentage))
                                         }
@@ -281,7 +273,7 @@ struct MuscleGroupView: View {
                 .padding(.horizontal)
             }
             .task {
-                muscleGroupState.load(lifts: lastWeekLifts)
+                muscleGroupState.load(lifts: lastWeekLifts, userGeneratedTypes: userGeneratedTypes)
             }
             .environment(muscleGroupState)
             .navigationTitle("Muscle Saturation")

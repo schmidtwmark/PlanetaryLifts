@@ -89,11 +89,15 @@ struct SettingsView: View {
                             
                             if !types.isEmpty {
                                 ForEach(types)  { type in
-                                    HStack {
-                                        Text(type.name)
-                                        Spacer()
-                                        Text(type.category.rawValue).fontWeight(.light)
-                                    }
+                                    NavigationLink(destination: {
+                                        CreateNewTypeView(type: type)
+                                    }, label: {
+                                        HStack {
+                                            Text(type.name)
+                                            Spacer()
+                                            Text(type.category.rawValue).fontWeight(.light)
+                                        }
+                                    })
                                 }.onDelete(perform: { indexSet in
                                     let liftsToDelete = indexSet.map({index in categorizedUserGeneratedTypes[category]![index]})
                                     for liftToDelete in liftsToDelete {

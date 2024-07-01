@@ -413,7 +413,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .uprightRow: LiftWeights([(.trapezius, 0.75), (.forearms, 0.25), (.deltoid, 1)])
 		case .frontRaise: LiftWeights([(.trapezius, 0.5), (.deltoid, 1)])
 
-		default: LiftWeights()
+		default: LiftWeights([])
 		}
 	}
 

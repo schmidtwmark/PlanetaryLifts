@@ -262,7 +262,7 @@ fn lift_weights_computed_parameter(category_map: &CategoryMap) -> String {
         output += "\n"
     }
 
-    output += "\t\tdefault: LiftWeights()\n";
+    output += "\t\tdefault: LiftWeights([])\n";
     output += COMPUTED_PARAMETER_FOOTER;
     output
 }

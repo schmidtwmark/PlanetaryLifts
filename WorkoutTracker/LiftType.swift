@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 import Charts
 
-
 public enum LiftCategory: String, Codable, CaseIterable, Comparable, Identifiable, Sendable {
     public var id: String {
         self.rawValue
@@ -120,7 +119,7 @@ extension LiftCategory: Defaultable {
     }
 }
 
-struct LiftWeights {
+struct LiftWeights : Codable, Equatable, Hashable {
     var map: [MuscleGroup: Double]
     
     init(_ sparse: [(MuscleGroup, Double)] = []) {

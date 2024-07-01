@@ -85,6 +85,7 @@ func roundedDecrement(_ current: Double) -> Double {
 
 struct AddLiftMuscleGroupView: View {
     @State var selector: LiftListItemMuscleGroupSelector
+    @Query var userGeneratedTypes: [UserGeneratedLiftType]
     var lift: Lift
     var body: some View {
         LiftMuscleGroupSilhouetteView(selector: $selector, lift: lift)
@@ -93,7 +94,7 @@ struct AddLiftMuscleGroupView: View {
             HStack {
                 Text(selected.rawValue)
                 Spacer()
-                Text(weightDisplayString(selector.getWeight(selected)))
+                Text(weightDisplayString(selector.getWeight(selected, userGeneratedTypes: userGeneratedTypes)))
             }
         }
     }
