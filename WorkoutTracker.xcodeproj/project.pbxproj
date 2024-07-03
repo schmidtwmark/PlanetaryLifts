@@ -22,6 +22,7 @@
 		ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7BF2BBE1BE900C46300 /* StatItem.swift */; };
 		ED76D7C22BBF9D4200C46300 /* BindingPlayground.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */; };
 		ED76D7C42BBF9F9500C46300 /* NumberPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */; };
+		ED87072B2C3358810010DFA8 /* ImportExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED87072A2C3358810010DFA8 /* ImportExportView.swift */; };
 		ED8C374B2C2FAABE00834F1D /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = ED8C374A2C2FAABE00834F1D /* Collections */; };
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
@@ -53,6 +54,7 @@
 		ED76D7BF2BBE1BE900C46300 /* StatItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatItem.swift; sourceTree = "<group>"; };
 		ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingPlayground.swift; sourceTree = "<group>"; };
 		ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberPicker.swift; sourceTree = "<group>"; };
+		ED87072A2C3358810010DFA8 /* ImportExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportExportView.swift; sourceTree = "<group>"; };
 		EDA682F02B90E9F4002015CA /* WorkoutTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTrackerApp.swift; sourceTree = "<group>"; };
 		EDA682F52B90E9F4002015CA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -134,6 +136,7 @@
 				ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */,
 				ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */,
 				EDA683092B913492002015CA /* SettingsView.swift */,
+				ED87072A2C3358810010DFA8 /* ImportExportView.swift */,
 				ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */,
 				ED320A372B94DB5E003A6628 /* LiftType.swift */,
 				ED30C2502BE6997D000303F9 /* LiftTypesGenerated.swift */,
@@ -236,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ED76D7C42BBF9F9500C46300 /* NumberPicker.swift in Sources */,
+				ED87072B2C3358810010DFA8 /* ImportExportView.swift in Sources */,
 				EDA6830E2B915190002015CA /* AddLiftView.swift in Sources */,
 				ED6E7EE02C28C0460092134D /* MuscleGroups.swift in Sources */,
 				EDA683102B9186DE002015CA /* StatsView.swift in Sources */,

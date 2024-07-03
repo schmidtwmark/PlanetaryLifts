@@ -280,13 +280,15 @@ struct MuscleGroupView: View {
             .toolbar {
                 ToolbarItem(placement: .automatic, content: {
                     Button {
-                        showInfoSheet.toggle()
+                        withAnimation {
+                            showInfoSheet.toggle()
+                        }
                     } label: {
-                        Label("Info", systemImage: showInfoSheet ? "info.circle.filled" : "info.circle")
+                        Label("Info", systemImage: showInfoSheet ? "info.circle.fill" : "info.circle").labelStyle(.iconOnly)
                     }
                 })
             }
-            .sheet(isPresented: $showInfoSheet, content: {
+            .sheet(isPresented: $showInfoSheet.animation(), content: {
                 VStack(alignment: .leading, spacing: 20) {
                     HStack {
                         Text("Info").font(.title)

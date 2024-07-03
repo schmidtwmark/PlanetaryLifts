@@ -209,6 +209,80 @@ enum LiftType: Hashable, Codable, Sendable {
 		}
 	}
 
+	init?(from: String) {
+		 switch from {
+		// MARK: Arms
+		case "Bicep Curl": self = .bicepCurl
+		case "Hammer Curl": self = .hammerCurl
+		case "Kettle Bell Swing": self = .kettleBellSwing
+		case "Skullcrushers": self = .skullcrushers
+		case "Tricep Extensions": self = .tricepExtensions
+		case "Preacher Curls": self = .preacherCurls
+		case "Lateral Raises": self = .lateralRaises
+		case "Tricep Kickback": self = .tricepKickback
+		case "Arnold Press": self = .arnoldPress
+		case "Tricep Pushdown ": self = .tricepPushdown
+		case "Landmine Press": self = .landminePress
+
+		// MARK: Back
+		case "Deadlift": self = .deadlift
+		case "Lat Pulldowns": self = .latPulldowns
+		case "Back Extensions": self = .backExtensions
+		case "Row": self = .row
+		case "Chest Supported Row": self = .chestSupportedRow
+		case "Bent Over Row": self = .bentOverRow
+		case "Seated Row": self = .seatedRow
+		case "Pull Up": self = .pullUp
+
+		// MARK: Chest
+		case "Bench Press": self = .benchPress
+		case "Viking Press": self = .vikingPress
+		case "Pushups": self = .pushups
+		case "Floor Press": self = .floorPress
+		case "Flyes": self = .flyes
+		case "Dip": self = .dip
+		case "Chest Press": self = .chestPress
+
+		// MARK: Core
+		case "Renegade Row": self = .renegadeRow
+		case "Plank": self = .plank
+		case "Side Plank": self = .sidePlank
+		case "Russian Twists": self = .russianTwists
+		case "Side Bends": self = .sideBends
+		case "Plank Pull Through": self = .plankPullThrough
+		case "Leg Raises": self = .legRaises
+
+		// MARK: Glutes
+		case "Hip Thrust": self = .hipThrust
+		case "Reverse Hyperextension": self = .reverseHyperextension
+		case "Kickbacks": self = .kickbacks
+		case "Romanain Deadlifts": self = .romanainDeadlifts
+		case "Good Mornings": self = .goodMornings
+		case "Step Ups": self = .stepUps
+
+		// MARK: Legs
+		case "Back Squat": self = .backSquat
+		case "Hack Squat": self = .hackSquat
+		case "Front Squat": self = .frontSquat
+		case "Hip Adduction": self = .hipAdduction
+		case "Lateral Lunge": self = .lateralLunge
+		case "Lunge": self = .lunge
+		case "Leg Press Machine": self = .legPressMachine
+		case "Leg Extension Machine": self = .legExtensionMachine
+		case "Hamstring Curls": self = .hamstringCurls
+		case "Goblet Squat": self = .gobletSquat
+		case "Bulgarian Split Squat": self = .bulgarianSplitSquat
+
+		// MARK: Shoulders
+		case "Overhead Press": self = .overheadPress
+		case "Face Pull": self = .facePull
+		case "Upright Row": self = .uprightRow
+		case "Front Raise": self = .frontRaise
+
+		default: return nil
+		}
+	}
+
 	var category: LiftCategory {
 		return switch self {
 		// MARK: Arms

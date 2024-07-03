@@ -53,6 +53,8 @@ struct SettingsView: View {
     }
     
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
+    @State var importSheetPresented = false
+    @State var exportSheetPresented = false
     
     var body: some View {
         NavigationStack {
@@ -111,6 +113,22 @@ struct SettingsView: View {
                         
                     }
                 }
+                
+                Section("Backup and Restore") {
+                    Button {
+                        print("Pressed import")
+                        importSheetPresented = true
+                    } label: {
+                        Label("Import Lifts", systemImage: "square.and.arrow.down.on.square")
+                    }
+                    Button {
+                        print("Pressed export")
+                        exportSheetPresented = true
+                    } label: {
+                        Label("Export Lifts", systemImage: "square.and.arrow.up.on.square")
+                    }
+                }
+               
                 if let version = Bundle.main.releaseVersionNumber, let build = Bundle.main.buildVersionNumber {
                     Section("About") {
                         HStack {
@@ -135,6 +153,13 @@ struct SettingsView: View {
 
             }
             .navigationTitle("Settings")
+            .sheet(isPresented: $importSheetPresented, content: {
+                ImportSheet()
+            })
+            .sheet(isPresented: $exportSheetPresented, content: {
+                ExportSheet()
+            })
+            
         }
     }
 }

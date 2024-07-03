@@ -157,7 +157,9 @@ struct NumberIncrementor<T: Numeric>: View {
                 }
             } label: {
                 Image(systemName: "minus")
-            }.buttonStyle(StepperButtonStyle(frame: CGSize(width: frame.width / 2, height: frame.height)))
+            }
+            .buttonStyle(StepperButtonStyle(frame: CGSize(width: frame.width / 2, height: frame.height)))
+            .buttonRepeatBehavior(.enabled)
             TextField("", value: $number, formatter: formatter)
                 .keyboardType(.decimalPad)
                 .focused($isInputActive)
@@ -172,7 +174,9 @@ struct NumberIncrementor<T: Numeric>: View {
                 }
             } label: {
                 Image(systemName: "plus")
-            }.buttonStyle(StepperButtonStyle(frame: CGSize(width: frame.width / 2, height: frame.height)))
+            }
+            .buttonStyle(StepperButtonStyle(frame: CGSize(width: frame.width / 2, height: frame.height)))
+            .buttonRepeatBehavior(.enabled)
         }
     }
 }

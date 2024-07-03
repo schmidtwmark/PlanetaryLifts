@@ -122,6 +122,25 @@ fn to_string_computed_parameter(category_map: &CategoryMap) -> String {
     output
 }
 
+fn from_string_init(category_map: &CategoryMap) -> String {
+    let mut output = "\tinit?(from: String) {\n\t\t switch from {\n".to_owned();
+    for (category, lifts) in category_map {
+        output += &format!("\t\t// MARK: {}\n", category);
+        for lift in lifts {
+            output += &format!(
+                "\t\tcase \"{lift_name}\": self = .{camel_lift}\n",
+                camel_lift = lift.camel_name(),
+                lift_name = lift.lift_name
+            );
+        }
+        output += "\n"
+    }
+
+    output += "\t\tdefault: return nil\n";
+    output += COMPUTED_PARAMETER_FOOTER;
+    output
+}
+
 fn category_computed_parameter(category_map: &CategoryMap) -> String {
     let mut output = computed_parameter_header("category", "LiftCategory");
     for (category, lifts) in category_map {
@@ -329,6 +348,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", cases(&category_map));
         println!("{}", all_cases(&category_map));
         println!("{}", to_string_computed_parameter(&category_map));
+        println!("{}", from_string_init(&category_map));
         println!("{}", category_computed_parameter(&category_map));
         println!("{}", modifiers_computed_parameter(&category_map));
         println!("{}", lift_weights_computed_parameter(&category_map));
