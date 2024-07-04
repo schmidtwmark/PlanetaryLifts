@@ -9,6 +9,13 @@ import SwiftUI
 import SwiftData
 import Collections
 
+extension UIScreen{
+   static let screenWidth = UIScreen.main.bounds.size.width
+   static let screenHeight = UIScreen.main.bounds.size.height
+   static let screenSize = UIScreen.main.bounds.size
+}
+
+
 enum MuscleLocation {
     case front
     case back
@@ -52,6 +59,7 @@ struct MuscleView<Selector: MuscleGroupSelector, S: Shape> : View{
         .rotation3DEffect(.degrees(mirrored ? 180 : 0.0), axis: (x: 0, y: 1, z: 0))
     }
 }
+
 
 protocol MuscleGroupSelector {
     var selectedMuscleGroup: MuscleGroup? { get set }
@@ -249,7 +257,7 @@ struct MuscleGroupView: View {
         })
         .clipShape(RoundedRectangle(cornerRadius: 10.0))
     }
-
+    
     var body: some View {
         NavigationStack {
             ScrollView(.vertical) {
@@ -257,8 +265,8 @@ struct MuscleGroupView: View {
                     if case .loaded(let stats) = muscleGroupState.stats {
                         
                         ScrollView(.horizontal) {
-                            HStack(spacing: 20.0) {
-                                VStack {
+                            HStack {
+                                VStack(alignment: .center) {
                                     Text("MUSCLE GROUPS")
                                     .font(.subheadline)
                                     .foregroundStyle(.gray)
@@ -267,13 +275,12 @@ struct MuscleGroupView: View {
                                     muscles(stats)
                                     musclesLabel(stats)
                                 }
+                                .padding()
                                 .id("muscles")
-                                .padding()
                                 .background(Color(uiColor: UIColor.secondarySystemBackground))
-                                .clipShape(RoundedRectangle(cornerRadius: 24.0))
-                                .frame(width: 275)
-                                .padding()
-                                VStack {
+                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                                .frame(width: UIScreen.screenWidth - (CARD_PADDING * 2))
+                                VStack(alignment: .center) {
                                     ScrollView(.vertical) {
                                         Text("SUGGESTED LIFTS")
                                         .font(.subheadline)
@@ -296,15 +303,14 @@ struct MuscleGroupView: View {
                                 }
                                 .padding()
                                 .background(Color(uiColor: UIColor.secondarySystemBackground))
-                                .clipShape(RoundedRectangle(cornerRadius: 24.0))
+                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
                                 .id("suggestions")
-                                .frame(width: 275)
-                                .padding()
+                                .frame(width: UIScreen.screenWidth - (CARD_PADDING * 2))
                             }
                             .scrollTargetLayout()
                         }
                         .scrollTargetBehavior(.viewAligned)
-                        .safeAreaPadding(.horizontal, 40)
+                        .safeAreaPadding(.horizontal, 20)
                         .scrollIndicators(.hidden)
                         
                         Spacer(minLength: 20.0)

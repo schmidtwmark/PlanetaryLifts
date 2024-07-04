@@ -103,6 +103,8 @@ enum Granularity: String, Codable, CaseIterable {
         return nil
     }
 }
+let CARD_PADDING = 20.0
+let CHART_PADDING = 10.0
 
 
 struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & Sendable>: View {
@@ -151,6 +153,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
             VStack {
                 Text(title).font(.headline)
                 ZStack {
+                    let chartWidth = UIScreen.screenWidth - (2 * CARD_PADDING) - (2 * CHART_PADDING)
                     Chart {
                         if case .loaded(let categoryCounts) = viewModel.chartData {
                             ForEach(categoryCounts) { chartItem in
@@ -176,7 +179,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
                                 .foregroundStyle(by: .value("Category", "second"))
                         }
                     }
-                    .frame(width: 275, height: 275)
+                    .frame(width: chartWidth, height: chartWidth)
                     if case .loading = viewModel.chartData {
                         ProgressView().tint(.gray)
                     }
@@ -255,10 +258,10 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
                 .scrollIndicators(.hidden)
             }
         }
-        .frame(width: 275)
-        .padding()
+        .padding(CARD_PADDING)
+        .frame(width: UIScreen.screenWidth - (2 * CARD_PADDING))
         .background(Color(uiColor: UIColor.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 24.0))
+        .clipShape(RoundedRectangle(cornerRadius: 10.0))
         .task {
             viewModel.load(liftsByCategory: liftsByCategory, countFn: countFn)
         }
@@ -368,7 +371,7 @@ struct StatsView: View {
                         .scrollTargetLayout()
                     }
                     .scrollTargetBehavior(.viewAligned)
-                    .safeAreaPadding(.horizontal, 40)
+                    .safeAreaPadding(.horizontal, CARD_PADDING)
                     .scrollIndicators(.hidden)
                     VStack(spacing: 20.0){
                         ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
