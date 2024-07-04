@@ -392,6 +392,7 @@ struct LiftListView: View {
     @State var showStatsForType: LiftType? = nil
     
     @AppStorage(PALETTE) var palette : Palette = .main
+    @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
     
     var filterImageName: String {
         if let _ = filterSelection {
@@ -504,11 +505,17 @@ struct LiftListView: View {
                         AddLiftView(lift: lift)
                     }
                 }
+                .onAppear {
+                    withAnimation {
+                        unreadLifts = 0
+                    }
+                }
                 .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
 
             }.tabItem {
                 Label("Lifts", systemImage: "dumbbell")
             }
+            .badge(unreadLifts)
             StatsView().tabItem {
                 Label("Stats", systemImage: "chart.xyaxis.line")
             }

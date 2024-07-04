@@ -103,7 +103,7 @@ enum Granularity: String, Codable, CaseIterable {
         return nil
     }
 }
-let CARD_PADDING = 20.0
+let CARD_MARGIN = 15.0
 let CHART_PADDING = 10.0
 
 
@@ -153,7 +153,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
             VStack {
                 Text(title).font(.headline)
                 ZStack {
-                    let chartWidth = UIScreen.screenWidth - (2 * CARD_PADDING) - (2 * CHART_PADDING)
+                    let chartWidth = UIScreen.screenWidth - (2 * CARD_MARGIN) - (2 * CHART_PADDING)
                     Chart {
                         if case .loaded(let categoryCounts) = viewModel.chartData {
                             ForEach(categoryCounts) { chartItem in
@@ -234,7 +234,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
             }
             .chartLegend(.hidden)
             .chartForegroundStyleScale(mapping: color)
-            .padding()
+            .padding(CHART_PADDING)
             ScrollView(.horizontal) {
                 HStack(alignment: .top) {
                     if case .loaded(let categoryCounts) = viewModel.chartData {
@@ -258,8 +258,8 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
                 .scrollIndicators(.hidden)
             }
         }
-        .padding(CARD_PADDING)
-        .frame(width: UIScreen.screenWidth - (2 * CARD_PADDING))
+        .padding(CARD_MARGIN)
+        .frame(width: UIScreen.screenWidth - (2 * CARD_MARGIN))
         .background(Color(uiColor: UIColor.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10.0))
         .task {
@@ -371,7 +371,7 @@ struct StatsView: View {
                         .scrollTargetLayout()
                     }
                     .scrollTargetBehavior(.viewAligned)
-                    .safeAreaPadding(.horizontal, CARD_PADDING)
+                    .safeAreaPadding(.horizontal, CARD_MARGIN)
                     .scrollIndicators(.hidden)
                     VStack(spacing: 20.0){
                         ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
@@ -410,7 +410,7 @@ struct StatsView: View {
                                 }
                             }
                         }
-                    }.padding()
+                    }.padding(CARD_MARGIN)
                 }
             }
             .navigationTitle("Stats")

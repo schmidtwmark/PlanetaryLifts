@@ -171,6 +171,6 @@ struct LiftWeights : Codable, Equatable, Hashable {
     }
     
     func suggestionScore(_ current: LiftWeights) -> Double {
-        return MuscleGroup.allCases.reduce(0.0, {sum, group in sum + (self.getWeight(group) - current.getWeight(group))})
+        return MuscleGroup.allCases.reduce(0.0, {sum, group in sum + (current.getWeight(group) - self.getWeight(group))})
     }
 }

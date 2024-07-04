@@ -119,7 +119,7 @@ struct AddLiftView: View {
         self.notes = lift.notes
     }
     
-    init(liftType: LiftType) {
+    init(liftType: LiftType, updateUnreadLifts: Bool = false) {
         self.mode = .add
         self.liftType = liftType
         self.timestamp = Date()
@@ -127,6 +127,7 @@ struct AddLiftView: View {
         self.liftSets = []
         self.modifiers = Set()
         self.notes = ""
+        self.updateUnreadLifts = updateUnreadLifts
     }
     
     
@@ -144,6 +145,7 @@ struct AddLiftView: View {
     @State var liftSets: [LiftSet]
     @State var modifiers: Set<LiftModifier>
     @State var notes: String
+    var updateUnreadLifts = false
     
     @Environment(\.modelContext) private var modelContext
     @State var showSetSettings = false
@@ -153,6 +155,7 @@ struct AddLiftView: View {
     @Environment(\.dismiss) var dismiss
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @AppStorage(PALETTE) var palette: Palette = .main
+    @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
     
     
     var mostRecentSet: LiftSet? {
@@ -448,6 +451,9 @@ struct AddLiftView: View {
                                     lift.weighted = isWeighted
                                     print("Updated lift \(lift)")
                                     break
+                                }
+                                if updateUnreadLifts {
+                                    unreadLifts += 1
                                 }
                                 dismiss()
                             } else {
