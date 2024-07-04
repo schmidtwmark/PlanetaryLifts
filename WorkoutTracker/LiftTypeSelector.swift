@@ -114,7 +114,7 @@ struct CreateNewTypeView : View {
     @Query var userGeneratedTypes: [UserGeneratedLiftType]
     
     
-    enum Mode {
+    enum Mode: Equatable {
         case edit(UserGeneratedLiftType)
         case add
         

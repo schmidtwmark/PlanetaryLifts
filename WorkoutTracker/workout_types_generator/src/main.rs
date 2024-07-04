@@ -217,8 +217,10 @@ fn modifiers_computed_parameter(category_map: &CategoryMap) -> String {
     output
 }
 
-fn lift_weights_computed_parameter(category_map: &CategoryMap) -> String {
-    let mut output = computed_parameter_header("weights", "LiftWeights");
+fn lift_weights_function(category_map: &CategoryMap) -> String {
+    let mut output =
+        "\tfunc getLiftWeights(_ userGeneratedTypes: [UserGeneratedLiftType]) -> LiftWeights {\n\t\tswitch self {"
+            .to_owned();
     for (category, lifts) in category_map {
         output += &format!("\t\t// MARK: {}\n", category);
         for lift in lifts {
@@ -281,7 +283,7 @@ fn lift_weights_computed_parameter(category_map: &CategoryMap) -> String {
         output += "\n"
     }
 
-    output += "\t\tdefault: LiftWeights([])\n";
+    output += "\t\tcase let .other(_, _, id): userGeneratedTypes.first(where: {$0.id == id})?.liftWeights ?? LiftWeights()\n";
     output += COMPUTED_PARAMETER_FOOTER;
     output
 }
@@ -351,7 +353,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", from_string_init(&category_map));
         println!("{}", category_computed_parameter(&category_map));
         println!("{}", modifiers_computed_parameter(&category_map));
-        println!("{}", lift_weights_computed_parameter(&category_map));
+        println!("{}", lift_weights_function(&category_map));
         println!("}}\n");
     } else {
         println!("Error downloading sheet: {}", response.status());

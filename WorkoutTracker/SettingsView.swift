@@ -116,13 +116,11 @@ struct SettingsView: View {
                 
                 Section("Backup and Restore") {
                     Button {
-                        print("Pressed import")
                         importSheetPresented = true
                     } label: {
                         Label("Import Lifts", systemImage: "square.and.arrow.down.on.square")
                     }
                     Button {
-                        print("Pressed export")
                         exportSheetPresented = true
                     } label: {
                         Label("Export Lifts", systemImage: "square.and.arrow.up.on.square")

@@ -175,7 +175,7 @@ struct ExportSheet: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text("Export Data for Planetary Lifts")
+                Text("Export Data for Planetary Lifts.\nThis creates a .tsv file containing your lift history.")
                     .multilineTextAlignment(.leading)
                 switch self.exportState {
                 case .processing:
@@ -252,7 +252,7 @@ struct ImportSheet: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text("Import data into Planetary Lifts")
+                Text("Import data into Planetary Lifts from a .tsv file")
                     .multilineTextAlignment(.leading)
                 switch self.importState{
                 case .prompt:

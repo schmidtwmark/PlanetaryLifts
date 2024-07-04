@@ -417,9 +417,8 @@ enum LiftType: Hashable, Codable, Sendable {
 		}
 	}
 
-	var weights: LiftWeights {
-		return switch self {
-		// MARK: Arms
+	func getLiftWeights(_ userGeneratedTypes: [UserGeneratedLiftType]) -> LiftWeights {
+		switch self {		// MARK: Arms
 		case .bicepCurl: LiftWeights([(.biceps, 1), (.forearms, 0.5), (.deltoid, 0.5)])
 		case .hammerCurl: LiftWeights([(.biceps, 1), (.forearms, 0.25), (.deltoid, 0.25)])
 		case .kettleBellSwing: LiftWeights([(.glutes, 0.75), (.hamstrings, 0.75), (.lowerBack, 0.5)])
@@ -487,7 +486,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .uprightRow: LiftWeights([(.trapezius, 0.75), (.forearms, 0.25), (.deltoid, 1)])
 		case .frontRaise: LiftWeights([(.trapezius, 0.5), (.deltoid, 1)])
 
-		default: LiftWeights([])
+		case let .other(_, _, id): userGeneratedTypes.first(where: {$0.id == id})?.liftWeights ?? LiftWeights()
 		}
 	}
 

@@ -106,15 +106,8 @@ final class Lift {
     // If this is a user generated type, we need to get the muscle groups from there
     func getLiftWeights(_ userGeneratedTypes: [UserGeneratedLiftType]) -> LiftWeights {
         // Overrides
-        if case let .other(_, _, id) = type {
-            if let userType = userGeneratedTypes.first(where: {$0.id == id}) {
-                return userType.liftWeights
-            } else {
-                return LiftWeights([])
-            }
-        }
         
-        return type.weights
+        return type.getLiftWeights(userGeneratedTypes)
     }
 }
 
@@ -306,6 +299,7 @@ final class UserGeneratedLiftType  {
     var name: String = ""
     var category: LiftCategory = LiftCategory.chest
     var id: UUID = UUID()
+    
     var liftWeights: LiftWeights = LiftWeights([])
     
     init(name: String, category: LiftCategory, liftWeights: LiftWeights = LiftWeights()) {
@@ -323,4 +317,12 @@ func generateAllLiftsByCategory(userGeneratedTypes: [UserGeneratedLiftType]) -> 
     return categoryMap
 }
 
-
+extension ModelContext {
+    var sqliteCommand: String {
+        if let url = container.configurations.first?.url.path(percentEncoded: false) {
+            "sqlite3 \"\(url)\""
+        } else {
+            "No SQLite database found."
+        }
+    }
+}
