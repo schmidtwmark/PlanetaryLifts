@@ -300,12 +300,12 @@ final class UserGeneratedLiftType  {
     var category: LiftCategory = LiftCategory.chest
     var id: UUID = UUID()
     
-    var liftWeights: LiftWeights = LiftWeights([])
+    var customWeights: LiftWeights = LiftWeights([])
     
     init(name: String, category: LiftCategory, liftWeights: LiftWeights = LiftWeights()) {
         self.name = name
         self.category = category
-        self.liftWeights = liftWeights
+        self.customWeights = liftWeights
     }
 }
 

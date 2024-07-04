@@ -120,7 +120,7 @@ extension LiftCategory: Defaultable {
 }
 
 struct LiftWeights : Codable, Equatable, Hashable {
-    var map: [MuscleGroup: Double]
+    var map: [MuscleGroup: Double] = [:]
     
     init(_ sparse: [(MuscleGroup, Double)] = []) {
         map = sparse.reduce(into: [MuscleGroup: Double](), {result, item in

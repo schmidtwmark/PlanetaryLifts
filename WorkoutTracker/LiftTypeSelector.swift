@@ -139,7 +139,8 @@ struct CreateNewTypeView : View {
         mode = .edit(type)
         name = type.name
         category = type.category
-        selector = NewLiftTypeMuscleGroupSelector(weights: type.liftWeights)
+//        selector = NewLiftTypeMuscleGroupSelector(weights: LiftWeights())
+        selector = NewLiftTypeMuscleGroupSelector(weights: type.customWeights)
     }
     
     
@@ -184,8 +185,10 @@ struct CreateNewTypeView : View {
                             let type = UserGeneratedLiftType(name: name, category: category, liftWeights: selector.weights)
                             modelContext.insert(type)
                         case .edit(let type):
+                            
                             // Canot update name or category
-                            type.liftWeights = selector.weights
+//                            break
+                            type.customWeights = selector.weights
                         }
                         dismiss()
                     } label: {
