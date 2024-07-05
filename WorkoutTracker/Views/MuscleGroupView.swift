@@ -116,12 +116,12 @@ class MuscleGroupState : MuscleGroupSelector {
                 scores.add(group, score: score)
             }
         })
-        let normalized = scores.normalize()
+        let normalized = scores.normalizeByMax()
 
         let allTypes = LiftType.allCases + userGeneratedTypes.map({userType in .other(name: userType.name, category: userType.category, id: userType.id)})
         
         var suggestionHeap = allTypes.reduce(into: Heap<LiftSuggestion>(), { heap, type in
-            let score = type.getLiftWeights(userGeneratedTypes).suggestionScore(normalized)
+            let score = LiftWeights.suggestionScore(userWeights: normalized, type: type, userGeneratedLiftTypes: userGeneratedTypes)
             
             if heap.count < 10 {
                 heap.insert(LiftSuggestion(score: score, type: type))
@@ -254,20 +254,28 @@ struct MuscleGroupView: View {
                 if showPercentage {
                     Text("\((percentage * 100).clean)%")
                 } else {
-                    Text(displayString(number: Double(count), singleUnit: "lift"))
+                    Text(Double(count).displayString(singleUnit: "lift"))
                 }
             }
+            .foregroundStyle(ForegroundText())
             .font(.title3)
             .padding(10)
+            .background(ZStack {
+                Color.black
+                tintColor.opacity((percentage / 2) + 0.5)
+            })
+            .clipShape(RoundedRectangle(cornerRadius: 10.0))
         }
-        .buttonStyle(.borderedProminent)
-        .tint(tintColor.opacity((percentage / 2) + 0.5))
+//        .tint(tintColor.opacity((percentage / 2) + 0.5))
     }
     
     @MainActor var cardWidth: Double {
         UIScreen.screenWidth - (CARD_MARGIN * 2)
     }
     
+    func gradient(_ percentage: Double) -> LinearGradient {
+        LinearGradient(colors: [Color(uiColor: .secondarySystemGroupedBackground), tintColor], startPoint: .init(x: 1 - percentage, y: 0.5), endPoint: .trailing)
+    }
     
     var body: some View {
         NavigationStack {
@@ -287,7 +295,7 @@ struct MuscleGroupView: View {
                                         musclesLabel(stats)
                                     }
                                     .padding(CHART_PADDING)
-                                    .background(Color(uiColor: UIColor.secondarySystemBackground))
+                                    .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
                                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
                                 }
                                 .id("muscles")
@@ -310,6 +318,7 @@ struct MuscleGroupView: View {
                                                 }
                                                 .font(.title3)
                                                 .padding()
+                                                .foregroundStyle(ForegroundText())
                                             }
                                             .tint(suggestion.type.category.getColor(for: palette))
                                             .buttonStyle(.borderedProminent)
@@ -317,7 +326,7 @@ struct MuscleGroupView: View {
                                     }
                                     .safeAreaPadding(.vertical)
                                     .padding(.horizontal)
-                                    .background(Color(uiColor: UIColor.secondarySystemBackground))
+                                    .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
                                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
                                 }
                                 .id("suggestions")
@@ -346,7 +355,9 @@ struct MuscleGroupView: View {
                             .padding(.leading, 15.0)
                             let contributingLifts = lastWeekLifts.filter({$0.getLiftWeights(userGeneratedTypes).affects(muscleGroupState.selectedMuscleGroup)})
                             if contributingLifts.count > 0 {
-                                VStack {
+                                VStack(spacing: 0.0) {
+                                    
+                                    Divider().opacity(0.0)
                                     ForEach(contributingLifts) { lift in
                                         let percentage = {
                                             if let selectedMuscleGroup = muscleGroupState.selectedMuscleGroup {
@@ -355,24 +366,22 @@ struct MuscleGroupView: View {
                                                 return lift.recencyFactor
                                             }
                                         }()
-                                        VStack {
-                                            if lift == contributingLifts.first {
-                                                Divider().opacity(0.0)
+                                        HStack {
+                                            Text(lift.type.string)
+                                            Spacer()
+                                            if showImpactForLift == lift {
+                                                Text("\((percentage * 100).clean)%")
+                                            } else {
+                                                Text(lift.timestamp.formatted(Date.FormatStyle().month(.defaultDigits).day()))
                                             }
-                                            HStack {
-                                                Text(lift.type.string)
-                                                Spacer()
-                                                if showImpactForLift == lift {
-                                                    Text("\((percentage * 100).clean)%")
-                                                } else {
-                                                    Text(lift.timestamp.formatted(Date.FormatStyle().month(.defaultDigits).day()))
-                                                }
-                                            }
-                                            .padding(.horizontal, 15.0)
-                                            .padding(.vertical, 10.0)
-                                            Divider().padding(.leading).opacity(contributingLifts.last == lift ? 0.0 : 1.0)
                                         }
+                                        
+                                        .padding(.horizontal, 15.0)
+                                        .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
+                                        .background(Color(uiColor: .secondarySystemGroupedBackground))
+//                                        .background(gradient(percentage))
                                         .contentShape(Rectangle())
+                                        
                                         .onTapGesture(perform: {
                                             withAnimation {
                                                 if showImpactForLift == lift {
@@ -382,12 +391,11 @@ struct MuscleGroupView: View {
                                                 }
                                             }
                                         })
-//                                        .background(tintColor.opacity(percentage))
-//                                        .background(LinearGradient(colors: [Color.clear, tintColor.opacity(percentage)]))
+                                        Divider().padding(.leading).opacity(contributingLifts.last == lift ? 0.0 : 1.0)
                                     }
                                 }
                                 .contentShape(Rectangle())
-                                .background(Color(UIColor.secondarySystemBackground))
+                                .background(Color(UIColor.secondarySystemGroupedBackground))
                                 .clipShape(RoundedRectangle(cornerRadius: 10.0))
                             }
                         }
@@ -397,6 +405,7 @@ struct MuscleGroupView: View {
                     }
                 }
             }
+            .background(Color(uiColor: .systemGroupedBackground))
             .task {
                 muscleGroupState.load(lifts: lastWeekLifts, userGeneratedTypes: userGeneratedTypes)
             }
@@ -439,6 +448,7 @@ struct MuscleGroupView: View {
             })
             .tint(tintColor)
         }
+//        .background(Color(uiColor: .systemGroupedBackground))
     }
 }
 

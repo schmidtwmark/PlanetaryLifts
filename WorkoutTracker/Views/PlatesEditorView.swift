@@ -9,15 +9,32 @@ import SwiftUI
 import SwiftData
 
 struct PlatesView: View {
-    let rectangleSizes = [2.5: CGSize(width: 30.0, height: 35.0),
-                          5.0: CGSize(width: 30.0, height: 50.0),
-                          10.0: CGSize(width: 30.0, height: 65.0),
-                          15.0: CGSize(width: 30.0, height: 80.0),
-                          25.0: CGSize(width: 30.0, height: 100.0),
-                          35.0: CGSize(width: 35.0, height: 100.0),
-                          45.0: CGSize(width: 40.0, height: 100.0),
-                          55.0: CGSize(width: 45.0, height: 100.0)
-    ]
+    
+   
+    var rectangleSizes : [Double: CGSize] {
+        switch units {
+        case .pounds:
+            return [
+                2.5: CGSize(width: 30.0, height: 35.0),
+                5.0: CGSize(width: 30.0, height: 50.0),
+                    10.0: CGSize(width: 30.0, height: 65.0),
+                    15.0: CGSize(width: 30.0, height: 80.0),
+                    25.0: CGSize(width: 30.0, height: 100.0),
+                    35.0: CGSize(width: 35.0, height: 100.0),
+                    45.0: CGSize(width: 40.0, height: 100.0),
+                    55.0: CGSize(width: 45.0, height: 100.0)]
+        case .kilograms:
+            return [
+                1.1: CGSize(width: 30.0, height: 35.0),
+                2.3: CGSize(width: 30.0, height: 50.0),
+                4.5: CGSize(width: 30.0, height: 65.0),
+                6.8: CGSize(width: 30.0, height: 80.0),
+                11.3: CGSize(width: 30.0, height: 100.0),
+                15.9: CGSize(width: 35.0, height: 100.0),
+                20.4: CGSize(width: 40.0, height: 100.0),
+                25.0: CGSize(width: 45.0, height: 100.0)]
+        }
+    }
     
     @Environment(\.colorScheme) private var colorScheme
 
@@ -26,6 +43,8 @@ struct PlatesView: View {
     var removePlate: (UUID) -> ()
     var rendering: Bool
     var accentColor: Color
+    var units: WeightUnits
+
     
     let BAR_CORNER_RADIUS = 3.0
     let BAR_COLOR = Color.gray.lighter(by: 10.0)
@@ -56,10 +75,11 @@ struct PlatesView: View {
                     .frame(width: 10.0, height: 30.0)
                 ForEach(plates.plates) { plate in
                     ZStack {
-                        RoundedRectangle(cornerRadius: rectangleSizes[plate.weight]!.width / WEIGHT_CORNER_RATIO)
+                        let rectangleSize = rectangleSizes[plate.weight] ?? CGSize(width: 30.0, height: 100.0)
+                        RoundedRectangle(cornerRadius: rectangleSize.width / WEIGHT_CORNER_RATIO)
                             .stroke(accentColor, lineWidth: WEIGHT_STROKE)
                             .fill(weightColor)
-                            .frame(width:  rectangleSizes[plate.weight]!.width, height: rectangleSizes[plate.weight]!.height)
+                            .frame(width:  rectangleSize.width, height: rectangleSize.height)
                         Text("\(plate.weight.clean)").font(.footnote).foregroundStyle(.white)
                     }.onTapGesture {
                         withAnimation {
@@ -93,7 +113,7 @@ struct PlatesEditorView: View {
     var addPlate: (Double) -> ()
     var accentColor: Color
     
-    var units: WeightUnits = .pounds
+    var units: WeightUnits
     
     var formatter: NumberFormatter {
             let formatter = NumberFormatter()
@@ -101,7 +121,7 @@ struct PlatesEditorView: View {
             formatter.zeroSymbol = ""
             return formatter
     }
-    
+
     var topRowWeights: [Double] {
         switch units {
         case .pounds: [2.5, 5.0, 10.0, 15.0]
@@ -124,7 +144,7 @@ struct PlatesEditorView: View {
                 Spacer()
                 Text(plates.weight == 1.0 ? "**1** \(units.singleUnit)" : "**\(plates.weight.clean)** \(units.singleUnit)s")
             }
-            PlatesView(plates: plates, removePlate: removePlate, rendering: false, accentColor: accentColor)
+            PlatesView(plates: plates, removePlate: removePlate, rendering: false, accentColor: accentColor, units: units)
             HStack {
                 Spacer()
                 VStack {
@@ -174,7 +194,9 @@ struct PlatesEditorContainer: View {
                     plates.plates.sort { $0 > $1 }
                     print("Added plates: \(plates.plates.count)")
                 
-            }, accentColor: Color.green
+            }, 
+                             accentColor: Color.green,
+                             units: .pounds
             ).environmentObject(editState)
         }.tint(Color.green)
     }

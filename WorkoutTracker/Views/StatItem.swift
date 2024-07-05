@@ -32,7 +32,7 @@ struct MaxesBarChart : View {
                 ForEach(maxes.sorted(by: <), id: \.key) { reps, max in
                     BarMark(x: .value("Reps", repToString(reps)), y: .value("Weight", max))
                         .annotation(content: {
-                            Text(displayString(number: max, singleUnit: weightUnits.shortSingleUnit))
+                            Text(max.displayString(singleUnit: weightUnits.shortSingleUnit))
                                 .opacity(selection == repToString(reps) ? 1.0 : 0.0)
 
                         })
@@ -370,7 +370,7 @@ struct WeightProgressView: View {
                             position: annotationPosition,
                             spacing: annotationPosition == .top ? nil : 2.0,
                             content: {
-                                Text(displayString(number: selectedSet.weight.weight, singleUnit: selectedSet.weight.units.shortSingleUnit))
+                                Text(selectedSet.weight.weight.displayString(singleUnit: selectedSet.weight.units.shortSingleUnit))
                                     .padding(4)
                                     .background(viewModel.colorByRepCount(repToString(selectedSet.reps), palette))
                                     .clipShape(Capsule())

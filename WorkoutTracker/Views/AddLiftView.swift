@@ -199,6 +199,15 @@ struct AddLiftView: View {
         }
     }
     
+    
+    var baseBarWeight: Double {
+        switch weightUnits {
+        case .pounds: 45.0
+        case .kilograms: 20.4
+        }
+    }
+    
+    
 //    @ViewBuilder
 //    var stickersSection: some View {
 //        Section("Awards") {
@@ -227,10 +236,11 @@ struct AddLiftView: View {
         }
     }
     
+    @ViewBuilder
     func weightEditModeSelector(weightEditingId: UUID) -> some View {
         let index = liftSets.firstIndex(where: { $0.id == weightEditingId} )!
         var liftSet = liftSets[index]
-        return Picker("", selection: Binding(get: {
+        Picker("", selection: Binding(get: {
             switch liftSet.weight.data {
             case .rawWeight(_):
                 return Weight.WeightDataTypes.rawWeight
@@ -244,7 +254,7 @@ struct AddLiftView: View {
                 liftSet.weight.data = .rawWeight(liftSet.weight.weight)
             case Weight.WeightDataTypes.plates:
                 print("Setting to plates")
-                liftSet.weight.data = .plates(WeightPlates(barWeight: 45.0, plates: []))
+                liftSet.weight.data = .plates(WeightPlates(barWeight: baseBarWeight, plates: []))
                 print("After: \(liftSet.weight.data)")
             }
             liftSets[index] = liftSet
@@ -314,9 +324,8 @@ struct AddLiftView: View {
                                                 }
 
                                             },
-                                            accentColor: liftType.category.getColor(for: palette)
-                                            )
-                                            //, weightUnits: liftSet.weight.units)
+                                            accentColor: liftType.category.getColor(for: palette),
+                                            units: liftSet.weight.units)
                                         } else {
                                             Spacer()
                                             Text(try! AttributedString(markdown: "\(liftSet.weight.displayString)"))

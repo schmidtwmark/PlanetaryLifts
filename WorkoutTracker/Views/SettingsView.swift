@@ -8,24 +8,7 @@
 import SwiftUI
 import SwiftData
 
-enum WeightUnits : String, Codable, Equatable{
-    case pounds = "Pounds"
-    case kilograms = "Kilograms"
-    
-    var singleUnit: String {
-        switch self {
-            case .pounds: "pound"
-            case .kilograms: "kilogram"
-        }
-    }
-    
-    var shortSingleUnit: String {
-        switch self {
-        case .pounds: "lb"
-        case .kilograms: "kg"
-        }
-    }
-}
+
 
 extension Bundle {
     var releaseVersionNumber: String? {
@@ -67,7 +50,7 @@ struct SettingsView: View {
                     }, label: {
                         Label("Weight", systemImage: "scalemass")
                     })
-                    .onChange(of: weightUnits, { (old, new) in
+                    onChange(of: weightUnits, { (old, new) in
                         // TODO: figure out how to do this in the background and show progress
                         let lifts = try! modelContext.fetch(FetchDescriptor<Lift>())
                         for lift in lifts {

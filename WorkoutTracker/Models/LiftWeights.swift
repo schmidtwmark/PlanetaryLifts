@@ -28,11 +28,19 @@ struct LiftWeights : Codable, Equatable, Hashable {
         return map[muscleGroup]!
     }
     
-    func normalize() -> LiftWeights {
+    func normalizeByMax() -> LiftWeights {
         guard let max = map.max(by: {$0.value < $1.value}), max.value != 0.0 else { return LiftWeights() }
         
         return LiftWeights(map.map({group, weight in
             (group, weight / max.value)
+        }))
+    }
+    
+    func normalizeByMagnitude() -> LiftWeights {
+        let magnitude = sqrt(map.reduce(0.0, { sum, item in sum + pow(item.value, 2)}))
+        
+        return LiftWeights(map.map({ group, weight in
+            (group, weight / magnitude)
         }))
     }
     
@@ -58,7 +66,17 @@ struct LiftWeights : Codable, Equatable, Hashable {
         return MuscleGroup.allCases.reduce(0.0, { sum, group in sum + self.getWeight(group) * other.getWeight(group)})
     }
     
-    func suggestionScore(_ current: LiftWeights) -> Double {
-        return MuscleGroup.allCases.reduce(0.0, {sum, group in sum + (current.getWeight(group) - self.getWeight(group))})
+    static func suggestionScore(userWeights: LiftWeights, type: LiftType, userGeneratedLiftTypes: [UserGeneratedLiftType]) -> Double {
+        let weightsForType = type.getLiftWeights(userGeneratedLiftTypes).normalizeByMagnitude()
+        let weights = MuscleGroup.allCases.map({ group in
+            let userWeight = userWeights.getWeight(group)
+            let typeWeight = weightsForType.getWeight(group)
+            let delta = typeWeight - userWeight
+            return (group, delta)
+        })
+        print("Deltas for \(type.string): \(weights.map({ ($0.0.rawValue, $0.1.clean)}))")
+        return weights.reduce(0, { sum, item in
+            sum + max(0, item.1)
+        })
     }
 }

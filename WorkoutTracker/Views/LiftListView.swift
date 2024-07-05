@@ -55,7 +55,7 @@ struct LiftSetView: View {
                  }
             }
             if let plates = platesToShow {
-                PlatesView(plates: plates, removePlate: {_ in }, rendering: rendering, accentColor: .white)
+                PlatesView(plates: plates, removePlate: {_ in }, rendering: rendering, accentColor: .white, units: liftSet.weight.units)
             }
         }
         .modifier(AnimatingCellHeight(height: platesToShow != nil ? 150 : 40))
@@ -469,6 +469,7 @@ struct LiftListView: View {
                         }
                         .padding([.horizontal], 20)
                     }
+                    .background(Color(uiColor: UIColor.systemGroupedBackground))
                     .navigationTitle("Lifts")
                     .toolbar() {
                         ToolbarItemGroup(placement: .primaryAction, content: {
@@ -542,10 +543,8 @@ struct LiftListView: View {
                 Label("Settings", systemImage: "gear")
             }
             .tag(TabType.settings)
-
-
-
         }
+        
         .onChange(of: selectedTab) { old, new in
             if new == .addLift {
                 selectedTab = old

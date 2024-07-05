@@ -14,6 +14,7 @@
 		ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */; };
 		ED50D4D62B9E20CC00BD3F77 /* CrookedText in Frameworks */ = {isa = PBXBuildFile; productRef = ED50D4D52B9E20CC00BD3F77 /* CrookedText */; };
 		ED65CC512B9F523E0029FF5A /* Shiny in Frameworks */ = {isa = PBXBuildFile; productRef = ED65CC502B9F523E0029FF5A /* Shiny */; };
+		ED69CBE92C387FFF00DBBDCF /* WeightUnits.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED69CBE82C387FFF00DBBDCF /* WeightUnits.swift */; };
 		ED6E7EE02C28C0460092134D /* MuscleGroups.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED6E7EDF2C28C0460092134D /* MuscleGroups.swift */; };
 		ED6E7EE22C28C4210092134D /* MuscleGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED6E7EE12C28C4210092134D /* MuscleGroupView.swift */; };
 		ED6E7EE42C2AEC260092134D /* MuscleShapes.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED6E7EE32C2AEC260092134D /* MuscleShapes.swift */; };
@@ -51,6 +52,7 @@
 		ED320A372B94DB5E003A6628 /* LiftType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftType.swift; sourceTree = "<group>"; };
 		ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftTypeSelector.swift; sourceTree = "<group>"; };
 		ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickerGeneratorView.swift; sourceTree = "<group>"; };
+		ED69CBE82C387FFF00DBBDCF /* WeightUnits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightUnits.swift; sourceTree = "<group>"; };
 		ED6E7EDF2C28C0460092134D /* MuscleGroups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuscleGroups.swift; sourceTree = "<group>"; };
 		ED6E7EE12C28C4210092134D /* MuscleGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuscleGroupView.swift; sourceTree = "<group>"; };
 		ED6E7EE32C2AEC260092134D /* MuscleShapes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuscleShapes.swift; sourceTree = "<group>"; };
@@ -109,8 +111,8 @@
 				EDA6830F2B9186DE002015CA /* StatsView.swift */,
 				EDFE3FB22C2513950035F065 /* StatsLegend.swift */,
 				EDA682F52B90E9F4002015CA /* ContentView.swift */,
-				EDA6830D2B915190002015CA /* AddLiftView.swift */,
 				EDA683072B91347A002015CA /* LiftListView.swift */,
+				EDA6830D2B915190002015CA /* AddLiftView.swift */,
 				ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */,
 				ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */,
 				EDA683092B913492002015CA /* SettingsView.swift */,
@@ -144,6 +146,7 @@
 				EDA6830B2B91469D002015CA /* Lift.swift */,
 				ED8707382C383B6D0010DFA8 /* UserGeneratedLiftType.swift */,
 				ED6E7EDF2C28C0460092134D /* MuscleGroups.swift */,
+				ED69CBE82C387FFF00DBBDCF /* WeightUnits.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -286,6 +289,7 @@
 				EDA683102B9186DE002015CA /* StatsView.swift in Sources */,
 				EDFE3FA72C13CB5B0035F065 /* ColorAdjustment.swift in Sources */,
 				ED8707312C383A010010DFA8 /* LiftTypesGenerated.swift in Sources */,
+				ED69CBE92C387FFF00DBBDCF /* WeightUnits.swift in Sources */,
 				EDFE3FA52C13CABB0035F065 /* Palette.swift in Sources */,
 				EDFE3FAB2C13CD2D0035F065 /* AppStorageKeys.swift in Sources */,
 				ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */,

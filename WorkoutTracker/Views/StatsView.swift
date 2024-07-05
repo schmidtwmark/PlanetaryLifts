@@ -223,9 +223,9 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
                             Text(stringMapping(item.category))
                             switch statsType {
                             case .count:
-                                Text(displayString(number: item.count, singleUnit: "lift"))
+                                Text(item.count.displayString(singleUnit: "lift"))
                             case .weight:
-                                Text(displayString(number: item.count, singleUnit: weightUnits.shortSingleUnit ))
+                                Text(item.count.displayString(singleUnit: weightUnits.shortSingleUnit ))
                             }
                         }
                     }
@@ -256,7 +256,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
         }
         .padding(CARD_MARGIN)
         .frame(width: UIScreen.screenWidth - (2 * CARD_MARGIN))
-        .background(Color(uiColor: UIColor.secondarySystemBackground))
+        .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10.0))
         .task {
             viewModel.load(liftsByCategory: liftsByCategory, countFn: countFn)
@@ -396,7 +396,7 @@ struct StatsView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(.gray)
                                     .padding(.leading, 15.0)
-                                    VStack {
+                                    VStack(spacing: 0.0) {
                                         let types = allLiftsByCategory[category]!.sorted(by: <).filter({presentTypes.contains($0)})
                                         if types.count > 0 {
                                             Divider().opacity(0.0)
@@ -406,7 +406,7 @@ struct StatsView: View {
                                                     Spacer()
                                                 }
                                                 .padding(.horizontal, 15.0)
-                                                .padding(.vertical, 5.0)
+                                                .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
                                                 .onTapGesture(perform: {
                                                     showStatsForType = liftType
                                                 })
@@ -416,7 +416,7 @@ struct StatsView: View {
                                         
                                     }
                                     .contentShape(Rectangle())
-                                    .background(Color(UIColor.secondarySystemBackground))
+                                    .background(Color(UIColor.secondarySystemGroupedBackground))
                                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
                                     
                                 }
@@ -425,6 +425,7 @@ struct StatsView: View {
                     }.padding()
                 }
             }
+            .background(Color(uiColor: UIColor.systemGroupedBackground))
             #if DEBUG
             .onChange(of: selectedCard, {
                 print("Changed selected card \(String(describing: selectedCard))")

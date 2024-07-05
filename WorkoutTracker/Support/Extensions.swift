@@ -47,3 +47,9 @@ extension Double {
         }
     }
 }
+
+extension Double {
+    func displayString(singleUnit: String) -> String {
+        return "\(self.roundedWithAbbreviations) \(singleUnit)\(self.rounded() != 1.0 ? "s" : "")"
+    }
+}

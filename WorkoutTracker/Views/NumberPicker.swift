@@ -47,7 +47,7 @@ struct NumberPicker<T: Numeric> : View {
         
         func getSingleUnitString(_ weightUnits: WeightUnits) -> String {
             return switch self {
-            case .weight: weightUnits.singleUnit
+            case .weight: weightUnits.shortSingleUnit
             case .reps: "rep"
             }
         }
