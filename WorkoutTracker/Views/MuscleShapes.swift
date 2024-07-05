@@ -8,9 +8,6 @@
 import Foundation
 import SwiftUI
 
-// To use this shape, just add it to your SwiftUI View:
-// WholeBody().fill().frame(width: 66.70126342773438, height: 143.2188720703125)
-
 struct Silhouette: Shape {
         func path(in rect: CGRect) -> Path {
                 var path = Path()

@@ -7,7 +7,6 @@
 
 import Foundation
 import SwiftData
-import UIKit
 
 @Model
 final class Lift {
@@ -291,38 +290,5 @@ struct LiftSet : Codable, Identifiable, Equatable {
         default: weight.data
         }
         return LiftSet(reps: reps, weight: Weight(data: newWeightData, units: to))
-    }
-}
-
-@Model
-final class UserGeneratedLiftType  {
-    var name: String = ""
-    var category: LiftCategory = LiftCategory.chest
-    var id: UUID = UUID()
-    
-    var customWeights: LiftWeights = LiftWeights([])
-    
-    init(name: String, category: LiftCategory, liftWeights: LiftWeights = LiftWeights()) {
-        self.name = name
-        self.category = category
-        self.customWeights = liftWeights
-    }
-}
-
-func generateAllLiftsByCategory(userGeneratedTypes: [UserGeneratedLiftType]) -> [LiftCategory: [LiftType]] {
-    var categoryMap = LiftType.liftsByCategory
-    for type in userGeneratedTypes {
-        categoryMap[type.category]!.append(LiftType.other(name: type.name, category: type.category, id: type.id))
-    }
-    return categoryMap
-}
-
-extension ModelContext {
-    var sqliteCommand: String {
-        if let url = container.configurations.first?.url.path(percentEncoded: false) {
-            "sqlite3 \"\(url)\""
-        } else {
-            "No SQLite database found."
-        }
     }
 }

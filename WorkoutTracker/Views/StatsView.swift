@@ -103,11 +103,9 @@ enum Granularity: String, Codable, CaseIterable {
         return nil
     }
 }
-let CARD_MARGIN = 30.0
-let CHART_PADDING = 10.0
 
 
-struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & Sendable>: View {
+struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds

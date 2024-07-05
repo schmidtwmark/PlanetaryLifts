@@ -18,12 +18,6 @@ func repToString(_ reps: Int) -> String {
     }
 }
 
-extension String: Identifiable {
-    public var id: String {
-        self
-    }
-}
-
 struct MaxesBarChart : View {
     
     var maxes: [Int: Double]

@@ -9,11 +9,6 @@ import SwiftUI
 import SwiftData
 import Collections
 
-extension UIScreen{
-   static let screenWidth = UIScreen.main.bounds.size.width
-   static let screenHeight = UIScreen.main.bounds.size.height
-   static let screenSize = UIScreen.main.bounds.size
-}
 
 
 enum MuscleLocation {
@@ -172,7 +167,7 @@ struct MuscleGroupFrontView<Selector: MuscleGroupSelector>: View {
             MuscleView(muscleGroup: .deltoid, shape: {Deltoid()}, selector: $selector)
             MuscleView(muscleGroup: .deltoid, mirrored: true, shape: {Deltoid()}, selector: $selector)
         }
-        .aspectRatio(66.70126342773438 / 143.2188720703125, contentMode: .fit)
+        .aspectRatio(SILHOUETTE_ASPECT_RATIO, contentMode: .fit)
     }
 }
 
@@ -202,7 +197,7 @@ struct MuscleGroupBackView<Selector: MuscleGroupSelector>: View {
             MuscleView(muscleGroup: .calves, shape: {RearCalf()}, selector: $selector)
             MuscleView(muscleGroup: .calves, mirrored: true, shape: {RearCalf()}, selector: $selector)
         }
-        .aspectRatio(66.70126342773438 / 143.2188720703125, contentMode: .fit)
+        .aspectRatio(SILHOUETTE_ASPECT_RATIO, contentMode: .fit)
     }
 }
 

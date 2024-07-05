@@ -6,26 +6,6 @@
 //
 
 import SwiftUI
-extension Double {
-    
-    var roundedWithAbbreviations: String {
-        let thousand = self / 1000.0
-        let million = self / 1000000.0
-        let billion = self / 1000000000.0
-        if billion >= 1.0 {
-            return "\(((billion * 10).rounded()/10.0).clean)B"
-        }
-        else if million >= 1.0 {
-            return "\(((million * 10).rounded()/10.0).clean)M"
-        }
-        else if thousand >= 1.0 {
-            return "\(((thousand * 10).rounded()/10.0).clean)K"
-        }
-        else {
-            return "\(self.clean)"
-        }
-    }
-}
 
 func displayString(number: Double, singleUnit: String) -> String {
     return "\(number.roundedWithAbbreviations) \(singleUnit)\(number.rounded() != 1.0 ? "s" : "")"

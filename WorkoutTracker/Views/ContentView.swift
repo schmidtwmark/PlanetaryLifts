@@ -13,9 +13,7 @@ struct ContentView: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
     var body: some View {
-        LiftListView().onAppear {
-            print("SQL Command: '\(modelContext.sqliteCommand)'")
-        }
+        LiftListView()
     }
 
 }

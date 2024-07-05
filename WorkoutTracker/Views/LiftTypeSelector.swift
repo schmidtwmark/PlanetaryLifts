@@ -8,12 +8,6 @@
 import SwiftUI
 import SwiftData
 
-extension String {
-    func containsIgnoringCase(_ target: String) -> Bool {
-        return self.range(of: target, options: .caseInsensitive) != nil
-    }
-}
-
 struct LiftTypeSelector: View {
     @Binding var selectedLiftType : LiftType
     @State var searchText: String = ""

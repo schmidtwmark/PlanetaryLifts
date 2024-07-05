@@ -133,3 +133,27 @@ extension Color {
         }
     }
 }
+
+
+extension UIColor {
+    static func fromHex(_ hex: UInt64) -> UIColor {
+        return UIColor(
+              red: CGFloat((hex & 0xFF0000) >> 16) / 255.0,
+              green: CGFloat((hex & 0x00FF00) >> 8) / 255.0,
+              blue: CGFloat(hex & 0x0000FF) / 255.0,
+              alpha: CGFloat(1.0)
+        )
+    }
+    
+    func toHex() -> UInt64 {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        self.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        
+        
+        
+        return UInt64(red * 255.0) << 16 | UInt64(green * 255.0) << 8 | UInt64(blue * 255.0)
+    }
+}
