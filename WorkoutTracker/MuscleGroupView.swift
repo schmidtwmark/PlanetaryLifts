@@ -276,7 +276,6 @@ struct MuscleGroupView: View {
     
     var body: some View {
         NavigationStack {
-            Spacer(minLength: 20)
             ScrollView(.vertical) {
                 VStack {
                     if case .loaded(let stats) = muscleGroupState.stats {
@@ -331,8 +330,11 @@ struct MuscleGroupView: View {
                             }
                             .scrollTargetLayout()
                         }
-                        .scrollPosition(id: $selectedCard)
-                        .sensoryFeedback(.selection, trigger: selectedCard)
+                        // Disabled because scroll position adds lag to the stats view screen--perhaps due to having too much data?
+                        #if false
+                         .scrollPosition(id: $selectedCard)
+                         .sensoryFeedback(.selection, trigger: selectedCard)
+                        #endif
                         .scrollTargetBehavior(.viewAligned)
                         .safeAreaPadding(.horizontal, CARD_MARGIN)
                         .scrollIndicators(.hidden)

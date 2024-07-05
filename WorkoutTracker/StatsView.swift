@@ -274,6 +274,8 @@ struct StatsView: View {
     @Environment(\.modelContext) private var modelContext
     @State var searchText = ""
     @State var showStatsForType: LiftType? = nil
+    @State var selectedCard: String? = nil
+
     
     @SectionedQuery(\Lift.type) var liftsByType: SectionedResults<LiftType, Lift>
     @SectionedQuery(\Lift.type.category) var liftsByCategory: SectionedResults<LiftCategory, Lift>
@@ -325,9 +327,12 @@ struct StatsView: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
     
-    @State
-    var cardSelection: String? = nil
-    
+    @ViewBuilder
+    func debugCard(_ text: String) -> some View {
+        Text(text)
+            .frame(width: 275, height: 275)
+            .background(.gray).id(text)
+    }
     
     var body: some View {
         
@@ -336,6 +341,9 @@ struct StatsView: View {
                 VStack {
                     ScrollView(.horizontal) {
                         HStack(spacing: 20.0) {
+//                            debugCard("blah 1")
+//                            debugCard("blah 2")
+//                            debugCard("blah 3")
                             CategoryPieChart<LiftCategory>(
                                 title: "Lift Count by Category",
                                 liftsByCategory: liftsByCategory,
@@ -371,8 +379,11 @@ struct StatsView: View {
                         }
                         .scrollTargetLayout()
                     }
-//                    .sensoryFeedback(.selection, trigger: cardSelection)
-//                    .scrollPosition(id: $cardSelection)
+                    // Disabled because scroll position adds lag to the stats view screen--perhaps due to loading?
+                    #if false
+                    .scrollPosition(id: $selectedCard)
+                    .sensoryFeedback(.selection, trigger: selectedCard)
+                    #endif
                     .scrollTargetBehavior(.viewAligned)
                     .safeAreaPadding(.horizontal, CARD_MARGIN)
                     .scrollIndicators(.hidden)
@@ -416,6 +427,11 @@ struct StatsView: View {
                     }.padding()
                 }
             }
+            #if DEBUG
+            .onChange(of: selectedCard, {
+                print("Changed selected card \(String(describing: selectedCard))")
+            })
+            #endif
             .navigationTitle("Stats")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .sheet(item: $showStatsForType) { type in
