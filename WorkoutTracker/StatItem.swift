@@ -196,6 +196,7 @@ struct StatItem: View {
     @AppStorage(PALETTE) var palette: Palette = .main
     @State var viewModel: ViewModel
     @State var selectedRepCount: String?
+    @State var legendPosition: Int? = nil
     
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -253,18 +254,13 @@ struct StatItem: View {
             .toolbar {
                 if case .loaded(let maxes, _, _, _, _) = viewModel.data {
                     ToolbarItem(placement: .bottomBar) {
-                        ScrollView(.horizontal) {
-                            HStack(alignment: .top) {
-                                StatsLegend(
-                                    chunkSize: 1,
-                                    categories: maxes.keys.sorted(by: <).map({repToString($0)}),
-                                    selectedCategory: $selectedRepCount,
-                                    stringMapping: {$0},
-                                    colorMapping: {viewModel.colorByRepCount($0, palette)})
-                            }
-                            .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
-                            .scrollIndicators(.hidden)
-                        }
+                            StatsLegend(
+                                chunkSize: 1,
+                                categories: maxes.keys.sorted(by: <).map({repToString($0)}),
+                                selectedCategory: $selectedRepCount,
+                                stringMapping: {$0},
+                                colorMapping: {viewModel.colorByRepCount($0, palette)},
+                                legendPosition: $legendPosition)
                     }
                 }
             }

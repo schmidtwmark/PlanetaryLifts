@@ -126,10 +126,9 @@ class MuscleGroupState : MuscleGroupSelector {
         let allTypes = LiftType.allCases + userGeneratedTypes.map({userType in .other(name: userType.name, category: userType.category, id: userType.id)})
         
         var suggestionHeap = allTypes.reduce(into: Heap<LiftSuggestion>(), { heap, type in
-            let score = type.getLiftWeights(userGeneratedTypes).suggestionScore(scores)
-//            let score = type.getLiftWeights(userGeneratedTypes).dotProduct(scores)
+            let score = type.getLiftWeights(userGeneratedTypes).suggestionScore(normalized)
             
-            if heap.count < 5 {
+            if heap.count < 10 {
                 heap.insert(LiftSuggestion(score: score, type: type))
             } else if let min = heap.min, min.score < score {
                 let _ = heap.popMin()
@@ -220,6 +219,8 @@ struct MuscleGroupView: View {
     @State var showImpactForLift: Lift? = nil
     @State var showPercentage = true
     @State var showAddLift: LiftType? = nil
+    @State var selectedCard: String? = nil
+
     
     @AppStorage(PALETTE) var palette: Palette = .main
     
@@ -243,39 +244,42 @@ struct MuscleGroupView: View {
             stats.normalizedWeight.mean
         }}()
         let count = lastWeekLifts.filter({$0.getLiftWeights(userGeneratedTypes).affects(muscleGroupState.selectedMuscleGroup)}).count
-        HStack {
-            if let selected = muscleGroupState.selectedMuscleGroup {
-                Text(selected.rawValue)
-            } else {
-                Text("Overall")
-            }
-            Spacer()
-            if showPercentage {
-                Text("\((percentage * 100).clean)%")
-            } else {
-                Text(displayString(number: Double(count), singleUnit: "lift"))
-            }
-        }
-        .font(.title3)
-        .padding()
-        .background(ZStack {
-            Rectangle().fill(.black)
-            Rectangle().fill(tintColor).opacity((percentage / 2) + 0.5)
-        })
-        .clipShape(RoundedRectangle(cornerRadius: 10.0))
-        .onTapGesture {
+        Button {
             withAnimation {
                 showPercentage.toggle()
             }
+        } label: {
+            HStack {
+                if let selected = muscleGroupState.selectedMuscleGroup {
+                    Text(selected.rawValue)
+                } else {
+                    Text("Overall")
+                }
+                Spacer()
+                if showPercentage {
+                    Text("\((percentage * 100).clean)%")
+                } else {
+                    Text(displayString(number: Double(count), singleUnit: "lift"))
+                }
+            }
+            .font(.title3)
+            .padding(10)
         }
+        .buttonStyle(.borderedProminent)
+        .tint(tintColor.opacity((percentage / 2) + 0.5))
     }
+    
+    @MainActor var cardWidth: Double {
+        UIScreen.screenWidth - (CARD_MARGIN * 2)
+    }
+    
     
     var body: some View {
         NavigationStack {
+            Spacer(minLength: 20)
             ScrollView(.vertical) {
                 VStack {
                     if case .loaded(let stats) = muscleGroupState.stats {
-                        
                         ScrollView(.horizontal) {
                             HStack {
                                 VStack(alignment: .center) {
@@ -283,7 +287,9 @@ struct MuscleGroupView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(.gray)
                                     VStack {
+                                        Spacer()
                                         muscles(stats)
+                                        Spacer()
                                         musclesLabel(stats)
                                     }
                                     .padding(CHART_PADDING)
@@ -291,39 +297,44 @@ struct MuscleGroupView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
                                 }
                                 .id("muscles")
-                                .frame(width: UIScreen.screenWidth - (CARD_MARGIN * 2))
+                                .frame(width: cardWidth, height: cardWidth * 1.3)
                                 VStack(alignment: .center) {
                                     Text("SUGGESTED LIFTS")
                                         .font(.subheadline)
                                         .foregroundStyle(.gray)
                                     ScrollView(.vertical) {
                                         ForEach(stats.suggestedLifts) { suggestion in
-                                            HStack {
-                                                Text(suggestion.type.string)
-                                                Spacer()
-                                            }
-                                            .font(.title3)
-                                            .padding()
-                                            .background(suggestion.type.category.getColor(for: palette))
-                                            .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                                            .contentShape(Rectangle())
-                                            .onTapGesture {
+                                            Button {
                                                 print("Tapped suggestion \(suggestion.type)")
                                                 showAddLift = suggestion.type
+   
+                                            } label: {
+                                                HStack {
+                                                    Text(suggestion.type.string)
+                                                    Spacer()
+                                                    Text(suggestion.score.clean).font(.body)
+                                                }
+                                                .font(.title3)
+                                                .padding()
                                             }
+                                            .tint(suggestion.type.category.getColor(for: palette))
+                                            .buttonStyle(.borderedProminent)
                                         }
                                     }
-                                    .padding()
+                                    .safeAreaPadding(.vertical)
+                                    .padding(.horizontal)
                                     .background(Color(uiColor: UIColor.secondarySystemBackground))
                                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
                                 }
                                 .id("suggestions")
-                                .frame(width: UIScreen.screenWidth - (CARD_MARGIN * 2))
+                                .frame(width: cardWidth, height: cardWidth * 1.3)
                             }
                             .scrollTargetLayout()
                         }
+                        .scrollPosition(id: $selectedCard)
+                        .sensoryFeedback(.selection, trigger: selectedCard)
                         .scrollTargetBehavior(.viewAligned)
-                        .safeAreaPadding(.horizontal, 20)
+                        .safeAreaPadding(.horizontal, CARD_MARGIN)
                         .scrollIndicators(.hidden)
                         
                         Spacer(minLength: 20.0)
@@ -383,7 +394,7 @@ struct MuscleGroupView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 10.0))
                             }
                         }
-                        .padding(CARD_MARGIN)
+                        .padding()
                     } else {
                         ProgressView()
                     }

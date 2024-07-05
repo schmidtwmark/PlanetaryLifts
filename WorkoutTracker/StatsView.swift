@@ -103,7 +103,7 @@ enum Granularity: String, Codable, CaseIterable {
         return nil
     }
 }
-let CARD_MARGIN = 15.0
+let CARD_MARGIN = 30.0
 let CHART_PADDING = 10.0
 
 
@@ -112,6 +112,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
     @AppStorage(PALETTE) var palette: Palette = .main
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @State var viewModel: ChartViewModel<T>
+    @State var legendPosition: Int? = nil
     
     var title: String
     
@@ -149,7 +150,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
     
     
     var body: some View {
-        ScrollViewReader { scrollProxy in
+        VStack {
             VStack {
                 Text(title).font(.headline)
                 ZStack {
@@ -180,6 +181,42 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
                         }
                     }
                     .frame(width: chartWidth, height: chartWidth)
+                    .chartOverlay { proxy in
+                        if case .loaded(let categoryCounts) = viewModel.chartData {
+                            GeometryReader { geometry in
+                                ZStack(alignment: .center) {
+                                    Rectangle().fill(.clear).contentShape(Rectangle())
+                                        .gesture(
+                                            SpatialTapGesture()
+                                                .onEnded{ value in
+                                                    // Convert the gesture location to the coordiante space of the plot area.
+                                                    let origin = geometry[proxy.plotFrame!].origin
+                                                    let location = CGPoint(
+                                                        x: value.location.x - origin.x,
+                                                        y: value.location.y - origin.y
+                                                    )
+                                                    let angle = proxy.angle(at: location)
+                                                    if let item = proxy.value(atAngle: angle, as: Double.self) {
+                                                        if let item = viewModel.getCategoryBy(count: item) {
+                                                            withAnimation {
+                                                                if item == viewModel.selectedItem{
+                                                                    viewModel.selectedItem = nil
+                                                                } else {
+                                                                    viewModel.selectedItem = item
+                                                                    if let idx = categoryCounts.firstIndex(of: item) {
+                                                                        legendPosition = (idx / 2)
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                }
+                            }
+                        }
+                    }
+
                     if case .loading = viewModel.chartData {
                         ProgressView().tint(.gray)
                     }
@@ -196,66 +233,27 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Defaultable & 
                     }
                 }
             }
-            .chartOverlay { proxy in
-                if case .loaded(_) = viewModel.chartData {
-                    GeometryReader { geometry in
-                        ZStack(alignment: .center) {
-                            Rectangle().fill(.clear).contentShape(Rectangle())
-                                .gesture(
-                                    SpatialTapGesture()
-                                        .onEnded{ value in
-                                            // Convert the gesture location to the coordiante space of the plot area.
-                                            let origin = geometry[proxy.plotFrame!].origin
-                                            let location = CGPoint(
-                                                x: value.location.x - origin.x,
-                                                y: value.location.y - origin.y
-                                            )
-                                            let angle = proxy.angle(at: location)
-                                            if let item = proxy.value(atAngle: angle, as: Double.self) {
-                                                if let item = viewModel.getCategoryBy(count: item) {
-                                                    withAnimation {
-                                                        if item == viewModel.selectedItem{
-                                                            viewModel.selectedItem = nil
-                                                        } else {
-                                                            viewModel.selectedItem = item
-//                                                            if let idx = categoryCounts.firstIndex(of: item) {
-//                                                                scrollProxy.scrollTo(idx / 2)
-//                                                            }
-                                                            
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                )
-                        }
-                    }
-                }
-            }
             .chartLegend(.hidden)
             .chartForegroundStyleScale(mapping: color)
             .padding(CHART_PADDING)
-            ScrollView(.horizontal) {
-                HStack(alignment: .top) {
-                    if case .loaded(let categoryCounts) = viewModel.chartData {
-                        StatsLegend(
-                                    chunkSize: 2,
-                                    categories: categoryCounts,
-                                    selectedCategory: $viewModel.selectedItem,
-                                    stringMapping: {stringMapping($0.category)},
-                                    colorMapping: colorMapping)
-                    } else {
-                        StatsLegend(
-                                    chunkSize: 2,
-                                    categories: ["Placeholder 1", "Placeholder 2"],
-                                    selectedCategory: Binding.constant(nil),
-                                    stringMapping: {$0},
-                                    colorMapping: {_ in Color.gray})
-                        .redacted(reason: .placeholder)
-                    }
-                }
-                .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
-                .scrollIndicators(.hidden)
+            if case .loaded(let categoryCounts) = viewModel.chartData {
+                StatsLegend(
+                            chunkSize: 2,
+                            categories: categoryCounts,
+                            selectedCategory: $viewModel.selectedItem,
+                            stringMapping: {stringMapping($0.category)},
+                            colorMapping: colorMapping,
+                            legendPosition: $legendPosition)
+            } else {
+                StatsLegend(
+                            chunkSize: 2,
+                            categories: ["Placeholder 1", "Placeholder 2"],
+                            selectedCategory: Binding.constant(nil),
+                            stringMapping: {$0},
+                            colorMapping: {_ in Color.gray},
+                            legendPosition: Binding.constant(0)
+                )
+                .redacted(reason: .placeholder)
             }
         }
         .padding(CARD_MARGIN)
@@ -327,6 +325,9 @@ struct StatsView: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
     
+    @State
+    var cardSelection: String? = nil
+    
     
     var body: some View {
         
@@ -370,6 +371,8 @@ struct StatsView: View {
                         }
                         .scrollTargetLayout()
                     }
+//                    .sensoryFeedback(.selection, trigger: cardSelection)
+//                    .scrollPosition(id: $cardSelection)
                     .scrollTargetBehavior(.viewAligned)
                     .safeAreaPadding(.horizontal, CARD_MARGIN)
                     .scrollIndicators(.hidden)
@@ -410,7 +413,7 @@ struct StatsView: View {
                                 }
                             }
                         }
-                    }.padding(CARD_MARGIN)
+                    }.padding()
                 }
             }
             .navigationTitle("Stats")
