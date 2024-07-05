@@ -485,8 +485,6 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .facePull: LiftWeights([(.deltoid, 0.75)])
 		case .uprightRow: LiftWeights([(.trapezius, 0.75), (.forearms, 0.25), (.deltoid, 1)])
 		case .frontRaise: LiftWeights([(.trapezius, 0.5), (.deltoid, 1)])
-            
-//        default: LiftWeights([])
 
 		case let .other(_, _, id): userGeneratedTypes.first(where: {$0.id == id})?.customWeights ?? LiftWeights()
 		}

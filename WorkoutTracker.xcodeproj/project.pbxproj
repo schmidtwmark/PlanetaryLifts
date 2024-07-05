@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		ED1B48D52BCB6792003F74BF /* PlatesEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */; };
-		ED30C2512BE6997D000303F9 /* LiftTypesGenerated.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED30C2502BE6997D000303F9 /* LiftTypesGenerated.swift */; };
 		ED320A362B92A0BF003A6628 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A352B92A0BF003A6628 /* Date.swift */; };
 		ED320A382B94DB5E003A6628 /* LiftType.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A372B94DB5E003A6628 /* LiftType.swift */; };
 		ED320A3A2B950AF5003A6628 /* LiftTypeSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */; };
@@ -20,9 +19,9 @@
 		ED6E7EE42C2AEC260092134D /* MuscleShapes.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED6E7EE32C2AEC260092134D /* MuscleShapes.swift */; };
 		ED749DC12BF5769200A3AA3E /* StatBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED749DC02BF5769200A3AA3E /* StatBlock.swift */; };
 		ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7BF2BBE1BE900C46300 /* StatItem.swift */; };
-		ED76D7C22BBF9D4200C46300 /* BindingPlayground.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */; };
 		ED76D7C42BBF9F9500C46300 /* NumberPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */; };
 		ED87072B2C3358810010DFA8 /* ImportExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED87072A2C3358810010DFA8 /* ImportExportView.swift */; };
+		ED8707312C383A010010DFA8 /* LiftTypesGenerated.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED8707302C383A000010DFA8 /* LiftTypesGenerated.swift */; };
 		ED8C374B2C2FAABE00834F1D /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = ED8C374A2C2FAABE00834F1D /* Collections */; };
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
@@ -42,7 +41,6 @@
 
 /* Begin PBXFileReference section */
 		ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatesEditorView.swift; sourceTree = "<group>"; };
-		ED30C2502BE6997D000303F9 /* LiftTypesGenerated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = LiftTypesGenerated.swift; path = workout_types_generator/LiftTypesGenerated.swift; sourceTree = "<group>"; };
 		ED320A352B92A0BF003A6628 /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
 		ED320A372B94DB5E003A6628 /* LiftType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftType.swift; sourceTree = "<group>"; };
 		ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftTypeSelector.swift; sourceTree = "<group>"; };
@@ -52,9 +50,9 @@
 		ED6E7EE32C2AEC260092134D /* MuscleShapes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuscleShapes.swift; sourceTree = "<group>"; };
 		ED749DC02BF5769200A3AA3E /* StatBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatBlock.swift; sourceTree = "<group>"; };
 		ED76D7BF2BBE1BE900C46300 /* StatItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatItem.swift; sourceTree = "<group>"; };
-		ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingPlayground.swift; sourceTree = "<group>"; };
 		ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberPicker.swift; sourceTree = "<group>"; };
 		ED87072A2C3358810010DFA8 /* ImportExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportExportView.swift; sourceTree = "<group>"; };
+		ED8707302C383A000010DFA8 /* LiftTypesGenerated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = LiftTypesGenerated.swift; path = WorkoutTracker/workout_types_generator/LiftTypesGenerated.swift; sourceTree = SOURCE_ROOT; };
 		EDA682F02B90E9F4002015CA /* WorkoutTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTrackerApp.swift; sourceTree = "<group>"; };
 		EDA682F52B90E9F4002015CA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -88,6 +86,50 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		ED87072C2C3839490010DFA8 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				ED6E7EE12C28C4210092134D /* MuscleGroupView.swift */,
+				ED6E7EE32C2AEC260092134D /* MuscleShapes.swift */,
+				ED749DC02BF5769200A3AA3E /* StatBlock.swift */,
+				ED76D7BF2BBE1BE900C46300 /* StatItem.swift */,
+				EDA6830F2B9186DE002015CA /* StatsView.swift */,
+				EDFE3FB22C2513950035F065 /* StatsLegend.swift */,
+				EDA682F52B90E9F4002015CA /* ContentView.swift */,
+				EDA6830D2B915190002015CA /* AddLiftView.swift */,
+				EDA683072B91347A002015CA /* LiftListView.swift */,
+				ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */,
+				ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */,
+				EDA683092B913492002015CA /* SettingsView.swift */,
+				ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */,
+				ED87072A2C3358810010DFA8 /* ImportExportView.swift */,
+				ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		ED87072E2C38395D0010DFA8 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				EDFE3FAA2C13CD2D0035F065 /* AppStorageKeys.swift */,
+				EDFE3FA42C13CABB0035F065 /* Palette.swift */,
+				EDFE3FA62C13CB5B0035F065 /* ColorAdjustment.swift */,
+				ED320A352B92A0BF003A6628 /* Date.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		ED87072F2C3839640010DFA8 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				ED8707302C383A000010DFA8 /* LiftTypesGenerated.swift */,
+				ED320A372B94DB5E003A6628 /* LiftType.swift */,
+				EDA6830B2B91469D002015CA /* DataModel.swift */,
+				ED6E7EDF2C28C0460092134D /* MuscleGroups.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
 		ED8C37492C2FAABE00834F1D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -115,31 +157,10 @@
 		EDA682F22B90E9F4002015CA /* WorkoutTracker */ = {
 			isa = PBXGroup;
 			children = (
+				ED87072F2C3839640010DFA8 /* Models */,
+				ED87072E2C38395D0010DFA8 /* Support */,
+				ED87072C2C3839490010DFA8 /* Views */,
 				EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */,
-				EDA682F52B90E9F4002015CA /* ContentView.swift */,
-				EDA6830F2B9186DE002015CA /* StatsView.swift */,
-				EDFE3FB22C2513950035F065 /* StatsLegend.swift */,
-				ED76D7BF2BBE1BE900C46300 /* StatItem.swift */,
-				ED749DC02BF5769200A3AA3E /* StatBlock.swift */,
-				EDA6830B2B91469D002015CA /* DataModel.swift */,
-				ED6E7EDF2C28C0460092134D /* MuscleGroups.swift */,
-				ED6E7EE12C28C4210092134D /* MuscleGroupView.swift */,
-				ED6E7EE32C2AEC260092134D /* MuscleShapes.swift */,
-				EDA683072B91347A002015CA /* LiftListView.swift */,
-				EDFE3FAA2C13CD2D0035F065 /* AppStorageKeys.swift */,
-				EDFE3FA42C13CABB0035F065 /* Palette.swift */,
-				EDFE3FA62C13CB5B0035F065 /* ColorAdjustment.swift */,
-				ED320A352B92A0BF003A6628 /* Date.swift */,
-				EDA6830D2B915190002015CA /* AddLiftView.swift */,
-				ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */,
-				ED76D7C32BBF9F9500C46300 /* NumberPicker.swift */,
-				ED76D7C12BBF9D4200C46300 /* BindingPlayground.swift */,
-				ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */,
-				EDA683092B913492002015CA /* SettingsView.swift */,
-				ED87072A2C3358810010DFA8 /* ImportExportView.swift */,
-				ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */,
-				ED320A372B94DB5E003A6628 /* LiftType.swift */,
-				ED30C2502BE6997D000303F9 /* LiftTypesGenerated.swift */,
 				EDA682F92B90E9F5002015CA /* Assets.xcassets */,
 				EDA682FE2B90E9F5002015CA /* WorkoutTracker.entitlements */,
 				EDA682FF2B90E9F5002015CA /* Info.plist */,
@@ -244,13 +265,13 @@
 				ED6E7EE02C28C0460092134D /* MuscleGroups.swift in Sources */,
 				EDA683102B9186DE002015CA /* StatsView.swift in Sources */,
 				EDFE3FA72C13CB5B0035F065 /* ColorAdjustment.swift in Sources */,
+				ED8707312C383A010010DFA8 /* LiftTypesGenerated.swift in Sources */,
 				EDFE3FA52C13CABB0035F065 /* Palette.swift in Sources */,
 				EDFE3FAB2C13CD2D0035F065 /* AppStorageKeys.swift in Sources */,
 				ED50D4D12B97CCDB00BD3F77 /* StickerGeneratorView.swift in Sources */,
 				EDA6830C2B91469D002015CA /* DataModel.swift in Sources */,
 				EDFE3FB32C2513950035F065 /* StatsLegend.swift in Sources */,
 				ED76D7C02BBE1BE900C46300 /* StatItem.swift in Sources */,
-				ED30C2512BE6997D000303F9 /* LiftTypesGenerated.swift in Sources */,
 				ED320A362B92A0BF003A6628 /* Date.swift in Sources */,
 				ED1B48D52BCB6792003F74BF /* PlatesEditorView.swift in Sources */,
 				EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */,
@@ -260,7 +281,6 @@
 				ED6E7EE42C2AEC260092134D /* MuscleShapes.swift in Sources */,
 				ED6E7EE22C28C4210092134D /* MuscleGroupView.swift in Sources */,
 				EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */,
-				ED76D7C22BBF9D4200C46300 /* BindingPlayground.swift in Sources */,
 				EDA683082B91347A002015CA /* LiftListView.swift in Sources */,
 				ED320A382B94DB5E003A6628 /* LiftType.swift in Sources */,
 			);
