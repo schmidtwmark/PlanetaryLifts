@@ -373,6 +373,14 @@ struct LiftListItem: View {
     }
 }
 
+enum TabType {
+    case liftList
+    case stats
+    case addLift
+    case muscles
+    case settings
+}
+
 struct LiftListView: View {
     @State var searchText: String = ""
 
@@ -390,7 +398,9 @@ struct LiftListView: View {
     @State var editingLift: Lift? = nil
     @State var addingLift: Bool = false
     @State var showStatsForType: LiftType? = nil
-    
+    @State var selectedTab: TabType = .liftList
+    @State var previousTab: TabType = .liftList
+
     @AppStorage(PALETTE) var palette : Palette = .main
     @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
     
@@ -429,7 +439,7 @@ struct LiftListView: View {
 
     
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -462,11 +472,6 @@ struct LiftListView: View {
                     .navigationTitle("Lifts")
                     .toolbar() {
                         ToolbarItemGroup(placement: .primaryAction, content: {
-                            Button {
-                                addingLift = true
-                            } label: {
-                                Label("Add Lift", systemImage: "plus")
-                            }
                             if let _ = filterSelection {
                                 Button(role: .destructive, action: {
                                     withAnimation {
@@ -498,9 +503,6 @@ struct LiftListView: View {
                     .sheet(item: $showStatsForType) { type in
                         StatItem(type: type)
                     }
-                    .sheet(isPresented: $addingLift, content: {
-                        AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress)
-                    })
                     .sheet(item: $editingLift) { lift in
                         AddLiftView(lift: lift)
                     }
@@ -512,22 +514,47 @@ struct LiftListView: View {
                 }
                 .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
 
-            }.tabItem {
+            }
+            .tabItem {
                 Label("Lifts", systemImage: "dumbbell")
             }
+            .tag(TabType.liftList)
             .badge(unreadLifts)
-            StatsView().tabItem {
+            StatsView()
+                .tabItem {
                 Label("Stats", systemImage: "chart.xyaxis.line")
             }
+            .tag(TabType.stats)
+
+            Text("Blah")
+                .tabItem {
+                    Label("Add Lift", systemImage: "plus")
+            }
+            .tag(TabType.addLift)
             MuscleGroupView()
                 .tabItem {
                 Label("Muscles", systemImage: "figure.strengthtraining.traditional")
             }
-            SettingsView().tabItem {
+            .tag(TabType.muscles)
+
+            SettingsView()
+            .tabItem {
                 Label("Settings", systemImage: "gear")
             }
+            .tag(TabType.settings)
+
+
 
         }
+        .onChange(of: selectedTab) { old, new in
+            if new == .addLift {
+                selectedTab = old
+                addingLift = true
+            }
+        }
+        .sheet(isPresented: $addingLift, content: {
+            AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList)
+        })
         .tint(getTintColor())
 
     }
