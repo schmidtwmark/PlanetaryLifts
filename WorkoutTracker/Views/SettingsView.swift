@@ -50,7 +50,7 @@ struct SettingsView: View {
                     }, label: {
                         Label("Weight", systemImage: "scalemass")
                     })
-                    onChange(of: weightUnits, { (old, new) in
+                    .onChange(of: weightUnits, { (old, new) in
                         // TODO: figure out how to do this in the background and show progress
                         let lifts = try! modelContext.fetch(FetchDescriptor<Lift>())
                         for lift in lifts {

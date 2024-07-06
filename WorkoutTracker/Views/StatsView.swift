@@ -337,92 +337,100 @@ struct StatsView: View {
         NavigationStack {
             ScrollView(.vertical) {
                 VStack {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 20.0) {
-//                            debugCard("blah 1")
-//                            debugCard("blah 2")
-//                            debugCard("blah 3")
-                            CategoryPieChart<LiftCategory>(
-                                title: "Lift Count by Category",
-                                liftsByCategory: liftsByCategory,
-                                statsType: .count,
-                                colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
-                                stringMapping: {$0.rawValue},
-                                countFn: {Double($0.elements.count)})
-                            .id("Category Count")
-                            CategoryPieChart<LiftCategory>(
-                                title: "Weight by Category",
-                                liftsByCategory: liftsByCategory,
-                                statsType: .weight,
-                                colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
-                                stringMapping: {$0.rawValue},
-                                countFn: {totalWeight($0.elements)})
-                            .id("Category Weight")
-                            CategoryPieChart<LiftType>(
-                                title: "Lift Count by Lift Type",
-                                liftsByCategory: liftsByType,
-                                statsType: .count,
-                                colorMapping: {colorByTypeString[$0]!},
-                                stringMapping: {$0.string},
-                                countFn: {Double($0.elements.count)})
-                            .id("Lift Count")
-                            CategoryPieChart<LiftType>(
-                                title: "Weight by Lift Type",
-                                liftsByCategory: liftsByType,
-                                statsType: .weight,
-                                colorMapping: {colorByTypeString[$0]!},
-                                stringMapping: {$0.string},
-                                countFn: {totalWeight($0.elements)})
-                            .id("Lift Weight")
+                    if liftsByCategory.count == 0 {
+                        HStack {
+                            Spacer()
+                            Text("Add lifts to start tracking stats!")
+                            Spacer()
                         }
-                        .scrollTargetLayout()
-                    }
-                    // Disabled because scroll position adds lag to the stats view screen--perhaps due to loading?
-                    #if false
-                    .scrollPosition(id: $selectedCard)
-                    .sensoryFeedback(.selection, trigger: selectedCard)
-                    #endif
-                    .scrollTargetBehavior(.viewAligned)
-                    .safeAreaPadding(.horizontal, CARD_MARGIN)
-                    .scrollIndicators(.hidden)
-                    VStack(spacing: 20.0){
-                        ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
-                            VStack {
-                                Section {
-                                    HStack {
-                                        Text(category.rawValue.uppercased())
-                                        Spacer()
-                                    }
-                                    .font(.subheadline)
-                                    .foregroundStyle(.gray)
-                                    .padding(.leading, 15.0)
-                                    VStack(spacing: 0.0) {
-                                        let types = allLiftsByCategory[category]!.sorted(by: <).filter({presentTypes.contains($0)})
-                                        if types.count > 0 {
-                                            Divider().opacity(0.0)
-                                            ForEach(types, id: \.string) { liftType in
-                                                HStack {
-                                                    Text("\(liftType.string)")
-                                                    Spacer()
-                                                }
-                                                .padding(.horizontal, 15.0)
-                                                .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
-                                                .onTapGesture(perform: {
-                                                    showStatsForType = liftType
-                                                })
-                                                Divider().padding(.leading).opacity(types.last == liftType ? 0.0 : 1.0)
-                                            }
+                    } else {
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 20.0) {
+                                //                            debugCard("blah 1")
+                                //                            debugCard("blah 2")
+                                //                            debugCard("blah 3")
+                                CategoryPieChart<LiftCategory>(
+                                    title: "Lift Count by Category",
+                                    liftsByCategory: liftsByCategory,
+                                    statsType: .count,
+                                    colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
+                                    stringMapping: {$0.rawValue},
+                                    countFn: {Double($0.elements.count)})
+                                .id("Category Count")
+                                CategoryPieChart<LiftCategory>(
+                                    title: "Weight by Category",
+                                    liftsByCategory: liftsByCategory,
+                                    statsType: .weight,
+                                    colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
+                                    stringMapping: {$0.rawValue},
+                                    countFn: {totalWeight($0.elements)})
+                                .id("Category Weight")
+                                CategoryPieChart<LiftType>(
+                                    title: "Lift Count by Lift Type",
+                                    liftsByCategory: liftsByType,
+                                    statsType: .count,
+                                    colorMapping: {colorByTypeString[$0]!},
+                                    stringMapping: {$0.string},
+                                    countFn: {Double($0.elements.count)})
+                                .id("Lift Count")
+                                CategoryPieChart<LiftType>(
+                                    title: "Weight by Lift Type",
+                                    liftsByCategory: liftsByType,
+                                    statsType: .weight,
+                                    colorMapping: {colorByTypeString[$0]!},
+                                    stringMapping: {$0.string},
+                                    countFn: {totalWeight($0.elements)})
+                                .id("Lift Weight")
+                            }
+                            .scrollTargetLayout()
+                        }
+                        // Disabled because scroll position adds lag to the stats view screen--perhaps due to loading?
+#if false
+                        .scrollPosition(id: $selectedCard)
+                        .sensoryFeedback(.selection, trigger: selectedCard)
+#endif
+                        .scrollTargetBehavior(.viewAligned)
+                        .safeAreaPadding(.horizontal, CARD_MARGIN)
+                        .scrollIndicators(.hidden)
+                        VStack(spacing: 20.0){
+                            ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
+                                VStack {
+                                    Section {
+                                        HStack {
+                                            Text(category.rawValue.uppercased())
+                                            Spacer()
                                         }
+                                        .font(.subheadline)
+                                        .foregroundStyle(.gray)
+                                        .padding(.leading, 15.0)
+                                        VStack(spacing: 0.0) {
+                                            let types = allLiftsByCategory[category]!.sorted(by: <).filter({presentTypes.contains($0)})
+                                            if types.count > 0 {
+                                                Divider().opacity(0.0)
+                                                ForEach(types, id: \.string) { liftType in
+                                                    HStack {
+                                                        Text("\(liftType.string)")
+                                                        Spacer()
+                                                    }
+                                                    .padding(.horizontal, 15.0)
+                                                    .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
+                                                    .onTapGesture(perform: {
+                                                        showStatsForType = liftType
+                                                    })
+                                                    Divider().padding(.leading).opacity(types.last == liftType ? 0.0 : 1.0)
+                                                }
+                                            }
+                                            
+                                        }
+                                        .contentShape(Rectangle())
+                                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
                                         
                                     }
-                                    .contentShape(Rectangle())
-                                    .background(Color(UIColor.secondarySystemGroupedBackground))
-                                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                                    
                                 }
                             }
-                        }
-                    }.padding()
+                        }.padding()
+                    }
                 }
             }
             .background(Color(uiColor: UIColor.systemGroupedBackground))

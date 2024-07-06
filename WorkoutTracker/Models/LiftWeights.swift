@@ -74,7 +74,6 @@ struct LiftWeights : Codable, Equatable, Hashable {
             let delta = typeWeight - userWeight
             return (group, delta)
         })
-        print("Deltas for \(type.string): \(weights.map({ ($0.0.rawValue, $0.1.clean)}))")
         return weights.reduce(0, { sum, item in
             sum + max(0, item.1)
         })

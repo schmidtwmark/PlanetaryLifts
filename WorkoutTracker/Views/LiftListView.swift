@@ -469,6 +469,29 @@ struct LiftListView: View {
                         }
                         .padding([.horizontal], 20)
                     }
+                    .overlay {
+                        if liftsByDate.count == 0 {
+                            HStack {
+                                Spacer()
+                                Text("Tap ")
+                                Button {
+                                    addingLift = true
+                                } label: {
+                                    VStack {
+                                        Image(systemName: "plus").imageScale(.large)
+                                        Text("Add Lift")
+                                    }
+                                    .font(.caption2)
+                                }
+                                .controlSize(.extraLarge)
+                                .tint(.gray)
+                                Text(" to create your first lift!")
+                                Spacer()
+                            }
+                        } else {
+                            EmptyView()
+                        }
+                    }
                     .background(Color(uiColor: UIColor.systemGroupedBackground))
                     .navigationTitle("Lifts")
                     .toolbar() {
@@ -526,8 +549,7 @@ struct LiftListView: View {
                 Label("Stats", systemImage: "chart.xyaxis.line")
             }
             .tag(TabType.stats)
-
-            Text("Blah")
+            Text("")
                 .tabItem {
                     Label("Add Lift", systemImage: "plus")
             }
@@ -555,7 +577,6 @@ struct LiftListView: View {
             AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList)
         })
         .tint(getTintColor())
-
     }
 }
 
@@ -587,6 +608,14 @@ struct LiftListView: View {
     return LiftListView()
         .modelContainer(container)
 }
+#Preview("Empty") {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    
+    return LiftListView()
+        .modelContainer(container)
+}
+
 #Preview("Custom Type") {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
