@@ -317,7 +317,6 @@ struct LiftListItem: View {
             }
 
         }
-//        .padding([.top, .bottom], 5.0)
         .padding()
         .background(lift.type.category.getColor(for: palette))
         .clipShape(RoundedRectangle(cornerRadius: 24.0, style: rendering ? .circular : .continuous))
@@ -349,7 +348,7 @@ struct LiftListItem: View {
                         modelContext.insert(newLift)
                     }
                     withAnimation {
-                        scroll.scrollTo("Top of List")
+                        scroll.scrollTo(TOP_OF_LIST)
                     }
                     
                 } label: {
@@ -443,9 +442,13 @@ struct LiftListView: View {
             NavigationStack {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack {
+                        LazyVGrid(
+                            columns: [GridItem(.adaptive(minimum: 300))], 
+                            alignment: .center
+                            ) {
                             EmptyView().id("Top of List")
                             ForEach(liftsByDate) { section in
+//                                let isFirst = section == liftsByDate.first
                                 let liftsForDate = section.elements
                                 let date = section.id
                                 let filteredLifts = filterLifts(liftsForDate)
@@ -470,33 +473,24 @@ struct LiftListView: View {
                         .padding([.horizontal], 20)
                     }
                     .safeAreaPadding(.bottom, 40.0)
-                    // MARK: Option 1: Corner Capsule Button
-//                    .overlay(alignment: .bottomTrailing, content: {
-//                        Button {
-//                            addingLift = true
-//                        } label: {
-//                            Label("Add Lift", systemImage: "plus")
-//                        }
-//                        .buttonStyle(.borderedProminent)
-//                        .controlSize(.extraLarge)
-//                        .clipShape(Capsule())
-//                        .padding(10)
-//                    })
-                    // MARK: Option 2: Wide Bottom Button
-//                    .overlay(alignment: .bottom, content: {
-//                        Button {
-//                            addingLift = true
-//                        } label: {
+//                    .overlay {
+//                        if liftsByDate.count == 0 {
 //                            HStack {
-//                                Label("Add Lift", systemImage: "plus")
+//                                Spacer()
+//                                Text("Press ")
+//                                Button {
+//                                    addingLift = true
+//                                } label: {
+//                                    Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+//                                }
+//                                .buttonStyle(.borderedProminent)
+//                                .clipShape(Capsule())
+//                                .padding(10)
+//                                Text(" to create your first lift!")
+//                                Spacer()
 //                            }
-//                            .padding(10)
-//                            .frame(maxWidth: .infinity)
-//                            .fontWeight(.heavy)
 //                        }
-//                        .padding(10)
-//                        .buttonStyle(.borderedProminent)
-//                    })
+//                    }
                     .background(Color(uiColor: UIColor.systemGroupedBackground))
                     .navigationTitle("Lifts")
                     .toolbar() {
@@ -529,8 +523,6 @@ struct LiftListView: View {
                                 })
                             }
                         })
-                        // MARK: Option 3: Top Right Capsule
-
                         ToolbarItemGroup(placement: .topBarTrailing, content: {
 
                             Button {
@@ -550,6 +542,13 @@ struct LiftListView: View {
                     .sheet(item: $editingLift) { lift in
                         AddLiftView(lift: lift, onSave: { _ in })
                     }
+                    .sheet(isPresented: $addingLift, content: {
+                        AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList, onSave: { _ in
+                            proxy.scrollTo(TOP_OF_LIST)
+                        })
+                        
+                    })
+
                 }
                 .onAppear {
                     withAnimation {
@@ -588,11 +587,6 @@ struct LiftListView: View {
                 addingLift = true
             }
         }
-        .sheet(isPresented: $addingLift, content: {
-            AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList, onSave: { _ in
-                    // TODO: update the muscle group state and stats view state
-            })
-        })
         .tint(getTintColor())
     }
 }

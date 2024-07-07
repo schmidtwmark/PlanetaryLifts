@@ -154,7 +154,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
             VStack {
                 Text(title).font(.headline)
                 ZStack {
-                    let chartWidth = UIScreen.screenWidth - (2 * CARD_MARGIN) - (2 * CHART_PADDING)
+                    let chartWidth = min(UIScreen.screenWidth - (2 * CARD_MARGIN), MAX_CARD_WIDTH) - (2 * CHART_PADDING)
                     Chart {
                         if case .loaded(let categoryCounts) = viewModel.chartData {
                             ForEach(categoryCounts) { chartItem in
@@ -257,7 +257,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
             }
         }
         .padding(CARD_MARGIN)
-        .frame(width: UIScreen.screenWidth - (2 * CARD_MARGIN))
+        .frame(width: min(UIScreen.screenWidth - (2 * CARD_MARGIN), MAX_CARD_WIDTH))
         .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10.0))
         .task {

@@ -155,6 +155,7 @@ struct CreateNewTypeView : View {
                     MuscleGroupFrontView(selector: $selector)
                     MuscleGroupBackView(selector: $selector)
                 }
+                .frame(maxWidth: MAX_CARD_WIDTH)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     selector.selectedMuscleGroup = nil

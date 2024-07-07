@@ -273,7 +273,7 @@ struct MuscleGroupView: View {
     }
     
     @MainActor var cardWidth: Double {
-        UIScreen.screenWidth - (CARD_MARGIN * 2)
+        min(UIScreen.screenWidth - (CARD_MARGIN * 2), MAX_CARD_WIDTH)
     }
     
     func gradient(_ percentage: Double) -> LinearGradient {
@@ -386,7 +386,6 @@ struct MuscleGroupView: View {
                                         .padding(.horizontal, 15.0)
                                         .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
                                         .background(Color(uiColor: .secondarySystemGroupedBackground))
-//                                        .background(gradient(percentage))
                                         .contentShape(Rectangle())
                                         
                                         .onTapGesture(perform: {

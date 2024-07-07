@@ -508,7 +508,9 @@ struct AddLiftView: View {
                             .frame(maxWidth: .infinity)
                         }
                     }
-                }.padding(.horizontal, 20.0)
+                }
+                .padding(.horizontal, 20.0)
+                .padding(.bottom, UIApplication.shared.bottomSafeAreaInset <= 20.0 ? 20.0 : 0.0)
             }
             .tint(liftType.category.getColor(for: palette))
             .background(Color(uiColor: UIColor.systemGroupedBackground))
