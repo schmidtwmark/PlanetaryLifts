@@ -144,8 +144,10 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
         self.countFn = countFn
     }
     
-   
-    
+    func refresh() {
+        viewModel.load(liftsByCategory: liftsByCategory, countFn: countFn)
+    }
+
     
     var body: some View {
         VStack {
@@ -259,7 +261,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
         .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10.0))
         .task {
-            viewModel.load(liftsByCategory: liftsByCategory, countFn: countFn)
+            refresh()
         }
     }
 }
@@ -346,9 +348,6 @@ struct StatsView: View {
                     } else {
                         ScrollView(.horizontal) {
                             HStack(spacing: 20.0) {
-                                //                            debugCard("blah 1")
-                                //                            debugCard("blah 2")
-                                //                            debugCard("blah 3")
                                 CategoryPieChart<LiftCategory>(
                                     title: "Lift Count by Category",
                                     liftsByCategory: liftsByCategory,

@@ -103,7 +103,7 @@ struct AddLiftMuscleGroupView: View {
 
 struct AddLiftView: View {
     
-    init(lift: Lift) {
+    init(lift: Lift, onSave: @escaping (Lift) -> ()) {
         self.mode = .edit(lift)
         self.liftType = lift.type
         self.timestamp = lift.timestamp
@@ -111,9 +111,10 @@ struct AddLiftView: View {
         self.liftSets = lift.sets
         self.modifiers = lift.modifiers
         self.notes = lift.notes
+        self.onSave = onSave
     }
     
-    init(liftType: LiftType, updateUnreadLifts: Bool = false) {
+    init(liftType: LiftType, updateUnreadLifts: Bool = false, onSave: @escaping (Lift) -> ()) {
         self.mode = .add
         self.liftType = liftType
         self.timestamp = Date()
@@ -122,6 +123,7 @@ struct AddLiftView: View {
         self.modifiers = Set()
         self.notes = ""
         self.updateUnreadLifts = updateUnreadLifts
+        self.onSave = onSave
     }
     
     
@@ -140,6 +142,7 @@ struct AddLiftView: View {
     @State var modifiers: Set<LiftModifier>
     @State var notes: String
     var updateUnreadLifts = false
+    var onSave: (Lift) -> ()
     
     @Environment(\.modelContext) private var modelContext
     @State var showSetSettings = false
@@ -441,7 +444,9 @@ struct AddLiftView: View {
                             if editState.setEditMode == .none {
                                 switch mode {
                                 case .add:
-                                    modelContext.insert(liftFromEdits())
+                                    let lift = liftFromEdits()
+                                    modelContext.insert(lift)
+                                    onSave(lift)
                                     break
                                     
                                 case .edit(let lift):
@@ -453,6 +458,7 @@ struct AddLiftView: View {
                                     lift.notes = notes
                                     lift.weighted = isWeighted
                                     print("Updated lift \(lift)")
+                                    onSave(lift)
                                     break
                                 }
                                 if updateUnreadLifts {
@@ -535,7 +541,7 @@ struct AddLiftView: View {
     lift.addSet(10, weight: 130.0, units: .pounds)
 
     return NavigationStack {
-        AddLiftView(lift: lift)
+        AddLiftView(lift: lift, onSave: { _ in })
             .modelContainer(container)
     }
     
@@ -553,7 +559,7 @@ struct AddLiftView: View {
     lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
 
     return NavigationStack {
-        AddLiftView(lift: lift)
+        AddLiftView(lift: lift, onSave: { _ in })
             .modelContainer(container)
     }
     
@@ -570,7 +576,7 @@ struct AddLiftView: View {
     container.mainContext.insert(lift)
     
     return NavigationStack {
-        AddLiftView(liftType: .benchPress)
+        AddLiftView(liftType: .benchPress, onSave: { _ in })
             .modelContainer(container)
     }
     

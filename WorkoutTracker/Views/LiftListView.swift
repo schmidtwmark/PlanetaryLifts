@@ -469,33 +469,39 @@ struct LiftListView: View {
                         }
                         .padding([.horizontal], 20)
                     }
-                    .overlay {
-                        if liftsByDate.count == 0 {
-                            HStack {
-                                Spacer()
-                                Text("Tap ")
-                                Button {
-                                    addingLift = true
-                                } label: {
-                                    VStack {
-                                        Image(systemName: "plus").imageScale(.large)
-                                        Text("Add Lift")
-                                    }
-                                    .font(.caption2)
-                                }
-                                .controlSize(.extraLarge)
-                                .tint(.gray)
-                                Text(" to create your first lift!")
-                                Spacer()
-                            }
-                        } else {
-                            EmptyView()
-                        }
-                    }
+                    .safeAreaPadding(.bottom, 40.0)
+                    // MARK: Option 1: Corner Capsule Button
+//                    .overlay(alignment: .bottomTrailing, content: {
+//                        Button {
+//                            addingLift = true
+//                        } label: {
+//                            Label("Add Lift", systemImage: "plus")
+//                        }
+//                        .buttonStyle(.borderedProminent)
+//                        .controlSize(.extraLarge)
+//                        .clipShape(Capsule())
+//                        .padding(10)
+//                    })
+                    // MARK: Option 2: Wide Bottom Button
+//                    .overlay(alignment: .bottom, content: {
+//                        Button {
+//                            addingLift = true
+//                        } label: {
+//                            HStack {
+//                                Label("Add Lift", systemImage: "plus")
+//                            }
+//                            .padding(10)
+//                            .frame(maxWidth: .infinity)
+//                            .fontWeight(.heavy)
+//                        }
+//                        .padding(10)
+//                        .buttonStyle(.borderedProminent)
+//                    })
                     .background(Color(uiColor: UIColor.systemGroupedBackground))
                     .navigationTitle("Lifts")
                     .toolbar() {
-                        ToolbarItemGroup(placement: .primaryAction, content: {
+                        ToolbarItemGroup(placement: .topBarLeading, content: {
+                            
                             if let _ = filterSelection {
                                 Button(role: .destructive, action: {
                                     withAnimation {
@@ -523,12 +529,26 @@ struct LiftListView: View {
                                 })
                             }
                         })
+                        // MARK: Option 3: Top Right Capsule
+
+                        ToolbarItemGroup(placement: .topBarTrailing, content: {
+
+                            Button {
+                                addingLift = true
+                            } label: {
+                                Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .clipShape(Capsule())
+                            .padding(10)
+
+                        })
                     }
                     .sheet(item: $showStatsForType) { type in
                         StatItem(type: type)
                     }
                     .sheet(item: $editingLift) { lift in
-                        AddLiftView(lift: lift)
+                        AddLiftView(lift: lift, onSave: { _ in })
                     }
                 }
                 .onAppear {
@@ -549,11 +569,6 @@ struct LiftListView: View {
                 Label("Stats", systemImage: "chart.xyaxis.line")
             }
             .tag(TabType.stats)
-            Text("")
-                .tabItem {
-                    Label("Add Lift", systemImage: "plus")
-            }
-            .tag(TabType.addLift)
             MuscleGroupView()
                 .tabItem {
                 Label("Muscles", systemImage: "figure.strengthtraining.traditional")
@@ -574,7 +589,9 @@ struct LiftListView: View {
             }
         }
         .sheet(isPresented: $addingLift, content: {
-            AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList)
+            AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList, onSave: { _ in
+                    // TODO: update the muscle group state and stats view state
+            })
         })
         .tint(getTintColor())
     }

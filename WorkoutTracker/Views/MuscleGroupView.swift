@@ -107,8 +107,11 @@ class MuscleGroupState : MuscleGroupSelector {
     }
     
     var stats : MuscleGroupStats = .loading
+    
     func load(lifts: [Lift], userGeneratedTypes: [UserGeneratedLiftType]) {
-        let scores = lifts.reduce(into: LiftWeights(), { scores, lift in 
+        stats = .loading
+        
+        let scores = lifts.reduce(into: LiftWeights(), { scores, lift in
             let weights = lift.getLiftWeights(userGeneratedTypes)
             for (group, weight) in weights.map {
                 let totalReps = Double(lift.sets.reduce(0, {sum, liftSet in sum + liftSet.reps}))
@@ -277,6 +280,10 @@ struct MuscleGroupView: View {
         LinearGradient(colors: [Color(uiColor: .secondarySystemGroupedBackground), tintColor], startPoint: .init(x: 1 - percentage, y: 0.5), endPoint: .trailing)
     }
     
+    func refresh() {
+        muscleGroupState.load(lifts: lastWeekLifts, userGeneratedTypes: userGeneratedTypes)
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollView(.vertical) {
@@ -407,7 +414,7 @@ struct MuscleGroupView: View {
             }
             .background(Color(uiColor: .systemGroupedBackground))
             .task {
-                muscleGroupState.load(lifts: lastWeekLifts, userGeneratedTypes: userGeneratedTypes)
+                refresh()
             }
             .environment(muscleGroupState)
             .navigationTitle("Muscle Saturation")
@@ -423,7 +430,11 @@ struct MuscleGroupView: View {
                 })
             }
             .sheet(item: $showAddLift, content: { liftType in
-                AddLiftView(liftType: liftType, updateUnreadLifts: true)
+                AddLiftView(liftType: liftType, updateUnreadLifts: true, onSave: { _ in
+                    DispatchQueue.main.async {
+                        refresh()
+                    }
+                })
             })
             .sheet(isPresented: $showInfoSheet.animation(), content: {
                 VStack(alignment: .leading, spacing: 20) {
