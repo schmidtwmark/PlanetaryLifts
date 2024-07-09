@@ -134,7 +134,7 @@ struct CreateNewTypeView : View {
         name = type.name
         category = type.category
 //        selector = NewLiftTypeMuscleGroupSelector(weights: LiftWeights())
-        selector = NewLiftTypeMuscleGroupSelector(weights: type.customWeights)
+        selector = NewLiftTypeMuscleGroupSelector(weights: type.liftWeights)
     }
     
     
@@ -177,13 +177,13 @@ struct CreateNewTypeView : View {
                     Button {
                         switch mode {
                         case .add:
-                            let type = UserGeneratedLiftType(name: name, category: category, liftWeights: selector.weights)
+                            let type = UserGeneratedLiftType(name: name, category: category, weights: selector.weights.sortedGroups)
                             modelContext.insert(type)
                         case .edit(let type):
                             
                             // Canot update name or category
 //                            break
-                            type.customWeights = selector.weights
+                            type.weights = selector.weights.sortedGroups.map({UserGeneratedLiftType.LiftWeight(muscleGroup: $0.0, weight: $0.1)})
                         }
                         dismiss()
                     } label: {
@@ -212,7 +212,7 @@ struct CreateNewTypeView : View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
 
-    container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms, liftWeights: LiftWeights([(.abs, 5)])))
+    container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms, weights: [(.abs, 5.0)]))
 
     return NavigationStack {
         LiftTypeSelector(selectedLiftType: .constant(.backSquat))

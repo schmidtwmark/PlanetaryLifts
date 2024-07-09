@@ -631,7 +631,7 @@ struct LiftListView: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
-    let userType = UserGeneratedLiftType(name: "Custom Type", category: .other, liftWeights: LiftWeights([(.abs, 1.0)]))
+    let userType = UserGeneratedLiftType(name: "Custom Type", category: .other, weights: [(.abs, 1.0)])
     
     container.mainContext.insert(userType)
     

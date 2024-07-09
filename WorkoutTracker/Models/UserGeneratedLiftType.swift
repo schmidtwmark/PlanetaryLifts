@@ -14,12 +14,21 @@ final class UserGeneratedLiftType  {
     var category: LiftCategory = LiftCategory.chest
     var id: UUID = UUID()
     
-    var customWeights: LiftWeights = LiftWeights([])
+    struct LiftWeight : Codable {
+        var muscleGroup: MuscleGroup
+        var weight: Double
+    }
     
-    init(name: String, category: LiftCategory, liftWeights: LiftWeights = LiftWeights()) {
+    var weights: [LiftWeight] = []
+    
+    var liftWeights: LiftWeights {
+        LiftWeights(weights.map({($0.muscleGroup, $0.weight)}))
+    }
+    
+    init(name: String, category: LiftCategory, weights: [(MuscleGroup, Double)] = []) {
         self.name = name
         self.category = category
-        self.customWeights = liftWeights
+        self.weights = weights.map({LiftWeight(muscleGroup: $0.0, weight: $0.1)})
     }
 }
 
