@@ -563,12 +563,12 @@ struct LiftListView: View {
             }
             .tag(TabType.liftList)
             .badge(unreadLifts)
-            StatsView()
+            StatsView(modelContext: modelContext)
                 .tabItem {
                 Label("Stats", systemImage: "chart.xyaxis.line")
             }
             .tag(TabType.stats)
-            MuscleGroupView()
+            MuscleGroupView(modelContext: modelContext)
                 .tabItem {
                 Label("Muscles", systemImage: "figure.strengthtraining.traditional")
             }

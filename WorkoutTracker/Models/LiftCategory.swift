@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 import Charts
 
-public enum LiftCategory: String, Codable, CaseIterable, Comparable, Identifiable, Sendable {
+public enum LiftCategory: String, Codable, CaseIterable, Comparable, Identifiable, Sendable, Hashable {
     public var id: String {
         self.rawValue
     }

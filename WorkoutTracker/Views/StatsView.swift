@@ -68,26 +68,30 @@ enum Granularity: String, Codable, CaseIterable {
     var selectedItem: ChartItem? = nil
     var chartData: ChartData = .loading
     
-    func load(liftsByCategory: SectionedResults<T, Lift>, countFn: (SectionedResults<T, Lift>.Section) -> Double) {
-        
-        var categoryHeap = liftsByCategory.sections.reduce(into: Heap<ChartItem>(), { output, section in
-            let count = countFn(section)
+    func load(liftsByCategory: Dictionary<T, [Lift]>?, countFn: ([Lift]) -> Double) {
+        if let liftsByCategory = liftsByCategory {
             
-            if output.count < 20 {
-                output.insert(ChartItem(category: section.id, count: count))
-            } else if let min = output.min, min.count < count {
-                let _ = output.popMin()
-                output.insert(ChartItem(category: section.id, count: count))
+            var categoryHeap = liftsByCategory.reduce(into: Heap<ChartItem>(), { output, item in
+                let count = countFn(item.value)
+                
+                if output.count < 20 {
+                    output.insert(ChartItem(category: item.key, count: count))
+                } else if let min = output.min, min.count < count {
+                    let _ = output.popMin()
+                    output.insert(ChartItem(category: item.key, count: count))
+                }
+            })
+            
+            var categoryCounts: [ChartItem] = []
+            while !categoryHeap.isEmpty {
+                if let max = categoryHeap.popMax() {
+                    categoryCounts.append(max)
+                }
             }
-        })
-        
-        var categoryCounts: [ChartItem] = []
-        while !categoryHeap.isEmpty {
-            if let max = categoryHeap.popMax() {
-              categoryCounts.append(max)
-            }
+            chartData = .loaded(categoryCounts: categoryCounts)
+        } else {
+            chartData = .loading
         }
-        chartData = .loaded(categoryCounts: categoryCounts)
     }
     
     func getCategoryBy(count: Double) -> ChartItem? {
@@ -124,17 +128,17 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
     }
     
     var statsType: StatsType
-    var countFn: (SectionedResults<T, Lift>.Section) -> Double
+    var countFn: ([Lift]) -> Double
     var colorMapping: (String) -> Color
     var stringMapping: (T) -> String
-    var liftsByCategory: SectionedResults<T, Lift>
+    var liftsByCategory: Dictionary<T, [Lift]>?
     
     init(title: String,
-         liftsByCategory: SectionedResults<T, Lift>,
+         liftsByCategory: Dictionary<T, [Lift]>?,
          statsType: StatsType,
          colorMapping: @escaping (String) -> Color,
          stringMapping: @escaping (T) -> String,
-         countFn: @escaping (SectionedResults<T, Lift>.Section) -> Double) {
+         countFn: @escaping ([Lift]) -> Double) {
         self.liftsByCategory = liftsByCategory
         self.viewModel = ChartViewModel<T>()
         self.colorMapping = colorMapping
@@ -142,10 +146,12 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
         self.title = title
         self.statsType = statsType
         self.countFn = countFn
+        print("Initialized \(title), liftsByCategoryCount: \(liftsByCategory?.count ?? -1)")
     }
     
     func refresh() {
         viewModel.load(liftsByCategory: liftsByCategory, countFn: countFn)
+        print("Refreshed \(title), liftsByCategoryCount: \(liftsByCategory?.count ?? -1)")
     }
 
     
@@ -260,6 +266,9 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
         .frame(width: min(UIScreen.screenWidth - (2 * CARD_MARGIN), MAX_CARD_WIDTH))
         .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10.0))
+        .onChange(of: liftsByCategory, {
+            refresh()
+        })
         .task {
             refresh()
         }
@@ -269,58 +278,130 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
 
 
 struct StatsView: View {
-    @Query var userGeneratedTypes : [UserGeneratedLiftType]
-    @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
-    @Environment(\.modelContext) private var modelContext
-    @State var searchText = ""
+    
+    @Observable
+    final class ViewModel {
+        var modelContext: ModelContext
+        var stats: State = .loading
+        var searchText = ""
+        // TODO: load palette from user defaults
+        var palette: Palette = .main
+
+        enum State {
+            case loading
+            case loaded(LoadedStats)
+            case error
+        }
+        
+         
+        init(modelContext: ModelContext) {
+            self.modelContext = modelContext
+        }
+
+        var allLiftsByCategory: [LiftCategory: [LiftType]] {
+            if case .loaded(let loadedStats) = stats {
+                return generateAllLiftsByCategory(userGeneratedTypes: loadedStats.userGeneratedTypes)
+            } else {
+                return [:]
+            }
+        }
+        
+        var loadedStats: LoadedStats? {
+            if case .loaded(let loadedStats) = stats {
+                return loadedStats
+            } else {
+                return nil
+            }
+        }
+        
+        var filteredCategories : [LiftCategory] {
+            if case .loaded(let loadedStats) = stats {
+                return allLiftsByCategory.keys.filter({ category in
+                    // there are liftTypes in this category
+                    !allLiftsByCategory[category]!.isEmpty &&
+                    // passes search
+                    (searchText == "" ||
+                     category.rawValue.containsIgnoringCase(searchText) ||
+                     allLiftsByCategory[category]!.contains(where: { liftType in
+                        liftType.string.containsIgnoringCase(searchText)
+                    })) &&
+                    // there are lifts for some lifttype in this category
+                    (
+                        allLiftsByCategory[category]!.contains(where: { liftType in loadedStats.liftsByType.keys.contains(liftType)
+                        })
+                    )
+                })
+            } else {
+                return []
+            }
+        }    
+   
+    
+        var presentTypes: Set<LiftType> {
+            if case .loaded(let loadedStats) = stats {
+                Set(loadedStats.liftsByType.keys)
+            } else {
+                Set()
+            }
+        }
+
+
+        func load() {
+            stats = .loading
+            print("LOADING VIEW MODEL")
+            do {
+                let typesDescriptor = FetchDescriptor<UserGeneratedLiftType>()
+                let userGeneratedTypes = try modelContext.fetch(typesDescriptor)
+                
+                let liftsDescriptor = FetchDescriptor<Lift>(sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
+                let lifts = try modelContext.fetch(liftsDescriptor)
+                
+                let liftsByType = Dictionary.init(grouping: lifts, by: { $0.type })
+                let liftsByCategory = Dictionary.init(grouping: lifts, by: { $0.type.category })
+                
+                let colorByTypeString = liftsByCategory.reduce(into: [String: Color](), { output, section in
+                    let lifts = section.value
+                    let category = section.key
+                    print("Calculating color by type string, category \(category) lifts \(lifts)")
+
+                    let types = lifts.reduce(into: Set(), {typeSet, lift in
+                        typeSet.insert(lift.type)
+                    })
+                    // We have a category and all the types we need to worry about
+                    let baseColor = category.getColor(for: palette)
+                    let shades = baseColor.shades(count: types.count)
+                    zip(shades, types.sorted(by: <)).forEach({ (shade, type) in
+                        output[type.string] = shade
+                    })
+                })
+                
+                stats = .loaded(.init(liftsByType: liftsByType, 
+                                      liftsByCategory: liftsByCategory,
+                                      userGeneratedTypes: userGeneratedTypes,
+                                      colorByTypeString: colorByTypeString))
+                
+            } catch {
+                print("Fetch failed ")
+            }
+            print("FINISHED LOADING VIEW MODEL")
+        }
+    }
+    
+    struct LoadedStats {
+        var liftsByType: [LiftType: [Lift]]
+        var liftsByCategory: [LiftCategory: [Lift]]
+        var userGeneratedTypes: [UserGeneratedLiftType]
+        var colorByTypeString: [String: Color]
+    }
+    
+    init(modelContext: ModelContext) {
+        let state = ViewModel(modelContext: modelContext)
+        _model = State(initialValue: state)
+    }
+    
+    @State var model: ViewModel
     @State var showStatsForType: LiftType? = nil
     @State var selectedCard: String? = nil
-
-    
-    @SectionedQuery(\Lift.type) var liftsByType: SectionedResults<LiftType, Lift>
-    @SectionedQuery(\Lift.type.category) var liftsByCategory: SectionedResults<LiftCategory, Lift>
-    
-    var allLiftsByCategory: [LiftCategory: [LiftType]] {
-        generateAllLiftsByCategory(userGeneratedTypes: userGeneratedTypes)
-    }
-    
-    var filteredCategories : [LiftCategory] {
-        allLiftsByCategory.keys.filter({ category in
-            // there are liftTypes in this category
-            !allLiftsByCategory[category]!.isEmpty &&
-            // passes search
-            (searchText == "" ||
-             category.rawValue.containsIgnoringCase(searchText) ||
-             allLiftsByCategory[category]!.contains(where: { liftType in
-                liftType.string.containsIgnoringCase(searchText)
-            })) &&
-            // there are lifts for some lifttype in this category
-            (
-                allLiftsByCategory[category]!.contains(where: { liftType in liftsByType.sections.contains(where: {$0.id == liftType})
-                })
-            )
-        })
-    }
-    
-    var presentTypes: Set<LiftType> {
-        Set(liftsByType.sections.map({$0.id}))
-    }
-    
-    var colorByTypeString: [String: Color] {
-        liftsByCategory.sections.reduce(into: [String: Color](), { output, section in
-            let lifts = section.elements
-            let category = section.id
-            let types = lifts.reduce(into: Set(), {typeSet, lift in
-                typeSet.insert(lift.type)
-            })
-            // We have a category and all the types we need to worry about
-            let baseColor = category.getColor(for: palette)
-            let shades = baseColor.shades(count: types.count)
-            zip(shades, types.sorted(by: <)).forEach({ (shade, type) in
-                output[type.string] = shade
-            })
-        })
-    }
     
     @State
     var granularity: Granularity = .category
@@ -339,7 +420,7 @@ struct StatsView: View {
         NavigationStack {
             ScrollView(.vertical) {
                 VStack {
-                    if liftsByCategory.count == 0 {
+                    if let loadedStats = model.loadedStats, loadedStats.liftsByCategory.count == 0 {
                         HStack {
                             Spacer()
                             Text("Add lifts to start tracking stats!")
@@ -350,35 +431,35 @@ struct StatsView: View {
                             HStack(spacing: 20.0) {
                                 CategoryPieChart<LiftCategory>(
                                     title: "Lift Count by Category",
-                                    liftsByCategory: liftsByCategory,
+                                    liftsByCategory: model.loadedStats?.liftsByCategory,
                                     statsType: .count,
                                     colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
                                     stringMapping: {$0.rawValue},
-                                    countFn: {Double($0.elements.count)})
+                                    countFn: {Double($0.count)})
                                 .id("Category Count")
                                 CategoryPieChart<LiftCategory>(
                                     title: "Weight by Category",
-                                    liftsByCategory: liftsByCategory,
+                                    liftsByCategory: model.loadedStats?.liftsByCategory,
                                     statsType: .weight,
                                     colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
                                     stringMapping: {$0.rawValue},
-                                    countFn: {totalWeight($0.elements)})
+                                    countFn: {totalWeight($0)})
                                 .id("Category Weight")
                                 CategoryPieChart<LiftType>(
                                     title: "Lift Count by Lift Type",
-                                    liftsByCategory: liftsByType,
+                                    liftsByCategory: model.loadedStats?.liftsByType,
                                     statsType: .count,
-                                    colorMapping: {colorByTypeString[$0]!},
+                                    colorMapping: {model.loadedStats?.colorByTypeString[$0] ?? .gray},
                                     stringMapping: {$0.string},
-                                    countFn: {Double($0.elements.count)})
+                                    countFn: {Double($0.count)})
                                 .id("Lift Count")
                                 CategoryPieChart<LiftType>(
                                     title: "Weight by Lift Type",
-                                    liftsByCategory: liftsByType,
+                                    liftsByCategory: model.loadedStats?.liftsByType,
                                     statsType: .weight,
-                                    colorMapping: {colorByTypeString[$0]!},
+                                    colorMapping: {model.loadedStats?.colorByTypeString[$0] ?? .gray},
                                     stringMapping: {$0.string},
-                                    countFn: {totalWeight($0.elements)})
+                                    countFn: {totalWeight($0)})
                                 .id("Lift Weight")
                             }
                             .scrollTargetLayout()
@@ -392,7 +473,7 @@ struct StatsView: View {
                         .safeAreaPadding(.horizontal, CARD_MARGIN)
                         .scrollIndicators(.hidden)
                         VStack(spacing: 20.0){
-                            ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
+                            ForEach(model.filteredCategories.sorted(by: <), id: \.rawValue) { category in
                                 VStack {
                                     Section {
                                         HStack {
@@ -403,7 +484,7 @@ struct StatsView: View {
                                         .foregroundStyle(.gray)
                                         .padding(.leading, 15.0)
                                         VStack(spacing: 0.0) {
-                                            let types = allLiftsByCategory[category]!.sorted(by: <).filter({presentTypes.contains($0)})
+                                            let types = model.allLiftsByCategory[category]!.sorted(by: <).filter({model.presentTypes.contains($0)})
                                             if types.count > 0 {
                                                 Divider().opacity(0.0)
                                                 ForEach(types, id: \.string) { liftType in
@@ -439,11 +520,14 @@ struct StatsView: View {
             })
             #endif
             .navigationTitle("Stats")
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+            .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always))
             .sheet(item: $showStatsForType) { type in
                 StatItem(type: type)
                 
             }
+        }
+        .task {
+            model.load()
         }
     }
 }
@@ -464,9 +548,9 @@ struct StatsView: View {
                 lift.addSet(reps, weight: Double.random(in: 100...200), units: .pounds)
             }
         }
-            
+        
     }
-    return StatsView().modelContainer(container)
+    return StatsView(modelContext: container.mainContext)
 }
 
 
@@ -488,5 +572,5 @@ struct StatsView: View {
         }
             
     }
-    return StatsView().modelContainer(container)
+    return StatsView(modelContext: container.mainContext)
 }
