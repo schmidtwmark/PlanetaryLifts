@@ -399,13 +399,14 @@ struct MuscleGroupView: View {
         NavigationStack {
             ScrollView(.vertical) {
                 VStack {
-                    if case .loaded(let stats) = muscleGroupState.stats {
-                        ScrollView(.horizontal) {
-                            HStack {
-                                VStack(alignment: .center) {
+                    ScrollView(.horizontal) {
+                        HStack {
+                            
+                            VStack(alignment: .center) {
+                                if case .loaded(let stats) = muscleGroupState.stats {
                                     Text("MUSCLE GROUPS")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.gray)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.gray)
                                     VStack {
                                         Spacer()
                                         muscles(stats)
@@ -415,29 +416,34 @@ struct MuscleGroupView: View {
                                     .padding(CHART_PADDING)
                                     .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
                                     .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                                } else {
+                                    ProgressView()
                                 }
-                                .id("muscles")
-                                .frame(width: cardWidth, height: cardWidth * 1.3)
-                                suggestedLifts(stats)
-                                .id("suggestions")
-                                .frame(width: cardWidth, height: cardWidth * 1.3)
                             }
-                            .scrollTargetLayout()
+                            .id("muscles")
+                            .frame(width: cardWidth, height: cardWidth * 1.3)
+                            
+                            if case .loaded(let stats) = muscleGroupState.stats {
+                                suggestedLifts(stats)
+                                    .id("suggestions")
+                                    .frame(width: cardWidth, height: cardWidth * 1.3)
+                            }
                         }
-                        // Disabled because scroll position adds lag to the stats view screen--perhaps due to having too much data?
-                        #if false
-                         .scrollPosition(id: $selectedCard)
-                         .sensoryFeedback(.selection, trigger: selectedCard)
-                        #endif
-                        .scrollTargetBehavior(.viewAligned)
-                        .safeAreaPadding(.horizontal, CARD_MARGIN)
-                        .scrollIndicators(.hidden)
-                        
-                        Spacer(minLength: 20.0)
+                        .scrollTargetLayout()
+                    }
+                    // Disabled because scroll position adds lag to the stats view screen--perhaps due to having too much data?
+#if false
+                    .scrollPosition(id: $selectedCard)
+                    .sensoryFeedback(.selection, trigger: selectedCard)
+#endif
+                    .scrollTargetBehavior(.viewAligned)
+                    .safeAreaPadding(.horizontal, CARD_MARGIN)
+                    .scrollIndicators(.hidden)
+                    
+                    Spacer(minLength: 20.0)
+                    if case .loaded(let stats) = muscleGroupState.stats {
                         contributingLifts(stats)
-                        .padding()
-                    } else {
-                        ProgressView()
+                            .padding()
                     }
                 }
             }

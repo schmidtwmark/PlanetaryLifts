@@ -146,12 +146,10 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
         self.title = title
         self.statsType = statsType
         self.countFn = countFn
-        print("Initialized \(title), liftsByCategoryCount: \(liftsByCategory?.count ?? -1)")
     }
     
     func refresh() {
         viewModel.load(liftsByCategory: liftsByCategory, countFn: countFn)
-        print("Refreshed \(title), liftsByCategoryCount: \(liftsByCategory?.count ?? -1)")
     }
 
     
@@ -348,7 +346,6 @@ struct StatsView: View {
 
         func load() {
             stats = .loading
-            print("LOADING VIEW MODEL")
             do {
                 let typesDescriptor = FetchDescriptor<UserGeneratedLiftType>()
                 let userGeneratedTypes = try modelContext.fetch(typesDescriptor)
@@ -362,7 +359,6 @@ struct StatsView: View {
                 let colorByTypeString = liftsByCategory.reduce(into: [String: Color](), { output, section in
                     let lifts = section.value
                     let category = section.key
-                    print("Calculating color by type string, category \(category) lifts \(lifts)")
 
                     let types = lifts.reduce(into: Set(), {typeSet, lift in
                         typeSet.insert(lift.type)
@@ -383,7 +379,6 @@ struct StatsView: View {
             } catch {
                 print("Fetch failed ")
             }
-            print("FINISHED LOADING VIEW MODEL")
         }
     }
     
@@ -522,7 +517,7 @@ struct StatsView: View {
             .navigationTitle("Stats")
             .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always))
             .sheet(item: $showStatsForType) { type in
-                StatItem(type: type)
+                StatItem(type: type, modelContext: model.modelContext)
                 
             }
         }

@@ -89,6 +89,7 @@ struct MaxesBarChart : View {
         )
     }
     var type: LiftType
+    var modelContext: ModelContext
     var data: StatItemData = .loading
 
     func colorByRepCount(_ repString: String, _ palette: Palette) -> Color {
@@ -102,36 +103,43 @@ struct MaxesBarChart : View {
     }
         
     
-    init(type: LiftType) {
+    init(type: LiftType, modelContext: ModelContext) {
         self.type = type
+        self.modelContext = modelContext
     }
     
-    func load(lifts: [Lift]) {
+    func load() {
         
-        let filteredLifts = lifts.filter({$0.type == type})
-
-        let maxes = filteredLifts.reduce(into: [Int: Double](), { result, lift in
-            let liftMaxes = lift.maxes()
-            for (reps, maxWeight) in liftMaxes {
-                if let maxForReps = result[reps], maxWeight < maxForReps {
-                    return
+        do {
+            let liftsDescriptor = FetchDescriptor<Lift>(sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
+            let lifts = try modelContext.fetch(liftsDescriptor)
+            let filteredLifts = lifts.filter({$0.type == type})
+            
+            let maxes = filteredLifts.reduce(into: [Int: Double](), { result, lift in
+                let liftMaxes = lift.maxes()
+                for (reps, maxWeight) in liftMaxes {
+                    if let maxForReps = result[reps], maxWeight < maxForReps {
+                        return
+                    }
+                    result[reps] = maxWeight
                 }
-                result[reps] = maxWeight
+            })
+            let shadeIndexByRepCount = zip((0..<maxes.count), maxes.sorted(by: <)).reduce(into: [String: Int](), { dict, values in
+                let (index, (reps, _)) = values
+                dict[repToString(reps)] = index
+            })
+            
+            let allTimeMax = maxes.values.max() ?? 0
+            
+            let daysRange = if let first = filteredLifts.first, let last = filteredLifts.last {
+                Int(first.timestamp.timeIntervalSince(last.timestamp))
+            } else {
+                0
             }
-        })
-        let shadeIndexByRepCount = zip((0..<maxes.count), maxes.sorted(by: <)).reduce(into: [String: Int](), { dict, values in
-            let (index, (reps, _)) = values
-            dict[repToString(reps)] = index
-        })
-        
-        let allTimeMax = maxes.values.max() ?? 0
-        
-        let daysRange = if let first = filteredLifts.first, let last = filteredLifts.last {
-            Int(first.timestamp.timeIntervalSince(last.timestamp))
-        } else {
-            0
+            self.data = .loaded(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, filteredLifts: filteredLifts, daysRange: daysRange)
+        } catch {
+            print("Fetch failed ")
         }
-        self.data = .loaded(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, filteredLifts: filteredLifts, daysRange: daysRange)
     }
     
     func getClosestToSelection(selectedDate: Date, selectedWeight: Double) -> (LiftSet, Date)? {
@@ -183,8 +191,6 @@ struct MaxesBarChart : View {
 struct StatItem: View {
     var type: LiftType
     
-    @Query(sort: \Lift.timestamp, order: .reverse) var lifts: [Lift]
-
     
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @AppStorage(PALETTE) var palette: Palette = .main
@@ -193,11 +199,10 @@ struct StatItem: View {
     @State var legendPosition: Int? = nil
     
     @Environment(\.dismiss) var dismiss
-    @Environment(\.modelContext) private var modelContext
 
-    init(type: LiftType) {
+    init(type: LiftType, modelContext: ModelContext) {
         self.type = type
-        self.viewModel = ViewModel(type: type)
+        self.viewModel = ViewModel(type: type, modelContext: modelContext)
     }
     
 
@@ -271,7 +276,7 @@ struct StatItem: View {
             .tint(type.category.getColor(for: palette))
         }
         .task {
-            viewModel.load(lifts: lifts)
+            viewModel.load()
         }
     }
 }
@@ -292,7 +297,7 @@ struct StatItem: View {
     }
     
     return NavigationStack {
-        StatItem(type: .benchPress).modelContainer(container)
+        StatItem(type: .benchPress, modelContext: container.mainContext)
     }
 }
 
@@ -350,37 +355,38 @@ struct WeightProgressView: View {
         VStack {
             if case .loaded(_, _, let allTimeMax, let filteredLifts, let daysRange) = viewModel.data {
                 progressTimeWindowPicker(daysRange: daysRange)
-                Chart(filteredLifts) { lift in
-                    let unique = lift.uniqueSets()
-                    ForEach(unique) { liftSet in
-                        PointMark(
-                            x: .value("Date", lift.timestamp, unit: .day),
-                            y: .value(repToString(liftSet.reps), liftSet.weight.weight))
-                        .symbol(.circle)
-                        .symbolSize(
-                            repToString(liftSet.reps) == selectedReps ? 100.0 : 40.0)
-                        .foregroundStyle(by: .value("Reps", repToString(liftSet.reps)))
+                Chart { 
+                    ForEach(filteredLifts) { lift in
+                        let unique = lift.uniqueSets()
+                        ForEach(unique) { liftSet in
+                            PointMark(
+                                x: .value("Date", lift.timestamp, unit: .day),
+                                y: .value(repToString(liftSet.reps), liftSet.weight.weight))
+                            .symbol(.circle)
+                            .symbolSize(
+                                repToString(liftSet.reps) == selectedReps ? 100.0 : 40.0)
+                            .foregroundStyle(by: .value("Reps", repToString(liftSet.reps)))
+                        }
+                        
+                        if let (selectedSet, selectedDate) = selectedLiftSet {
+                            PointMark(
+                                x: .value("Date", selectedDate, unit: .day),
+                                y: .value(repToString(selectedSet.reps), selectedSet.weight.weight))
+                            .annotation(
+                                position: annotationPosition,
+                                spacing: annotationPosition == .top ? nil : 2.0,
+                                content: {
+                                    Text(selectedSet.weight.weight.displayString(singleUnit: selectedSet.weight.units.shortSingleUnit))
+                                        .padding(4)
+                                        .background(viewModel.colorByRepCount(repToString(selectedSet.reps), palette))
+                                        .clipShape(Capsule())
+                                }
+                            )
+                            .symbol(.circle)
+                            .symbolSize(150.0)
+                            .foregroundStyle(by: .value("Reps", repToString(selectedSet.reps)))
+                        }
                     }
-                    
-                    if let (selectedSet, selectedDate) = selectedLiftSet {
-                        PointMark(
-                            x: .value("Date", selectedDate, unit: .day),
-                            y: .value(repToString(selectedSet.reps), selectedSet.weight.weight))
-                        .annotation(
-                            position: annotationPosition,
-                            spacing: annotationPosition == .top ? nil : 2.0,
-                            content: {
-                                Text(selectedSet.weight.weight.displayString(singleUnit: selectedSet.weight.units.shortSingleUnit))
-                                    .padding(4)
-                                    .background(viewModel.colorByRepCount(repToString(selectedSet.reps), palette))
-                                    .clipShape(Capsule())
-                            }
-                        )
-                        .symbol(.circle)
-                        .symbolSize(150.0)
-                        .foregroundStyle(by: .value("Reps", repToString(selectedSet.reps)))
-                    }
-                    
                 }
                 .chartOverlay { proxy in
                     GeometryReader { geometry in

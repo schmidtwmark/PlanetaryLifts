@@ -399,6 +399,7 @@ struct LiftListView: View {
     @State var showStatsForType: LiftType? = nil
     @State var selectedTab: TabType = .liftList
     @State var previousTab: TabType = .liftList
+    @State var scrollPosition: String?
 
     @AppStorage(PALETTE) var palette : Palette = .main
     @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
@@ -465,13 +466,14 @@ struct LiftListView: View {
                                                 .foregroundStyle(filteredLifts.first!.type.category.getColor(for: palette))
                                             Spacer()
                                         }.padding([.horizontal], 20)
-                                    })
+                                    }).id(date.format())
                                     Spacer(minLength: 40.0)
                                 }
                             }
                         }
                         .padding([.horizontal], 20)
                     }
+                    .scrollPosition(id: $scrollPosition)
                     .safeAreaPadding(.bottom, 40.0)
 //                    .overlay {
 //                        if liftsByDate.count == 0 {
@@ -528,7 +530,11 @@ struct LiftListView: View {
                             Button {
                                 addingLift = true
                             } label: {
-                                Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                                if scrollPosition == TOP_OF_LIST || scrollPosition == nil {
+                                    Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                                } else {
+                                    Label("Add Lift", systemImage: "plus").labelStyle(.iconOnly)
+                                }
                             }
                             .buttonStyle(.borderedProminent)
                             .clipShape(Capsule())
@@ -537,7 +543,7 @@ struct LiftListView: View {
                         })
                     }
                     .sheet(item: $showStatsForType) { type in
-                        StatItem(type: type)
+                        StatItem(type: type, modelContext: modelContext)
                     }
                     .sheet(item: $editingLift) { lift in
                         AddLiftView(lift: lift, onSave: { _ in })
