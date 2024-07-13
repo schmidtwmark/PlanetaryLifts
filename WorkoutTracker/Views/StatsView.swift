@@ -220,7 +220,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
                             }
                         }
                     }
-
+                    
                     if case .loading = viewModel.chartData {
                         ProgressView().tint(.gray)
                     }
@@ -237,6 +237,7 @@ struct CategoryPieChart<T: Hashable & Comparable & Identifiable & Sendable>: Vie
                     }
                 }
             }
+            .sensoryFeedback(.selection, trigger: viewModel.selectedItem)
             .chartLegend(.hidden)
             .chartForegroundStyleScale(mapping: color)
             .padding(CHART_PADDING)
@@ -460,10 +461,8 @@ struct StatsView: View {
                             .scrollTargetLayout()
                         }
                         // Disabled because scroll position adds lag to the stats view screen--perhaps due to loading?
-#if false
                         .scrollPosition(id: $selectedCard)
                         .sensoryFeedback(.selection, trigger: selectedCard)
-#endif
                         .scrollTargetBehavior(.viewAligned)
                         .safeAreaPadding(.horizontal, CARD_MARGIN)
                         .scrollIndicators(.hidden)

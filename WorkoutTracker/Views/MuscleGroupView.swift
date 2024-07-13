@@ -254,6 +254,7 @@ struct MuscleGroupView: View {
         .onTapGesture {
             muscleGroupState.selectedMuscleGroup = nil
         }
+        .sensoryFeedback(.selection, trigger: muscleGroupState.selectedMuscleGroup)
     }
     
     @ViewBuilder
@@ -432,10 +433,8 @@ struct MuscleGroupView: View {
                         .scrollTargetLayout()
                     }
                     // Disabled because scroll position adds lag to the stats view screen--perhaps due to having too much data?
-#if false
                     .scrollPosition(id: $selectedCard)
                     .sensoryFeedback(.selection, trigger: selectedCard)
-#endif
                     .scrollTargetBehavior(.viewAligned)
                     .safeAreaPadding(.horizontal, CARD_MARGIN)
                     .scrollIndicators(.hidden)

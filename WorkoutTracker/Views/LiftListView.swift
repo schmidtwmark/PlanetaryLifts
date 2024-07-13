@@ -208,7 +208,7 @@ struct LiftListItem: View {
     
     var onLiftsScreen: Bool
     
-    var scrollViewProxy: ScrollViewProxy?
+    var scrollViewProxy: ScrollViewProxy
     var onDelete: ((Lift) -> ())?
     
     // init on lift screen
@@ -219,15 +219,6 @@ struct LiftListItem: View {
         _showStatsForType = showStatsForType
         self.scrollViewProxy = scrollViewProxy
         self.onDelete = onDelete
-    }
-    
-    init(lift: Lift, showStatsForType: Binding<LiftType?>) {
-       onLiftsScreen = false
-        self.lift = lift
-        _editingLift = Binding.constant(nil)
-        _showStatsForType = showStatsForType
-        self.scrollViewProxy = nil
-        self.onDelete = nil
     }
     // init on muscle group screen
 
@@ -334,26 +325,24 @@ struct LiftListItem: View {
                     Label("Edit Lift", systemImage: "pencil")
                 }
             }
-            if let scroll = scrollViewProxy {
-                Button {
-                    let newLift = Lift(liftType: lift.type,
-                                       sets: lift.sets,
-                                       timestamp: Date.now,
-                                       modifiers:
-                                        lift.modifiers,
-                                       notes: lift.notes,
-                                       weighted: lift.weighted)
-                    
-                    withAnimation {
-                        modelContext.insert(newLift)
-                    }
-                    withAnimation {
-                        scroll.scrollTo(TOP_OF_LIST)
-                    }
-                    
-                } label: {
-                    Label("Repeat Now", systemImage: "arrow.circlepath")
+            Button {
+                let newLift = Lift(liftType: lift.type,
+                                   sets: lift.sets,
+                                   timestamp: Date.now,
+                                   modifiers:
+                                    lift.modifiers,
+                                   notes: lift.notes,
+                                   weighted: lift.weighted)
+                
+                withAnimation {
+                    modelContext.insert(newLift)
                 }
+                withAnimation {
+                    scrollViewProxy.scrollTo(TOP_OF_LIST)
+                }
+                
+            } label: {
+                Label("Repeat Now", systemImage: "arrow.circlepath")
             }
             Button {
                 showStatsForType = lift.type
@@ -456,7 +445,11 @@ struct LiftListView: View {
                                 if !filteredLifts.isEmpty {
                                     Section(content: {
                                         ForEach(filteredLifts) {lift in
-                                            LiftListItem(lift: lift, editingLift: $editingLift, showStatsForType: $showStatsForType, scrollViewProxy: proxy, onDelete: {modelContext.delete($0)})
+                                            LiftListItem(lift: lift, 
+                                                         editingLift: $editingLift,
+                                                         showStatsForType: $showStatsForType,
+                                                         scrollViewProxy: proxy,
+                                                         onDelete: {modelContext.delete($0)})
                                         }
                                     }, header: {
                                         HStack {
