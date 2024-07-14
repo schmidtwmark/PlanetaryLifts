@@ -85,7 +85,7 @@ struct MaxesBarChart : View {
                     shadeIndexByRepCount: [String: Int],
                     allTimeMax: Double,
                     filteredLifts: [Lift],
-                    daysRange: Int
+                    timeRange: Int
         )
     }
     var type: LiftType
@@ -131,12 +131,12 @@ struct MaxesBarChart : View {
             
             let allTimeMax = maxes.values.max() ?? 0
             
-            let daysRange = if let first = filteredLifts.first, let last = filteredLifts.last {
+            let timeRange = if let first = filteredLifts.first, let last = filteredLifts.last {
                 Int(first.timestamp.timeIntervalSince(last.timestamp))
             } else {
                 0
             }
-            self.data = .loaded(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, filteredLifts: filteredLifts, daysRange: daysRange)
+            self.data = .loaded(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, filteredLifts: filteredLifts, timeRange: timeRange)
         } catch {
             print("Fetch failed ")
         }
@@ -329,16 +329,26 @@ struct WeightProgressView: View {
                 365
             }
             return 60 * 60 * 24 * days
-            
+        }
+        
+        static func validWindows(timeRange: Int) -> [TimeWindow] {
+            let daysRange = timeRange / (60 * 60 * 24)
+            if daysRange <= 15 {
+                return [.week]
+            } else if daysRange <= 30 {
+                return [.week, .month]
+            } else if daysRange <= 90 {
+                return [.week, .month, .ninetyDays]
+            } else {
+                return [.week, .month, .ninetyDays, .year]
+            }
         }
     }
     
     
     @ViewBuilder
-    func progressTimeWindowPicker(daysRange: Int) -> some View {
-        let validWindows = TimeWindow.allCases.filter({window in
-            return daysRange >= window.timeRange
-        })
+    func progressTimeWindowPicker(timeRange: Int) -> some View {
+        let validWindows = TimeWindow.validWindows(timeRange: timeRange)
         if validWindows.count > 1 {
             Picker("Time Window", selection: $timeWindow.animation()) {
                 ForEach(validWindows, id: \.rawValue) { window in
@@ -353,8 +363,8 @@ struct WeightProgressView: View {
     
     var body: some View {
         VStack {
-            if case .loaded(_, _, let allTimeMax, let filteredLifts, let daysRange) = viewModel.data {
-                progressTimeWindowPicker(daysRange: daysRange)
+            if case .loaded(_, _, let allTimeMax, let filteredLifts, let timeRange) = viewModel.data {
+                progressTimeWindowPicker(timeRange: timeRange)
                 Chart { 
                     ForEach(filteredLifts) { lift in
                         let unique = lift.uniqueSets()

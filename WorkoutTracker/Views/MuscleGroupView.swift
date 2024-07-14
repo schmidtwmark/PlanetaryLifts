@@ -320,6 +320,7 @@ struct MuscleGroupView: View {
                                 Text("\((percentage * 100).clean)%")
                             } else {
                                 Text(lift.timestamp.formatted(Date.FormatStyle().month(.defaultDigits).day()))
+                                    .foregroundStyle(lift.type.category.getColor(for: palette))
                             }
                         }
                         

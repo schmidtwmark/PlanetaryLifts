@@ -423,49 +423,51 @@ struct StatsView: View {
                             Spacer()
                         }
                     } else {
-                        ScrollView(.horizontal) {
-                            HStack(spacing: 20.0) {
-                                CategoryPieChart<LiftCategory>(
-                                    title: "Lift Count by Category",
-                                    liftsByCategory: model.loadedStats?.liftsByCategory,
-                                    statsType: .count,
-                                    colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
-                                    stringMapping: {$0.rawValue},
-                                    countFn: {Double($0.count)})
-                                .id("Category Count")
-                                CategoryPieChart<LiftCategory>(
-                                    title: "Weight by Category",
-                                    liftsByCategory: model.loadedStats?.liftsByCategory,
-                                    statsType: .weight,
-                                    colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
-                                    stringMapping: {$0.rawValue},
-                                    countFn: {totalWeight($0)})
-                                .id("Category Weight")
-                                CategoryPieChart<LiftType>(
-                                    title: "Lift Count by Lift Type",
-                                    liftsByCategory: model.loadedStats?.liftsByType,
-                                    statsType: .count,
-                                    colorMapping: {model.loadedStats?.colorByTypeString[$0] ?? .gray},
-                                    stringMapping: {$0.string},
-                                    countFn: {Double($0.count)})
-                                .id("Lift Count")
-                                CategoryPieChart<LiftType>(
-                                    title: "Weight by Lift Type",
-                                    liftsByCategory: model.loadedStats?.liftsByType,
-                                    statsType: .weight,
-                                    colorMapping: {model.loadedStats?.colorByTypeString[$0] ?? .gray},
-                                    stringMapping: {$0.string},
-                                    countFn: {totalWeight($0)})
-                                .id("Lift Weight")
+                        if model.searchText == "" {
+                            ScrollView(.horizontal) {
+                                HStack(spacing: 20.0) {
+                                    CategoryPieChart<LiftCategory>(
+                                        title: "Lift Count by Category",
+                                        liftsByCategory: model.loadedStats?.liftsByCategory,
+                                        statsType: .count,
+                                        colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
+                                        stringMapping: {$0.rawValue},
+                                        countFn: {Double($0.count)})
+                                    .id("Category Count")
+                                    CategoryPieChart<LiftCategory>(
+                                        title: "Weight by Category",
+                                        liftsByCategory: model.loadedStats?.liftsByCategory,
+                                        statsType: .weight,
+                                        colorMapping: {LiftCategory(rawValue: $0)!.getColor(for: palette)},
+                                        stringMapping: {$0.rawValue},
+                                        countFn: {totalWeight($0)})
+                                    .id("Category Weight")
+                                    CategoryPieChart<LiftType>(
+                                        title: "Lift Count by Lift Type",
+                                        liftsByCategory: model.loadedStats?.liftsByType,
+                                        statsType: .count,
+                                        colorMapping: {model.loadedStats?.colorByTypeString[$0] ?? .gray},
+                                        stringMapping: {$0.string},
+                                        countFn: {Double($0.count)})
+                                    .id("Lift Count")
+                                    CategoryPieChart<LiftType>(
+                                        title: "Weight by Lift Type",
+                                        liftsByCategory: model.loadedStats?.liftsByType,
+                                        statsType: .weight,
+                                        colorMapping: {model.loadedStats?.colorByTypeString[$0] ?? .gray},
+                                        stringMapping: {$0.string},
+                                        countFn: {totalWeight($0)})
+                                    .id("Lift Weight")
+                                }
+                                .scrollTargetLayout()
                             }
-                            .scrollTargetLayout()
+                            // Disabled because scroll position adds lag to the stats view screen--perhaps due to loading?
+                            .scrollPosition(id: $selectedCard)
+                            .sensoryFeedback(.selection, trigger: selectedCard)
+                            .scrollTargetBehavior(.viewAligned)
+                            .safeAreaPadding(.horizontal, CARD_MARGIN)
+                            .scrollIndicators(.hidden)
                         }
-                        // Disabled because scroll position adds lag to the stats view screen--perhaps due to loading?
-                        .scrollPosition(id: $selectedCard)
-                        .sensoryFeedback(.selection, trigger: selectedCard)
-                        .scrollTargetBehavior(.viewAligned)
-                        .safeAreaPadding(.horizontal, CARD_MARGIN)
-                        .scrollIndicators(.hidden)
                         VStack(spacing: 20.0){
                             ForEach(model.filteredCategories.sorted(by: <), id: \.rawValue) { category in
                                 VStack {
@@ -485,7 +487,12 @@ struct StatsView: View {
                                                     HStack {
                                                         Text("\(liftType.string)")
                                                         Spacer()
+                                                        if let stats = model.loadedStats, let lifts = stats.liftsByType[liftType] {
+                                                            Text(Double(lifts.count).displayString(singleUnit: "lift"))
+                                                                .foregroundStyle(liftType.category.getColor(for: palette))
+                                                        }
                                                     }
+                                                    .contentShape(Rectangle())
                                                     .padding(.horizontal, 15.0)
                                                     .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
                                                     .onTapGesture(perform: {
