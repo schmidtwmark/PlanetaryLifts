@@ -209,14 +209,6 @@ struct StatItem: View {
 
     var body: some View {
         NavigationStack {
-            #if targetEnvironment(simulator)
-            // Weirdly, there's a bug with @Observable where without this, loading does not retrigger
-            if case .loading = viewModel.data {
-                Text("Loading")
-            } else {
-                Text("Loaded")
-            }
-            #endif
             List {
                 switch viewModel.data {
                 case .loading:

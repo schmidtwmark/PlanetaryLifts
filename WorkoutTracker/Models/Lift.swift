@@ -40,6 +40,12 @@ final class Lift {
         sets.append(set)
     }
     
+    func addRepeatedSet(times: Int, liftSet: LiftSet) {
+        for _ in 0..<times {
+            sets.append(liftSet.clone())
+        }
+    }
+    
     func allSetsSame() -> Bool {
         if let first = sets.first {
             return sets.count >= 2 && sets.allSatisfy({ $0.reps == first.reps && $0.weight.weight == first.weight.weight && $0.weight.units == first.weight.units})

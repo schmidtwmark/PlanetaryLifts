@@ -596,24 +596,23 @@ struct LiftListView: View {
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip], notes: "Notes notes notes notes notes notes notes")
     container.mainContext.insert(lift)
-    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
-    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
-    lift.addSet(10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds)
-    
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
 
     let secondLift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*10))
     container.mainContext.insert(secondLift)
-    secondLift.addSet(10, weight: 250.0, units: .pounds)
-    secondLift.addSet(10, weight: 250.0, units: .pounds)
-    secondLift.addSet(10, weight: 250.0, units: .pounds)
+    secondLift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 250.0, units: .pounds))
     
     
-    let thirdLift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*60*24 - 10*60))
+    let yesterday = Date.now.addingTimeInterval(-60*60*24 - 10*60)
+    
+    let thirdLift = Lift(liftType: .backSquat, timestamp: yesterday)
     container.mainContext.insert(thirdLift)
-    thirdLift.addSet(10, weight: 250.0, units: .pounds)
-    thirdLift.addSet(10, weight: 250.0, units: .pounds)
-    thirdLift.addSet(10, weight: 250.0, units: .pounds)
+    thirdLift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 250.0, units: .pounds))
     
+    let fourthLift = Lift(liftType: .bicepCurl, timestamp: yesterday)
+    container.mainContext.insert(fourthLift)
+    fourthLift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 80.0, units: .pounds))
+
 
     return LiftListView()
         .modelContainer(container)
@@ -644,6 +643,61 @@ struct LiftListView: View {
 
     
 
+    return LiftListView()
+        .modelContainer(container)
+}
+
+
+
+#Preview("Screenshots") {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    
+    var lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip], notes: "Notes notes notes notes notes notes notes")
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
+    
+    lift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*10))
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 250.0, units: .pounds))
+    
+    lift = Lift(liftType: .deadlift, timestamp: Date.now.addingTimeInterval(-60*10))
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
+    
+    
+    
+    let yesterday = Date.now.addingTimeInterval(-60*60*24 - 10*60)
+    
+    lift = Lift(liftType: .backSquat, timestamp: yesterday)
+    container.mainContext.insert(lift)
+    lift .addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 250.0, units: .pounds))
+    
+    lift = Lift(liftType: .bicepCurl, timestamp: yesterday)
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 80.0, units: .pounds))
+    
+    let threeDaysAgo = Date.now.addingTimeInterval(-60*60*24*2)
+    lift = Lift(liftType: .frontSquat, timestamp: threeDaysAgo)
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
+
+    lift = Lift(liftType: .tricepExtensions, timestamp: threeDaysAgo)
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 80.0, units: .pounds))
+
+    lift = Lift(liftType: .backSquat, timestamp: threeDaysAgo)
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 200.0, units: .pounds))
+    
+    let lifts : [LiftType] = [.benchPress, .tricepExtensions, .bicepCurl, .backSquat, .deadlift]
+    
+    for day in 5 ..< 120 {
+        lift = Lift(liftType: lifts[day % lifts.count], timestamp: Date.now.addingTimeInterval(TimeInterval(-60 * 60 * 24 * day)))
+        container.mainContext.insert(lift)
+        lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: Double(150.0 - 10 * Double(day / 20)), units: .pounds))
+    }
+    
     return LiftListView()
         .modelContainer(container)
 }
