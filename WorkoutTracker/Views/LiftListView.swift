@@ -369,17 +369,73 @@ enum TabType {
     case settings
 }
 
+struct FilterButton: View {
+    
+    @Query var userGeneratedTypes: [UserGeneratedLiftType]
+    @Query var lifts: [Lift]
+    
+    var allLiftsByCategory: [LiftCategory: [LiftType]] {
+        let presentTypes = Set(lifts.map({$0.type}))
+        let allLiftTypes = generateAllLiftsByCategory(userGeneratedTypes: userGeneratedTypes).mapValues({ liftTypes in
+            liftTypes.filter({ liftType in
+                presentTypes.contains(liftType)
+            })
+        }).filter({!$0.value.isEmpty})
+        return allLiftTypes
+    }
+    
+    @Binding var filterSelection: LiftType?
+    var filterImageName: String {
+        if let _ = filterSelection {
+            return "line.3.horizontal.decrease.circle.fill"
+        } else {
+            return "line.3.horizontal.decrease.circle"
+        }
+    }
+    
+
+    var body: some View {
+        
+        if let _ = filterSelection {
+            Button(role: .destructive, action: {
+                withAnimation {
+                    filterSelection = nil
+                }
+            }) {
+                Label("Cancel Filter", systemImage: filterImageName)
+            }
+        } else {
+            if allLiftsByCategory.count > 0  {
+                Menu("Filter", systemImage: filterImageName, content: {
+                    ForEach(allLiftsByCategory.keys.sorted(by: <), id: \.rawValue) { category in
+                        Menu(category.rawValue, content: {
+                            ForEach(allLiftsByCategory[category]!, id: \.hashValue) { lift in
+                                Button {
+                                    withAnimation {
+                                        filterSelection = lift
+                                    }
+                                } label: {
+                                    Text(lift.string)
+                                }
+                            }
+                        })
+                        
+                    }
+                })
+            } else {
+                EmptyView()
+            }
+        }
+
+    }
+}
+
 struct LiftListView: View {
     @State var searchText: String = ""
 
     @Environment(\.modelContext) private var modelContext
     
     @SectionedQuery(\.date, sort: [SortDescriptor(\.timestamp, order: .reverse)]) var liftsByDate: SectionedResults<TimelessDate, Lift>
-    @Query var userGeneratedTypes: [UserGeneratedLiftType]
-    
-    var allLiftsByCategory: [LiftCategory: [LiftType]] {
-        generateAllLiftsByCategory(userGeneratedTypes: userGeneratedTypes)
-    }
     
     @State var filterSelection: LiftType? = nil
 
@@ -388,18 +444,9 @@ struct LiftListView: View {
     @State var showStatsForType: LiftType? = nil
     @State var selectedTab: TabType = .liftList
     @State var previousTab: TabType = .liftList
-    @State var scrollPosition: String?
 
     @AppStorage(PALETTE) var palette : Palette = .main
     @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
-    
-    var filterImageName: String {
-        if let _ = filterSelection {
-            return "line.3.horizontal.decrease.circle.fill"
-        } else {
-            return "line.3.horizontal.decrease.circle"
-        }
-    }
     
     func getMostRecentLiftType() -> LiftType? {
         return liftsByDate.first?.first?.type
@@ -432,102 +479,74 @@ struct LiftListView: View {
             NavigationStack {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVGrid(
-                            columns: [GridItem(.adaptive(minimum: 300))], 
-                            alignment: .center
-                            ) {
-                            EmptyView().id("Top of List")
-                            ForEach(liftsByDate) { section in
-//                                let isFirst = section == liftsByDate.first
-                                let liftsForDate = section.elements
-                                let date = section.id
-                                let filteredLifts = filterLifts(liftsForDate)
-                                if !filteredLifts.isEmpty {
-                                    Section(content: {
-                                        ForEach(filteredLifts) {lift in
-                                            LiftListItem(lift: lift, 
-                                                         editingLift: $editingLift,
-                                                         showStatsForType: $showStatsForType,
-                                                         scrollViewProxy: proxy,
-                                                         onDelete: {modelContext.delete($0)})
-                                        }
-                                    }, header: {
-                                        HStack {
-                                            Text("\(date.format())".uppercased())
-                                                .font(.subheadline)
-                                                .fontWeight(.bold)
-                                                .foregroundStyle(filteredLifts.first!.type.category.getColor(for: palette))
-                                            Spacer()
-                                        }.padding([.horizontal], 20)
-                                    }).id(date.format())
-                                    Spacer(minLength: 40.0)
+                        HStack {
+                            Spacer()
+                            LazyVStack {
+                                EmptyView().id("Top of List")
+                                ForEach(liftsByDate) { section in
+                                    let liftsForDate = section.elements
+                                    let date = section.id
+                                    let filteredLifts = filterLifts(liftsForDate)
+                                    if !filteredLifts.isEmpty {
+                                        Section(content: {
+                                            ForEach(filteredLifts) {lift in
+                                                LiftListItem(lift: lift,
+                                                             editingLift: $editingLift,
+                                                             showStatsForType: $showStatsForType,
+                                                             scrollViewProxy: proxy,
+                                                             onDelete: {modelContext.delete($0)})
+                                            }
+                                        }, header: {
+                                            HStack {
+                                                Text("\(date.format())".uppercased())
+                                                    .font(.subheadline)
+                                                    .fontWeight(.bold)
+                                                    .foregroundStyle(filteredLifts.first!.type.category.getColor(for: palette))
+                                                Spacer()
+                                            }.padding([.horizontal], 20)
+                                        })
+                                        Spacer(minLength: 40.0)
+                                    }
                                 }
                             }
+                            .frame(maxWidth: 500.0)
+                            .scrollTargetLayout()
+                            Spacer()
                         }
                         .padding([.horizontal], 20)
                     }
-                    .scrollPosition(id: $scrollPosition)
+                    .frame(maxWidth: .infinity)
                     .safeAreaPadding(.bottom, 40.0)
-//                    .overlay {
-//                        if liftsByDate.count == 0 {
-//                            HStack {
-//                                Spacer()
-//                                Text("Press ")
-//                                Button {
-//                                    addingLift = true
-//                                } label: {
-//                                    Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
-//                                }
-//                                .buttonStyle(.borderedProminent)
-//                                .clipShape(Capsule())
-//                                .padding(10)
-//                                Text(" to create your first lift!")
-//                                Spacer()
-//                            }
-//                        }
-//                    }
+                    .overlay {
+                        if liftsByDate.count == 0 {
+                            HStack {
+                                Spacer()
+                                Text("Press ")
+                                Button {
+                                    addingLift = true
+                                } label: {
+                                    Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .clipShape(Capsule())
+                                .padding(10)
+                                Text(" to create your first lift!")
+                                Spacer()
+                            }
+                        }
+                    }
                     .background(Color(uiColor: UIColor.systemGroupedBackground))
                     .navigationTitle("Lifts")
                     .toolbar() {
                         ToolbarItemGroup(placement: .topBarLeading, content: {
-                            
-                            if let _ = filterSelection {
-                                Button(role: .destructive, action: {
-                                    withAnimation {
-                                        filterSelection = nil
-                                    }
-                                }) {
-                                    Label("Cancel Filter", systemImage: filterImageName)
-                                }
-                            } else {
-                                Menu("Filter", systemImage: filterImageName, content: {
-                                    ForEach(allLiftsByCategory.keys.sorted(by: <), id: \.rawValue) { category in
-                                        Menu(category.rawValue, content: {
-                                            ForEach(allLiftsByCategory[category]!, id: \.hashValue) { lift in
-                                                Button {
-                                                    withAnimation {
-                                                        filterSelection = lift
-                                                    }
-                                                } label: {
-                                                    Text(lift.string)
-                                                }
-                                            }
-                                        })
-                                        
-                                    }
-                                })
-                            }
+                            FilterButton(filterSelection: $filterSelection)
                         })
                         ToolbarItemGroup(placement: .topBarTrailing, content: {
 
                             Button {
                                 addingLift = true
                             } label: {
-                                if scrollPosition == TOP_OF_LIST || scrollPosition == nil {
                                     Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
-                                } else {
-                                    Label("Add Lift", systemImage: "plus").labelStyle(.iconOnly)
-                                }
                             }
                             .buttonStyle(.borderedProminent)
                             .clipShape(Capsule())
