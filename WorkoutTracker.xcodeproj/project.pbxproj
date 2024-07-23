@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		ED1B48D52BCB6792003F74BF /* PlatesEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */; };
+		ED2B81A82C4C5A7F00455872 /* ListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2B81A72C4C5A7F00455872 /* ListViewModel.swift */; };
 		ED320A362B92A0BF003A6628 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A352B92A0BF003A6628 /* Date.swift */; };
 		ED320A382B94DB5E003A6628 /* LiftType.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A372B94DB5E003A6628 /* LiftType.swift */; };
 		ED320A3A2B950AF5003A6628 /* LiftTypeSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */; };
@@ -48,6 +49,7 @@
 
 /* Begin PBXFileReference section */
 		ED1B48D42BCB6792003F74BF /* PlatesEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatesEditorView.swift; sourceTree = "<group>"; };
+		ED2B81A72C4C5A7F00455872 /* ListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListViewModel.swift; sourceTree = "<group>"; };
 		ED320A352B92A0BF003A6628 /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
 		ED320A372B94DB5E003A6628 /* LiftType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftType.swift; sourceTree = "<group>"; };
 		ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftTypeSelector.swift; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 				ED8707382C383B6D0010DFA8 /* UserGeneratedLiftType.swift */,
 				ED6E7EDF2C28C0460092134D /* MuscleGroups.swift */,
 				ED69CBE82C387FFF00DBBDCF /* WeightUnits.swift */,
+				ED2B81A72C4C5A7F00455872 /* ListViewModel.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -302,6 +305,7 @@
 				EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */,
 				ED320A3A2B950AF5003A6628 /* LiftTypeSelector.swift in Sources */,
 				EDA6830A2B913492002015CA /* SettingsView.swift in Sources */,
+				ED2B81A82C4C5A7F00455872 /* ListViewModel.swift in Sources */,
 				ED8707392C383B6D0010DFA8 /* UserGeneratedLiftType.swift in Sources */,
 				ED749DC12BF5769200A3AA3E /* StatBlock.swift in Sources */,
 				ED6E7EE42C2AEC260092134D /* MuscleShapes.swift in Sources */,

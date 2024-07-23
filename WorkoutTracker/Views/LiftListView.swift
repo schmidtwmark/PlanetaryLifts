@@ -198,6 +198,7 @@ struct LiftListItem: View {
     @State var lift: Lift
     @Binding var editingLift: Lift?
     @Binding var showStatsForType: LiftType?
+    @Binding var model: ListViewModel
     @AppStorage(PALETTE) var palette: Palette = .main
     
     enum CardState {
@@ -212,15 +213,15 @@ struct LiftListItem: View {
     var onDelete: ((Lift) -> ())?
     
     // init on lift screen
-    init(lift: Lift, editingLift: Binding<Lift?>, showStatsForType: Binding<LiftType?>, scrollViewProxy: ScrollViewProxy, onDelete: @escaping (Lift) -> ()) {
+    init(lift: Lift, editingLift: Binding<Lift?>, showStatsForType: Binding<LiftType?>, model: Binding<ListViewModel>, scrollViewProxy: ScrollViewProxy, onDelete: @escaping (Lift) -> ()) {
         onLiftsScreen = true
         self.lift = lift
         _editingLift = editingLift
         _showStatsForType = showStatsForType
+        _model = model
         self.scrollViewProxy = scrollViewProxy
         self.onDelete = onDelete
     }
-    // init on muscle group screen
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
@@ -334,11 +335,16 @@ struct LiftListItem: View {
                                    notes: lift.notes,
                                    weighted: lift.weighted)
                 
-                withAnimation {
+                Task {
                     modelContext.insert(newLift)
-                }
-                withAnimation {
-                    scrollViewProxy.scrollTo(TOP_OF_LIST)
+                    model.load()
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + SCROLL_DELAY) {
+                        withAnimation {
+                            scrollViewProxy.scrollTo(Date.now.timeless())
+
+                        }
+                    }
                 }
                 
             } label: {
@@ -369,74 +375,19 @@ enum TabType {
     case settings
 }
 
-struct FilterButton: View {
-    
-    @Query var userGeneratedTypes: [UserGeneratedLiftType]
-    @Query var lifts: [Lift]
-    
-    var allLiftsByCategory: [LiftCategory: [LiftType]] {
-        let presentTypes = Set(lifts.map({$0.type}))
-        let allLiftTypes = generateAllLiftsByCategory(userGeneratedTypes: userGeneratedTypes).mapValues({ liftTypes in
-            liftTypes.filter({ liftType in
-                presentTypes.contains(liftType)
-            })
-        }).filter({!$0.value.isEmpty})
-        return allLiftTypes
-    }
-    
-    @Binding var filterSelection: LiftType?
-    var filterImageName: String {
-        if let _ = filterSelection {
-            return "line.3.horizontal.decrease.circle.fill"
-        } else {
-            return "line.3.horizontal.decrease.circle"
-        }
-    }
-    
-
-    var body: some View {
-        
-        if let _ = filterSelection {
-            Button(role: .destructive, action: {
-                withAnimation {
-                    filterSelection = nil
-                }
-            }) {
-                Label("Cancel Filter", systemImage: filterImageName)
-            }
-        } else {
-            if allLiftsByCategory.count > 0  {
-                Menu("Filter", systemImage: filterImageName, content: {
-                    ForEach(allLiftsByCategory.keys.sorted(by: <), id: \.rawValue) { category in
-                        Menu(category.rawValue, content: {
-                            ForEach(allLiftsByCategory[category]!, id: \.hashValue) { lift in
-                                Button {
-                                    withAnimation {
-                                        filterSelection = lift
-                                    }
-                                } label: {
-                                    Text(lift.string)
-                                }
-                            }
-                        })
-                        
-                    }
-                })
-            } else {
-                EmptyView()
-            }
-        }
-
-    }
-}
-
 struct LiftListView: View {
-    @State var searchText: String = ""
 
-    @Environment(\.modelContext) private var modelContext
     
-    @SectionedQuery(\.date, sort: [SortDescriptor(\.timestamp, order: .reverse)]) var liftsByDate: SectionedResults<TimelessDate, Lift>
+    @State var model: ListViewModel
+    var modelContext: ModelContext
     
+    init(modelContext: ModelContext) {
+        self.modelContext = modelContext
+        let model = ListViewModel(modelContext: modelContext)
+        _model = State(initialValue: model)
+    }
+    
+    @State var searchText: String = ""
     @State var filterSelection: LiftType? = nil
 
     @State var editingLift: Lift? = nil
@@ -448,12 +399,9 @@ struct LiftListView: View {
     @AppStorage(PALETTE) var palette : Palette = .main
     @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
     
-    func getMostRecentLiftType() -> LiftType? {
-        return liftsByDate.first?.first?.type
-    }
     
     func getTintColor() -> Color {
-        if let mostRecentLift = getMostRecentLiftType() {
+        if let mostRecentLift = model.getMostRecentLiftType() {
             return mostRecentLift.category.getColor(for: palette)
         }
         return LiftCategory.allCases.first!.getColor(for: palette)
@@ -473,109 +421,189 @@ struct LiftListView: View {
 
     }
 
+    var filterImageName: String {
+        if let _ = filterSelection {
+            return "line.3.horizontal.decrease.circle.fill"
+        } else {
+            return "line.3.horizontal.decrease.circle"
+        }
+    }
     
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            NavigationStack {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        HStack {
-                            Spacer()
-                            LazyVStack {
-                                EmptyView().id("Top of List")
-                                ForEach(liftsByDate) { section in
-                                    let liftsForDate = section.elements
-                                    let date = section.id
-                                    let filteredLifts = filterLifts(liftsForDate)
-                                    if !filteredLifts.isEmpty {
-                                        Section(content: {
-                                            ForEach(filteredLifts) {lift in
-                                                LiftListItem(lift: lift,
-                                                             editingLift: $editingLift,
-                                                             showStatsForType: $showStatsForType,
-                                                             scrollViewProxy: proxy,
-                                                             onDelete: {modelContext.delete($0)})
-                                            }
-                                        }, header: {
-                                            HStack {
-                                                Text("\(date.format())".uppercased())
-                                                    .font(.subheadline)
-                                                    .fontWeight(.bold)
-                                                    .foregroundStyle(filteredLifts.first!.type.category.getColor(for: palette))
-                                                Spacer()
-                                            }.padding([.horizontal], 20)
-                                        })
-                                        Spacer(minLength: 40.0)
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: 500.0)
-                            .scrollTargetLayout()
-                            Spacer()
-                        }
-                        .padding([.horizontal], 20)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .safeAreaPadding(.bottom, 40.0)
-                    .overlay {
-                        if liftsByDate.count == 0 {
-                            HStack {
-                                Spacer()
-                                Text("Press ")
+
+    @ViewBuilder
+    var filterButton: some View {
+        if let _ = filterSelection {
+            Button(role: .destructive, action: {
+                withAnimation {
+                    filterSelection = nil
+                }
+            }) {
+                Label("Cancel Filter", systemImage: filterImageName)
+            }
+        } else if let data = model.loadedData, data.presentTypesByCategory.count > 0  {
+                Menu("Filter", systemImage: filterImageName, content: {
+                    ForEach(data.presentTypesByCategory.keys.sorted(by: <), id: \.rawValue) { category in
+                        Menu(category.rawValue, content: {
+                            ForEach(data.presentTypesByCategory[category]!, id: \.hashValue) { lift in
                                 Button {
-                                    addingLift = true
+                                    withAnimation {
+                                        filterSelection = lift
+                                    }
                                 } label: {
-                                    Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                                    Text(lift.string)
                                 }
-                                .buttonStyle(.borderedProminent)
-                                .clipShape(Capsule())
-                                .padding(10)
-                                Text(" to create your first lift!")
-                                Spacer()
+                            }
+                        })
+                        
+                    }
+                })
+        } else {
+           EmptyView()
+        }
+
+    }
+    
+    @ViewBuilder
+    var overlay: some View {
+        if let data = model.loadedData, data.liftsByDate.count == 0 {
+            HStack {
+                Spacer()
+                Text("Press ")
+                Button {
+                    addingLift = true
+                } label: {
+                    Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                }
+                .buttonStyle(.borderedProminent)
+                .clipShape(Capsule())
+                .padding(10)
+                Text(" to create your first lift!")
+                Spacer()
+            }
+        }
+    }
+    
+    
+    @ViewBuilder
+    func liftSection(section: (TimelessDate, [Lift]), proxy: ScrollViewProxy) -> some View {
+        let liftsForDate = section.1
+        let date = section.0
+        let filteredLifts = filterLifts(liftsForDate)
+        if !filteredLifts.isEmpty {
+            VStack {
+                HStack {
+                    Text("\(date.format())".uppercased())
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(filteredLifts.first!.type.category.getColor(for: palette))
+                    Spacer()
+                }.padding([.horizontal], 20)
+
+                ForEach(filteredLifts) {lift in
+                    LiftListItem(lift: lift,
+                                 editingLift: $editingLift,
+                                 showStatsForType: $showStatsForType,
+                                 model: $model,
+                                 scrollViewProxy: proxy,
+                                 onDelete: { lift in
+                        modelContext.delete(lift)
+                        model.load()
+                    })
+                }
+                Spacer(minLength: 40.0)
+            }.id(date)
+        }
+    }
+    
+    @MainActor
+    @ViewBuilder
+    var liftListView: some View {
+        NavigationStack {
+            ScrollView {
+                ScrollViewReader { proxy in
+                    HStack {
+                        Spacer()
+                        LazyVStack {
+                            EmptyView().id(TOP_OF_LIST)
+                            if let data = model.loadedData {
+                                ForEach(data.liftsByDate, id: \.0) { section in
+                                    liftSection(section: section, proxy: proxy)
+                                }
                             }
                         }
-                    }
-                    .background(Color(uiColor: UIColor.systemGroupedBackground))
-                    .navigationTitle("Lifts")
-                    .toolbar() {
-                        ToolbarItemGroup(placement: .topBarLeading, content: {
-                            FilterButton(filterSelection: $filterSelection)
-                        })
-                        ToolbarItemGroup(placement: .topBarTrailing, content: {
-
-                            Button {
-                                addingLift = true
-                            } label: {
-                                    Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .clipShape(Capsule())
-                            .padding(10)
-
-                        })
+                        .frame(maxWidth: 500.0)
+                        .scrollTargetLayout()
+                        Spacer()
                     }
                     .sheet(item: $showStatsForType) { type in
                         StatItem(type: type, modelContext: modelContext)
                     }
                     .sheet(item: $editingLift) { lift in
-                        AddLiftView(lift: lift, onSave: { _ in })
+                        AddLiftView(lift: lift, onSave: { _ in
+                            model.load()
+                        })
                     }
                     .sheet(isPresented: $addingLift, content: {
-                        AddLiftView(liftType: getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList, onSave: { _ in
-                            proxy.scrollTo(TOP_OF_LIST)
+                        AddLiftView(liftType: model.getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList, onSave: { newLift in
+                            Task {
+                                model.load()
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + SCROLL_DELAY) {
+                                    withAnimation {
+                                        proxy.scrollTo(Date.now.timeless())
+
+                                    }
+                                }
+                            }
                         })
-                        
                     })
-
+                    .padding([.horizontal], 20)
                 }
-                .onAppear {
-                    withAnimation {
-                        unreadLifts = 0
-                    }
-                }
-                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-
             }
+            .frame(maxWidth: .infinity)
+            .safeAreaPadding(.bottom, 40.0)
+            .overlay {
+                overlay
+            }
+            .background(Color(uiColor: UIColor.systemGroupedBackground))
+            .navigationTitle("Lifts")
+            .toolbar() {
+                ToolbarItemGroup(placement: .topBarLeading, content: {
+                    filterButton
+                })
+                ToolbarItemGroup(placement: .topBarTrailing, content: {
+
+                    if let _ = model.loadedData {
+                        Button {
+                            addingLift = true
+                        } label: {
+                            Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .clipShape(Capsule())
+                        .padding(10)
+                    }
+
+                })
+            }
+
+            .task {
+                model.load()
+            }
+            .onAppear {
+                withAnimation {
+                    unreadLifts = 0
+                }
+            }
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+
+        }
+    }
+    
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            liftListView
             .tabItem {
                 Label("Lifts", systemImage: "dumbbell")
             }
@@ -597,13 +625,6 @@ struct LiftListView: View {
                 Label("Settings", systemImage: "gear")
             }
             .tag(TabType.settings)
-        }
-        
-        .onChange(of: selectedTab) { old, new in
-            if new == .addLift {
-                selectedTab = old
-                addingLift = true
-            }
         }
         .tint(getTintColor())
     }
@@ -628,19 +649,19 @@ struct LiftListView: View {
     container.mainContext.insert(thirdLift)
     thirdLift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 250.0, units: .pounds))
     
-    let fourthLift = Lift(liftType: .bicepCurl, timestamp: yesterday)
+    let fourthLift = Lift(liftType: .bicepCurl, timestamp: yesterday.addingTimeInterval(-10.0))
     container.mainContext.insert(fourthLift)
     fourthLift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 80.0, units: .pounds))
 
 
-    return LiftListView()
+    return ContentView()
         .modelContainer(container)
 }
 #Preview("Empty") {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
-    return LiftListView()
+    return ContentView()
         .modelContainer(container)
 }
 
@@ -662,7 +683,7 @@ struct LiftListView: View {
 
     
 
-    return LiftListView()
+    return ContentView()
         .modelContainer(container)
 }
 
@@ -673,17 +694,17 @@ struct LiftListView: View {
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
     
     var lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip], notes: "Notes notes notes notes notes notes notes")
-    container.mainContext.insert(lift)
-    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
-    
-    lift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*10))
-    container.mainContext.insert(lift)
-    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 250.0, units: .pounds))
-    
-    lift = Lift(liftType: .deadlift, timestamp: Date.now.addingTimeInterval(-60*10))
-    container.mainContext.insert(lift)
-    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
-    
+//    container.mainContext.insert(lift)
+//    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
+//    
+//    lift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*10))
+//    container.mainContext.insert(lift)
+//    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 250.0, units: .pounds))
+//    
+//    lift = Lift(liftType: .deadlift, timestamp: Date.now.addingTimeInterval(-60*10))
+//    container.mainContext.insert(lift)
+//    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
+//    
     
     
     let yesterday = Date.now.addingTimeInterval(-60*60*24 - 10*60)
@@ -717,6 +738,6 @@ struct LiftListView: View {
         lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: Double(150.0 - 10 * Double(day / 20)), units: .pounds))
     }
     
-    return LiftListView()
+    return ContentView()
         .modelContainer(container)
 }

@@ -14,6 +14,7 @@ let CHART_PADDING = 10.0
 let LIST_ROW_VERTICAL_PADDING = 15.0
 let TOP_OF_LIST = "Top of List"
 let MAX_CARD_WIDTH = 375.0
+let SCROLL_DELAY: DispatchTimeInterval = .milliseconds(250)
 
 extension UIScreen {
    static let screenWidth = UIScreen.main.bounds.size.width

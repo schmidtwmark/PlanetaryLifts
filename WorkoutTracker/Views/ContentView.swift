@@ -13,7 +13,7 @@ struct ContentView: View {
     
     @AppStorage(PALETTE) var palette: Palette = .main
     var body: some View {
-        LiftListView()
+        LiftListView(modelContext: modelContext)
     }
 
 }
