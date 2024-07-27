@@ -511,7 +511,8 @@ struct LiftListView: View {
                     })
                 }
                 Spacer(minLength: 40.0)
-            }.id(date)
+            }                    
+            .id(date)
         }
     }
     

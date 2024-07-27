@@ -8,14 +8,29 @@
 import SwiftUI
 import SwiftData
 
+let SECTION_COUNT_INITIAL_VALUE: Int = 5
+
 struct LiftTypeSelector: View {
     @Binding var selectedLiftType : LiftType
     @State var searchText: String = ""
+    @State var muscleGroupState: MuscleGroupState
+    
+    @State var suggestionsToShow = SECTION_COUNT_INITIAL_VALUE
+    @State var recentsToShow = SECTION_COUNT_INITIAL_VALUE
+
     @Environment(\.dismiss) var dismiss
 
     @Query var userGeneratedTypes : [UserGeneratedLiftType]
-    @Environment(\.modelContext) private var modelContext
+    var modelContext: ModelContext
     
+    
+    init(selectedLiftType: Binding<LiftType>, modelContext: ModelContext) {
+        let state = MuscleGroupState(modelContext: modelContext)
+        _muscleGroupState = State(initialValue: state)
+        _selectedLiftType = selectedLiftType
+        self.modelContext = modelContext
+    }
+
     var allLiftsByCategory: [LiftCategory: [LiftType]] {
         generateAllLiftsByCategory(userGeneratedTypes: userGeneratedTypes)
     }
@@ -31,29 +46,88 @@ struct LiftTypeSelector: View {
         })
     }
     
+    @ViewBuilder
+    func liftTypeRow(liftType: LiftType, deleteAllowed: Bool) -> some View {
+        HStack {
+            Text(liftType.string)
+            Spacer()
+            if liftType == selectedLiftType {
+                Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+            }
+        }
+        .deleteDisabled(deleteAllowed && !liftType.deletable)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: {
+            withAnimation {
+                selectedLiftType = liftType
+                dismiss()
+            }
+        })
+
+    }
+    
+    struct ShowMoreButton : View {
+        @Binding var displayCount: Int
+        var itemCount: Int
+        
+        
+        var body: some View {
+            if itemCount > SECTION_COUNT_INITIAL_VALUE {
+                Button {
+                    withAnimation {
+                        if displayCount == SECTION_COUNT_INITIAL_VALUE {
+                            displayCount = itemCount
+                        } else {
+                            displayCount = SECTION_COUNT_INITIAL_VALUE
+                        }
+                    }
+                } label: {
+                    Text(displayCount == SECTION_COUNT_INITIAL_VALUE ? "Show More" : "Show Less")
+                        .font(.subheadline.smallCaps())
+
+                }
+            }
+        }
+    }
+    
     var body: some View {
         List {
+            if case .loaded(let stats) = muscleGroupState.stats, searchText == "" {
+                if stats.recentLiftTypes.count > 0 {
+                    Section(content: {
+                        ForEach(stats.recentLiftTypes.prefix(recentsToShow)) { liftType in
+                            liftTypeRow(liftType: liftType, deleteAllowed: false)
+                        }
+                    }, header: {
+                        HStack {
+                            Text("Recent Lifts")
+                            Spacer()
+                            ShowMoreButton(displayCount: $recentsToShow, itemCount: stats.recentLiftTypes.count)
+                        }
+                    })
+                        
+                }
+                if stats.suggestedLifts.count > 0 {
+                    Section(content: {
+                        ForEach(stats.suggestedLifts.prefix(suggestionsToShow)) { suggestion in
+                            liftTypeRow(liftType: suggestion.type, deleteAllowed: false)
+                        }
+                    }, header: {
+                        HStack {
+                            Text("Suggestions")
+                            Spacer()
+                            ShowMoreButton(displayCount: $suggestionsToShow, itemCount: stats.suggestedLifts.count)
+                        }
+                    })
+                }
+            }
             ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in
                 Section(category.rawValue) {
                     ForEach(allLiftsByCategory[category]!.sorted(), id: \.string) { lift in
                         if searchText == "" ||
                             category.rawValue.containsIgnoringCase(searchText) || 
                             lift.string.containsIgnoringCase(searchText) {
-                            HStack {
-                                Text(lift.string)
-                                Spacer()
-                                if lift == selectedLiftType {
-                                    Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
-                                }
-                            }
-                            .deleteDisabled(!lift.deletable)
-                            .contentShape(Rectangle())
-                            .onTapGesture(perform: {
-                                withAnimation {
-                                    selectedLiftType = lift
-                                    dismiss()
-                                }
-                            })
+                            liftTypeRow(liftType: lift, deleteAllowed: true)
                         }
                     }.onDelete(perform: { indexSet in
                         let liftsToDelete = indexSet.map({index in allLiftsByCategory[category]![index]})
@@ -79,6 +153,9 @@ struct LiftTypeSelector: View {
                    Label("New Lift Type", systemImage: "square.and.pencil")
                })
             }
+        }
+        .task {
+            muscleGroupState.load()
         }
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
     }
@@ -133,7 +210,6 @@ struct CreateNewTypeView : View {
         mode = .edit(type)
         name = type.name
         category = type.category
-//        selector = NewLiftTypeMuscleGroupSelector(weights: LiftWeights())
         selector = NewLiftTypeMuscleGroupSelector(weights: type.liftWeights)
     }
     
@@ -206,24 +282,44 @@ struct CreateNewTypeView : View {
     }
 }
 
-#Preview {
+struct LiftTypeSelectorWrapper: View {
+    @Environment(\.modelContext) var modelContext
+    
+    
+    var body: some View {
+        NavigationStack {
+            LiftTypeSelector(selectedLiftType: .constant(.backSquat), modelContext: modelContext)
+        }
+    }
+}
+
+#Preview("Add Lift"){
     
     
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
 
     container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms, weights: [(.abs, 5.0)]))
+    var lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip], notes: "Notes notes notes notes notes notes notes")
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
+    
+    lift = Lift(liftType: .backSquat, timestamp: Date.now.addingTimeInterval(-60*10))
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, weight: 250.0, units: .pounds))
+    
+    lift = Lift(liftType: .deadlift, timestamp: Date.now.addingTimeInterval(-60*10))
+    container.mainContext.insert(lift)
+    lift.addRepeatedSet(times: 3, liftSet: LiftSet(reps: 10, plates: WeightPlates(barWeight: 45.0, plates: [WeightPlates.Plate(weight: 45.0)]), units: .pounds))
 
-    return NavigationStack {
-        LiftTypeSelector(selectedLiftType: .constant(.backSquat))
-            .modelContainer(container)
-    }
+    return LiftTypeSelectorWrapper().modelContainer(container)
 }
 
-#Preview {
+#Preview("Create New Type") {
     
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    
 
 
     return NavigationStack {

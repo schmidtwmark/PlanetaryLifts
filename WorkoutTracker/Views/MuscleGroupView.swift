@@ -94,6 +94,7 @@ class MuscleGroupState : MuscleGroupSelector {
         var normalizedWeight: LiftWeights
         var suggestedLifts : [LiftSuggestion]
         var lastWeekLifts: [Lift]
+        var recentLiftTypes: OrderedSet<LiftType>
     }
     
     struct LiftSuggestion : Comparable, Identifiable {
@@ -154,8 +155,12 @@ class MuscleGroupState : MuscleGroupSelector {
                   suggestions.append(max)
                 }
             }
+            
+            let recentLiftTypes = lifts.map({$0.type}).reduce(into: OrderedSet<LiftType>(), { result, liftType in
+                result.append(liftType)
+            })
 
-            stats = .loaded(MuscleGroupStatsData(normalizedWeight: normalized, suggestedLifts: suggestions, lastWeekLifts: lifts))
+            stats = .loaded(MuscleGroupStatsData(normalizedWeight: normalized, suggestedLifts: suggestions, lastWeekLifts: lifts, recentLiftTypes: recentLiftTypes))
             
         } catch {
             print("Fetch failed ")
@@ -245,7 +250,7 @@ struct MuscleGroupView: View {
     @AppStorage(PALETTE) var palette: Palette = .main
     
     @ViewBuilder
-    func muscles(_ stats: MuscleGroupState.MuscleGroupStatsData) -> some View {
+    func muscles() -> some View {
         HStack {
             MuscleGroupFrontView(selector: $muscleGroupState)
             MuscleGroupBackView(selector: $muscleGroupState)
@@ -258,30 +263,34 @@ struct MuscleGroupView: View {
     }
     
     @ViewBuilder
-    func suggestedLifts(_ stats: MuscleGroupState.MuscleGroupStatsData) -> some View {
+    func suggestedLifts() -> some View {
         
         VStack(alignment: .center) {
             Text("SUGGESTED LIFTS")
                 .font(.subheadline)
                 .foregroundStyle(.gray)
             ScrollView(.vertical) {
-                ForEach(stats.suggestedLifts) { suggestion in
-                    Button {
-                        print("Tapped suggestion \(suggestion.type)")
-                        showAddLift = suggestion.type
-
-                    } label: {
-                        HStack {
-                            Text(suggestion.type.string)
-                            Spacer()
-                            Text(suggestion.score.clean).font(.body)
+                if case .loaded(let stats) = muscleGroupState.stats {
+                    ForEach(stats.suggestedLifts) { suggestion in
+                        Button {
+                            print("Tapped suggestion \(suggestion.type)")
+                            showAddLift = suggestion.type
+                            
+                        } label: {
+                            HStack {
+                                Text(suggestion.type.string)
+                                Spacer()
+                                Text(suggestion.score.clean).font(.body)
+                            }
+                            .font(.title3)
+                            .padding()
+                            .foregroundStyle(ForegroundText())
                         }
-                        .font(.title3)
-                        .padding()
-                        .foregroundStyle(ForegroundText())
+                        .tint(suggestion.type.category.getColor(for: palette))
+                        .buttonStyle(.borderedProminent)
                     }
-                    .tint(suggestion.type.category.getColor(for: palette))
-                    .buttonStyle(.borderedProminent)
+                } else {
+                    ProgressView()
                 }
             }
             .safeAreaPadding(.vertical)
@@ -300,89 +309,95 @@ struct MuscleGroupView: View {
             .font(.subheadline)
             .foregroundStyle(.gray)
             .padding(.leading, 15.0)
-            let contributingLifts = stats.lastWeekLifts.filter({$0.getLiftWeights(userGeneratedTypes).affects(muscleGroupState.selectedMuscleGroup)})
-            if contributingLifts.count > 0 {
-                VStack(spacing: 0.0) {
-                    
-                    Divider().opacity(0.0)
-                    ForEach(contributingLifts) { lift in
-                        let percentage = {
-                            if let selectedMuscleGroup = muscleGroupState.selectedMuscleGroup {
-                                return lift.getLiftWeights(userGeneratedTypes).getWeight(selectedMuscleGroup) * lift.recencyFactor
-                            } else {
-                                return lift.recencyFactor
-                            }
-                        }()
-                        HStack {
-                            Text(lift.type.string)
-                            Spacer()
-                            if showImpactForLift == lift {
-                                Text("\((percentage * 100).clean)%")
-                            } else {
-                                Text(lift.timestamp.formatted(Date.FormatStyle().month(.defaultDigits).day()))
-                                    .foregroundStyle(lift.type.category.getColor(for: palette))
-                            }
-                        }
+            if case .loaded(let stats) = muscleGroupState.stats {
+                let contributingLifts = stats.lastWeekLifts.filter({$0.getLiftWeights(userGeneratedTypes).affects(muscleGroupState.selectedMuscleGroup)})
+                if contributingLifts.count > 0 {
+                    VStack(spacing: 0.0) {
                         
-                        .padding(.horizontal, 15.0)
-                        .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
-                        .background(Color(uiColor: .secondarySystemGroupedBackground))
-                        .contentShape(Rectangle())
-                        
-                        .onTapGesture(perform: {
-                            withAnimation {
-                                if showImpactForLift == lift {
-                                    showImpactForLift = nil
+                        Divider().opacity(0.0)
+                        ForEach(contributingLifts) { lift in
+                            let percentage = {
+                                if let selectedMuscleGroup = muscleGroupState.selectedMuscleGroup {
+                                    return lift.getLiftWeights(userGeneratedTypes).getWeight(selectedMuscleGroup) * lift.recencyFactor
                                 } else {
-                                    showImpactForLift = lift
+                                    return lift.recencyFactor
+                                }
+                            }()
+                            HStack {
+                                Text(lift.type.string)
+                                Spacer()
+                                if showImpactForLift == lift {
+                                    Text("\((percentage * 100).clean)%")
+                                } else {
+                                    Text(lift.timestamp.formatted(Date.FormatStyle().month(.defaultDigits).day()))
+                                        .foregroundStyle(lift.type.category.getColor(for: palette))
                                 }
                             }
-                        })
-                        Divider().padding(.leading).opacity(contributingLifts.last == lift ? 0.0 : 1.0)
+                            
+                            .padding(.horizontal, 15.0)
+                            .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
+                            .background(Color(uiColor: .secondarySystemGroupedBackground))
+                            .contentShape(Rectangle())
+                            
+                            .onTapGesture(perform: {
+                                withAnimation {
+                                    if showImpactForLift == lift {
+                                        showImpactForLift = nil
+                                    } else {
+                                        showImpactForLift = lift
+                                    }
+                                }
+                            })
+                            Divider().padding(.leading).opacity(contributingLifts.last == lift ? 0.0 : 1.0)
+                        }
                     }
+                    .contentShape(Rectangle())
+                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
                 }
-                .contentShape(Rectangle())
-                .background(Color(UIColor.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 10.0))
             }
         }
     }
     @ViewBuilder
-    func musclesLabel(_ stats: MuscleGroupState.MuscleGroupStatsData) -> some View {
-        let percentage = { if let selected = muscleGroupState.selectedMuscleGroup {
-            stats.normalizedWeight.getWeight(selected)
+    func musclesLabel() -> some View {
+        if case .loaded(let stats) = muscleGroupState.stats {
+            let percentage = { if let selected = muscleGroupState.selectedMuscleGroup {
+                stats.normalizedWeight.getWeight(selected)
+            } else {
+                stats.normalizedWeight.mean
+            }}()
+            let count = stats.lastWeekLifts.filter({$0.getLiftWeights(userGeneratedTypes).affects(muscleGroupState.selectedMuscleGroup)}).count
+            Button {
+                withAnimation {
+                    showPercentage.toggle()
+                }
+            } label: {
+                HStack {
+                    if let selected = muscleGroupState.selectedMuscleGroup {
+                        Text(selected.rawValue)
+                    } else {
+                        Text("Overall")
+                    }
+                    Spacer()
+                    if showPercentage {
+                        Text("\((percentage * 100).clean)%")
+                    } else {
+                        Text(Double(count).displayString(singleUnit: "lift"))
+                    }
+                }
+                .foregroundStyle(ForegroundText())
+                .font(.title3)
+                .padding(10)
+                .background(ZStack {
+                    Color.black
+                    tintColor.opacity((percentage / 2) + 0.5)
+                })
+                .clipShape(RoundedRectangle(cornerRadius: 10.0))
+            }
+            //        .tint(tintColor.opacity((percentage / 2) + 0.5))
         } else {
-            stats.normalizedWeight.mean
-        }}()
-        let count = stats.lastWeekLifts.filter({$0.getLiftWeights(userGeneratedTypes).affects(muscleGroupState.selectedMuscleGroup)}).count
-        Button {
-            withAnimation {
-                showPercentage.toggle()
-            }
-        } label: {
-            HStack {
-                if let selected = muscleGroupState.selectedMuscleGroup {
-                    Text(selected.rawValue)
-                } else {
-                    Text("Overall")
-                }
-                Spacer()
-                if showPercentage {
-                    Text("\((percentage * 100).clean)%")
-                } else {
-                    Text(Double(count).displayString(singleUnit: "lift"))
-                }
-            }
-            .foregroundStyle(ForegroundText())
-            .font(.title3)
-            .padding(10)
-            .background(ZStack {
-                Color.black
-                tintColor.opacity((percentage / 2) + 0.5)
-            })
-            .clipShape(RoundedRectangle(cornerRadius: 10.0))
+            EmptyView()
         }
-//        .tint(tintColor.opacity((percentage / 2) + 0.5))
     }
     
     @MainActor var cardWidth: Double {
@@ -405,35 +420,28 @@ struct MuscleGroupView: View {
                         HStack {
                             
                             VStack(alignment: .center) {
-                                if case .loaded(let stats) = muscleGroupState.stats {
-                                    Text("MUSCLE GROUPS")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.gray)
-                                    VStack {
-                                        Spacer()
-                                        muscles(stats)
-                                        Spacer()
-                                        musclesLabel(stats)
-                                    }
-                                    .padding(CHART_PADDING)
-                                    .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
-                                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                                } else {
-                                    ProgressView()
+                                Text("MUSCLE GROUPS")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.gray)
+                                VStack {
+                                    Spacer()
+                                    muscles()
+                                    Spacer()
+                                    musclesLabel()
                                 }
+                                .padding(CHART_PADDING)
+                                .background(Color(uiColor: UIColor.secondarySystemGroupedBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
                             }
                             .id("muscles")
                             .frame(width: cardWidth, height: cardWidth * 1.3)
                             
-                            if case .loaded(let stats) = muscleGroupState.stats {
-                                suggestedLifts(stats)
-                                    .id("suggestions")
-                                    .frame(width: cardWidth, height: cardWidth * 1.3)
-                            }
+                            suggestedLifts()
+                                .id("suggestions")
+                                .frame(width: cardWidth, height: cardWidth * 1.3)
                         }
                         .scrollTargetLayout()
                     }
-                    // Disabled because scroll position adds lag to the stats view screen--perhaps due to having too much data?
                     .scrollPosition(id: $selectedCard)
                     .sensoryFeedback(.selection, trigger: selectedCard)
                     .scrollTargetBehavior(.viewAligned)
@@ -497,6 +505,15 @@ struct MuscleGroupView: View {
     }
 }
 
+struct MuscleGroupWrapper: View {
+    
+    @Environment(\.modelContext) var modelContext
+    
+    var body: some View {
+        MuscleGroupView(modelContext: modelContext)
+    }
+}
+
 #Preview("Both") {
     
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -514,6 +531,6 @@ struct MuscleGroupView: View {
         }
             
     }
-    return MuscleGroupView(modelContext: container.mainContext)
+    return MuscleGroupWrapper().modelContainer(container)
 }
 

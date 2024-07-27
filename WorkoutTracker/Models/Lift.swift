@@ -191,8 +191,15 @@ struct Weight : Equatable, Codable{
     var data: WeightData
     var units: WeightUnits
     
+    private func generateDisplayString(_ singleUnit: String) -> String {
+        return self.weight == 1.0 ? "**1** \(singleUnit)" : "**\(roundedWeight.clean)** \(singleUnit)s"
+    }
+    
     var displayString : String {
-        self.weight == 1.0 ? "**1** \(self.units.singleUnit)" : "**\(roundedWeight.clean)** \(self.units.singleUnit)s"
+        generateDisplayString(self.units.singleUnit)
+    }
+    var shortDisplayString: String {
+        generateDisplayString(self.units.shortSingleUnit)
     }
     
     var roundedWeight : Double {

@@ -103,6 +103,7 @@ struct AddLiftMuscleGroupView: View {
 
 struct AddLiftView: View {
     
+    // Edit
     init(lift: Lift, onSave: @escaping (Lift) -> ()) {
         self.mode = .edit(lift)
         self.liftType = lift.type
@@ -114,6 +115,7 @@ struct AddLiftView: View {
         self.onSave = onSave
     }
     
+    // Add
     init(liftType: LiftType, updateUnreadLifts: Bool = false, onSave: @escaping (Lift) -> ()) {
         self.mode = .add
         self.liftType = liftType
@@ -154,9 +156,12 @@ struct AddLiftView: View {
     @AppStorage(PALETTE) var palette: Palette = .main
     @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
     
+    var mostRecentLift: Lift? {
+        lifts.first(where: {$0.type == liftType})
+    }
     
     var mostRecentSet: LiftSet? {
-        lifts.first(where: {$0.type == liftType})?.sets.first
+        mostRecentLift?.sets.first
     }
     
     var navigationTitle : String {
@@ -225,7 +230,7 @@ struct AddLiftView: View {
     @ViewBuilder
     var mainSection: some View {
         Section {
-            NavigationLink(destination: { LiftTypeSelector(selectedLiftType: $liftType)
+            NavigationLink(destination: { LiftTypeSelector(selectedLiftType: $liftType, modelContext: modelContext)
             }, label: {
                 HStack {
                     Text("Lift Type")
@@ -307,7 +312,6 @@ struct AddLiftView: View {
                             case .plates(let plates):
                                 HStack {
                                     Group {
-                                       
                                         if editState.setEditMode == .weight(liftSet.id) {
                                             PlatesEditorView(plates: Binding(get: {
                                                 return plates
@@ -331,7 +335,7 @@ struct AddLiftView: View {
                                             units: liftSet.weight.units)
                                         } else {
                                             Spacer()
-                                            Text(try! AttributedString(markdown: "\(liftSet.weight.displayString)"))
+                                            Text(try! AttributedString(markdown: "\(liftSet.weight.shortDisplayString)"))
                                                 .onTapGesture {
                                                     withAnimation {
                                                         editState.setEditMode = .weight(liftSet.id)
@@ -369,25 +373,29 @@ struct AddLiftView: View {
                     }
                 } label: {
                     Label("Settings", systemImage: "gear")
-                }.font(.caption)
+                }.font(.subheadline.smallCaps())
             }
         } footer: {
             HStack {
                 Spacer()
-                Button {
-                    withAnimation {
+                if editState.setEditMode == .none {
+                    Button {
+                        withAnimation {
                             if let lastSet = liftSets.last {
                                 liftSets.append(lastSet.clone())
-                            } else if let mostRecentSet = mostRecentSet {
+                            } else if let mostRecentLift = mostRecentLift, let mostRecentSet = mostRecentSet {
+                                if isWeighted && !mostRecentLift.weighted {
+                                    isWeighted = false
+                                }
                                 liftSets.append(mostRecentSet.clone())
                             } else {
                                 liftSets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
                             }
-                        
-                    }
-                } label: {
-                    HStack {
-                      Label("Add Set", systemImage: "plus")
+                        }
+                    } label: {
+                        HStack {
+                            Label("Add Set", systemImage: "plus")
+                        }
                     }
                 }
                 Spacer()
