@@ -78,25 +78,29 @@ struct MaxesBarChart : View {
 
 @Observable final class ViewModel {
     
+    struct StatItemLoadedData {
+        var maxes: [Int: Double]
+        var shadeIndexByRepCount: [String: Int]
+        var allTimeMax: Double
+        var allTimeMin: Double
+        var filteredLifts: [Lift]
+        var timeRange: Int
+
+    }
+    
     enum StatItemData {
         case loading
-        case loaded(
-                    maxes: [Int: Double],
-                    shadeIndexByRepCount: [String: Int],
-                    allTimeMax: Double,
-                    filteredLifts: [Lift],
-                    timeRange: Int
-        )
+        case loaded(StatItemLoadedData)
     }
     var type: LiftType
     var modelContext: ModelContext
     var data: StatItemData = .loading
 
     func colorByRepCount(_ repString: String, _ palette: Palette) -> Color {
-        if case .loaded(let maxes, let shadeIndexByRepCount, _, _, _) = data {
+        if case .loaded(let loadedData) = data {
             type.category
                 .getColor(for: palette)
-                .shades(count: maxes.count)[shadeIndexByRepCount[repString]!]
+                .shades(count: loadedData.maxes.count)[loadedData.shadeIndexByRepCount[repString]!]
         } else {
             Color.gray
         }
@@ -129,14 +133,24 @@ struct MaxesBarChart : View {
                 dict[repToString(reps)] = index
             })
             
-            let allTimeMax = maxes.values.max() ?? 0
+            let allTimeMax = max(maxes.values.max() ?? 0.0, 0.0)
+            let allTimeMin = filteredLifts.map({lift in
+                if lift.weighted {
+                    lift.sets.map({liftSet in
+                        liftSet.weight.weight}).min() ?? 0.0
+                } else {
+                    0.0
+                }
+            }).min() ?? 0.0
+                
             
             let timeRange = if let first = filteredLifts.first, let last = filteredLifts.last {
                 Int(first.timestamp.timeIntervalSince(last.timestamp))
             } else {
                 0
             }
-            self.data = .loaded(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, filteredLifts: filteredLifts, timeRange: timeRange)
+            
+            self.data = .loaded(StatItemLoadedData(maxes: maxes, shadeIndexByRepCount: shadeIndexByRepCount, allTimeMax: allTimeMax, allTimeMin: allTimeMin, filteredLifts: filteredLifts, timeRange: timeRange))
         } catch {
             print("Fetch failed ")
         }
@@ -148,13 +162,13 @@ struct MaxesBarChart : View {
         switch self.data {
         case .loading:
             return nil
-        case .loaded(_, _, _, let filteredLifts, _):
-            guard !filteredLifts.isEmpty else { return nil }
+        case .loaded(let loadedData):
+            guard !loadedData.filteredLifts.isEmpty else { return nil }
             
             
             var closestTimeDistance = Double.infinity
             var closestLift: Lift? = nil
-            for lift in filteredLifts {
+            for lift in loadedData.filteredLifts {
                 let distance = abs(selectedDate.timeIntervalSince(lift.timestamp))
                 if distance > closestTimeDistance {
                     // Distance is increasing, we passed the closest
@@ -213,23 +227,22 @@ struct StatItem: View {
                 switch viewModel.data {
                 case .loading:
                     ProgressView()
-                case .loaded(let maxes, _, let allTimeMax, let filteredLifts, _):
+                case .loaded(let loadedData):
                     Section {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading) {
-                            StatBlock(description: "All Time Max", unit: weightUnits.shortSingleUnit, number: allTimeMax)
-                            StatBlock(description: "Total Weight", unit: weightUnits.shortSingleUnit, number: totalWeight(filteredLifts))
-                            StatBlock(description: "Total Reps", unit: "Rep", number: Double(totalReps(filteredLifts)))
-                            StatBlock(description: "Total Lifts", unit: "Lift", number: Double(filteredLifts.count))
+                            StatBlock(description: "All Time Max", unit: weightUnits.shortSingleUnit, number: loadedData.allTimeMax)
+                            StatBlock(description: "Total Weight", unit: weightUnits.shortSingleUnit, number: totalWeight(loadedData.filteredLifts))
+                            StatBlock(description: "Total Reps", unit: "Rep", number: Double(totalReps(loadedData.filteredLifts)))
+                            StatBlock(description: "Total Lifts", unit: "Lift", number: Double(loadedData.filteredLifts.count))
                             
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                     }
                     
-                    // Only show this
-                    if maxes.count > 1 {
+                    if loadedData.maxes.count > 1 {
                         Section("Maxes") {
-                            MaxesBarChart(maxes: maxes,
+                            MaxesBarChart(maxes: loadedData.maxes,
                                           colorByRepCount: viewModel.colorByRepCount,
                                           selection: $selectedRepCount
                             )
@@ -243,11 +256,11 @@ struct StatItem: View {
                 }
             }
             .toolbar {
-                if case .loaded(let maxes, _, _, _, _) = viewModel.data {
+                if case .loaded(let loadedData) = viewModel.data {
                     ToolbarItem(placement: .bottomBar) {
                             StatsLegend(
                                 chunkSize: 1,
-                                categories: maxes.keys.sorted(by: <).map({repToString($0)}),
+                                categories: loadedData.maxes.keys.sorted(by: <).map({repToString($0)}),
                                 selectedCategory: $selectedRepCount,
                                 stringMapping: {$0},
                                 colorMapping: {viewModel.colorByRepCount($0, palette)},
@@ -355,15 +368,15 @@ struct WeightProgressView: View {
     
     var body: some View {
         VStack {
-            if case .loaded(_, _, let allTimeMax, let filteredLifts, let timeRange) = viewModel.data {
-                progressTimeWindowPicker(timeRange: timeRange)
-                Chart { 
-                    ForEach(filteredLifts) { lift in
+            if case .loaded(let loadedData) = viewModel.data {
+                progressTimeWindowPicker(timeRange: loadedData.timeRange)
+                Chart {
+                    ForEach(loadedData.filteredLifts) { lift in
                         let unique = lift.uniqueSets()
                         ForEach(unique) { liftSet in
                             PointMark(
                                 x: .value("Date", lift.timestamp, unit: .day),
-                                y: .value(repToString(liftSet.reps), liftSet.weight.weight))
+                                y: .value(repToString(liftSet.reps), lift.weighted ? liftSet.weight.weight : 0.0))
                             .symbol(.circle)
                             .symbolSize(
                                 repToString(liftSet.reps) == selectedReps ? 100.0 : 40.0)
@@ -410,7 +423,7 @@ struct WeightProgressView: View {
                                                 }
                                                 return
                                             }
-                                            if abs(weight - closestSet.weight.weight) < (allTimeMax * 0.3) && abs(date.timeIntervalSince(closestDate)) < Double(timeWindow.timeRange / 5) {
+                                            if abs(weight - closestSet.weight.weight) < (loadedData.allTimeMax * 0.3) && abs(date.timeIntervalSince(closestDate)) < Double(timeWindow.timeRange / 5) {
 
                                                 withAnimation {
                                                     selectedLiftSet = (closestSet, closestDate)
@@ -437,7 +450,7 @@ struct WeightProgressView: View {
                     return viewModel.colorByRepCount(data, palette)
                 })
                 .chartXVisibleDomain(length: timeWindow.timeRange)
-                .chartYScale(domain: 0...allTimeMax * 1.4)
+                .chartYScale(domain: (loadedData.allTimeMin < 0.0 ? loadedData.allTimeMin : 0.0)...loadedData.allTimeMax * 1.4)
                 .chartScrollPosition(initialX: Date().addingTimeInterval(TimeInterval(-1 * timeWindow.timeRange)))
                 .chartScrollableAxes(.horizontal)
                 .chartScrollTargetBehavior(

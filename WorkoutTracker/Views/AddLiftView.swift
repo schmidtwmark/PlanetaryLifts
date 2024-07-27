@@ -33,7 +33,13 @@ class EditState : ObservableObject {
 }
 
 func weightGranularityIncrement(_ current: Double) -> Double {
-    return if current < 12.5 {
+    return if current < -250.0 {
+        10.0
+    } else if current < -100.0 {
+        5.0
+    } else if current < -12.5 {
+        2.5
+    } else if current < 12.5 {
         0.5
     } else if current < 100.0 {
         2.5
@@ -45,7 +51,13 @@ func weightGranularityIncrement(_ current: Double) -> Double {
 }
 
 func weightGranularityDecrement(_ current: Double) -> Double {
-    return if current <= 12.5 {
+    return if current <= -250.0 {
+        10.0
+    } else if current <= -100.0 {
+        5.0
+    } else if current <= -12.5 {
+        2.5
+    } else if current <= 12.5 {
         0.5
     } else if current <= 100.0 {
         2.5
@@ -305,7 +317,7 @@ struct AddLiftView: View {
                                 }, set: { liftSet.weight.data = .rawWeight($0)}),
                                              toString: { _ in "\(liftSet.weight.roundedWeight.clean)"},
                                              onIncrement: {return roundedIncrement($0)},
-                                             onDecrement: {return max(1.0, roundedDecrement($0))},
+                                             onDecrement: {return  roundedDecrement($0)},
                                              type: .weight,
                                              id: liftSet.id)
                                 

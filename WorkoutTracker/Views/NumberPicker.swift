@@ -68,7 +68,7 @@ struct NumberPicker<T: Numeric> : View {
             if type == .weight {
                 formatter.numberStyle = .decimal
             }
-            formatter.zeroSymbol = ""
+            formatter.zeroSymbol = "0"
             return formatter
     }
     

@@ -306,7 +306,7 @@ struct MuscleGroupView: View {
                 Text("CONTRIBUTING LIFTS")
                 Spacer()
             }
-            .font(.subheadline)
+            .font(.subheadline.smallCaps())
             .foregroundStyle(.gray)
             .padding(.leading, 15.0)
             if case .loaded(let stats) = muscleGroupState.stats {

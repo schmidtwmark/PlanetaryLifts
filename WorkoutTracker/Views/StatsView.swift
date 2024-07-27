@@ -15,7 +15,7 @@ import Collections
 func totalWeight(_ lifts: [Lift]) -> Double {
     return lifts.reduce(into: 0, { sum, lift in
         sum += lift.sets.reduce(into: 0, { innerSum, liftSet in
-            if lift.weighted {
+            if lift.weighted && liftSet.weight.weight > 0.0 {
                 innerSum += Double(liftSet.reps) * liftSet.weight.weight
             }
         })
@@ -476,7 +476,7 @@ struct StatsView: View {
                                             Text(category.rawValue.uppercased())
                                             Spacer()
                                         }
-                                        .font(.subheadline)
+                                        .font(.subheadline.smallCaps())
                                         .foregroundStyle(.gray)
                                         .padding(.leading, 15.0)
                                         VStack(spacing: 0.0) {

@@ -13,9 +13,6 @@ struct StatBlock: View {
     var unit: String
     var number: Double
     
-
-    
-    
     var body: some View {
         VStack(alignment: .leading) {
             Text(description)
