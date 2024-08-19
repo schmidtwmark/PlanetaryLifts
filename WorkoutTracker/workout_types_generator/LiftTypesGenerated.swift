@@ -42,6 +42,7 @@ enum LiftType: Hashable, Codable, Sendable {
 	case russianTwists
 	case sideBends
 	case plankPullThrough
+	case hangClean
 	case legRaises
 	// MARK: Glutes
 	case hipThrust
@@ -108,6 +109,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		.russianTwists,
 		.sideBends,
 		.plankPullThrough,
+		.hangClean,
 		.legRaises,
 		// MARK: Glutes
 		.hipThrust,
@@ -176,6 +178,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .russianTwists: "Russian Twists"
 		case .sideBends: "Side Bends"
 		case .plankPullThrough: "Plank Pull Through"
+		case .hangClean: "Hang Clean"
 		case .legRaises: "Leg Raises"
 
 		// MARK: Glutes
@@ -250,6 +253,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		case "Russian Twists": self = .russianTwists
 		case "Side Bends": self = .sideBends
 		case "Plank Pull Through": self = .plankPullThrough
+		case "Hang Clean": self = .hangClean
 		case "Leg Raises": self = .legRaises
 
 		// MARK: Glutes
@@ -324,6 +328,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .russianTwists: .core
 		case .sideBends: .core
 		case .plankPullThrough: .core
+		case .hangClean: .core
 		case .legRaises: .core
 
 		// MARK: Glutes
@@ -392,6 +397,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .sidePlank: [.incline]
 		case .sideBends: [.oneArm, .dumbbell]
 		case .plankPullThrough: [.incline]
+		case .hangClean: [.narrowGrip, .wideGrip, .oneArm, .barbell, .dumbbell]
 
 		// MARK: Glutes
 		case .kickbacks: [.cable]
@@ -408,7 +414,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .bulgarianSplitSquat: [.barbell]
 
 		// MARK: Shoulders
-		case .overheadPress: [.narrowGrip, .wideGrip, .dumbbell, .multiGripBar]
+		case .overheadPress: [.narrowGrip, .wideGrip, .barbell, .dumbbell, .multiGripBar, .cable]
 		case .facePull: [.cable]
 		case .uprightRow: [.narrowGrip, .wideGrip, .oneArm, .barbell, .dumbbell, .cable]
 		case .frontRaise: [.oneArm, .dumbbell, .cable]
@@ -429,47 +435,48 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .tricepKickback: LiftWeights([(.triceps, 1)])
 		case .arnoldPress: LiftWeights([(.triceps, 0.75), (.deltoid, 1)])
 		case .tricepPushdown: LiftWeights([(.triceps, 1)])
-		case .landminePress: LiftWeights([(.biceps, 0.5), (.triceps, 0.5), (.deltoid, 1)])
+		case .landminePress: LiftWeights([(.glutes, 0.5), (.quadriceps, 1), (.lowerBack, 0.25)])
 
 		// MARK: Back
 		case .deadlift: LiftWeights([(.latissmusDorsi, 1), (.glutes, 0.5), (.lowerBack, 0.75)])
 		case .latPulldowns: LiftWeights([(.biceps, 0.5), (.latissmusDorsi, 1)])
-		case .backExtensions: LiftWeights([(.lowerBack, 1)])
-		case .row: LiftWeights([(.biceps, 0.25), (.triceps, 0.5), (.latissmusDorsi, 1)])
-		case .chestSupportedRow: LiftWeights([(.trapezius, 0.75), (.latissmusDorsi, 1), (.lowerBack, 0.5)])
-		case .bentOverRow: LiftWeights([(.biceps, 0.75), (.triceps, 0.5), (.latissmusDorsi, 1)])
-		case .seatedRow: LiftWeights([(.biceps, 0.75), (.latissmusDorsi, 1)])
-		case .pullUp: LiftWeights([(.biceps, 0.25), (.trapezius, 0.5), (.latissmusDorsi, 1)])
+		case .backExtensions: LiftWeights([(.glutes, 0.75), (.quadriceps, 1)])
+		case .row: LiftWeights([(.lowerBack, 1)])
+		case .chestSupportedRow: LiftWeights([(.biceps, 0.25), (.triceps, 0.5), (.latissmusDorsi, 1)])
+		case .bentOverRow: LiftWeights([(.trapezius, 0.75), (.latissmusDorsi, 1), (.lowerBack, 0.5)])
+		case .seatedRow: LiftWeights([(.biceps, 0.75), (.triceps, 0.5), (.latissmusDorsi, 1)])
+		case .pullUp: LiftWeights([(.biceps, 0.75), (.latissmusDorsi, 1)])
 
 		// MARK: Chest
-		case .benchPress: LiftWeights([(.triceps, 0.75), (.forearms, 0.25), (.abs, 0.25), (.chest, 1), (.deltoid, 0.5)])
-		case .vikingPress: LiftWeights([(.biceps, 0.5), (.triceps, 0.5), (.forearms, 0.25), (.chest, 0.25), (.deltoid, 1)])
-		case .pushups: LiftWeights([(.triceps, 0.5), (.chest, 1)])
-		case .floorPress: LiftWeights([(.triceps, 0.75), (.chest, 0.75)])
-		case .flyes: LiftWeights([(.chest, 0.75)])
-		case .dip: LiftWeights([(.triceps, 0.75), (.forearms, 0.5), (.chest, 1)])
-		case .chestPress: LiftWeights([(.triceps, 0.75), (.forearms, 0.5), (.chest, 1)])
+		case .benchPress: LiftWeights([(.biceps, 0.25), (.trapezius, 0.5), (.latissmusDorsi, 1)])
+		case .vikingPress: LiftWeights([(.triceps, 0.75), (.forearms, 0.25), (.abs, 0.25), (.chest, 1), (.deltoid, 0.5)])
+		case .pushups: LiftWeights([(.biceps, 0.5), (.triceps, 0.5), (.forearms, 0.25), (.chest, 0.25), (.deltoid, 1)])
+		case .floorPress: LiftWeights([(.biceps, 0.5), (.triceps, 0.5), (.deltoid, 1)])
+		case .flyes: LiftWeights([(.triceps, 0.5), (.chest, 1)])
+		case .dip: LiftWeights([(.triceps, 0.75), (.chest, 0.75)])
+		case .chestPress: LiftWeights([(.chest, 0.75)])
 
 		// MARK: Core
-		case .renegadeRow: LiftWeights([(.latissmusDorsi, 0.5), (.abs, 1)])
-		case .plank: LiftWeights([(.abs, 1)])
-		case .sidePlank: LiftWeights([(.abs, 0.5), (.obliques, 1)])
-		case .russianTwists: LiftWeights([(.abs, 0.75), (.obliques, 1)])
-		case .sideBends: LiftWeights([(.obliques, 1)])
-		case .plankPullThrough: LiftWeights([(.biceps, 0.25), (.abs, 1)])
-		case .legRaises: LiftWeights([(.abs, 1)])
+		case .renegadeRow: LiftWeights([(.triceps, 0.75), (.forearms, 0.5), (.chest, 1)])
+		case .plank: LiftWeights([(.triceps, 0.75), (.forearms, 0.5), (.chest, 1)])
+		case .sidePlank: LiftWeights([(.latissmusDorsi, 0.5), (.abs, 1)])
+		case .russianTwists: LiftWeights([(.abs, 1)])
+		case .sideBends: LiftWeights([(.abs, 0.5), (.obliques, 1)])
+		case .plankPullThrough: LiftWeights([(.abs, 0.75), (.obliques, 1)])
+		case .hangClean: LiftWeights([(.trapezius, 0.25), (.forearms, 0.5), (.glutes, 1), (.hamstrings, 0.25), (.quadriceps, 1), (.lowerBack, 0.5)])
+		case .legRaises: LiftWeights([(.obliques, 1)])
 
 		// MARK: Glutes
-		case .hipThrust: LiftWeights([(.glutes, 1)])
-		case .reverseHyperextension: LiftWeights([(.glutes, 1), (.hamstrings, 0.75), (.lowerBack, 0.5)])
-		case .kickbacks: LiftWeights([(.glutes, 1), (.lowerBack, 1)])
-		case .romanainDeadlifts: LiftWeights([(.glutes, 1), (.hamstrings, 1), (.lowerBack, 0.5)])
-		case .goodMornings: LiftWeights([(.glutes, 0.75), (.hamstrings, 1), (.lowerBack, 0.5)])
-		case .stepUps: LiftWeights([(.glutes, 1), (.quadriceps, 0.75), (.calves, 0.25)])
+		case .hipThrust: LiftWeights([(.biceps, 0.25), (.abs, 1)])
+		case .reverseHyperextension: LiftWeights([(.abs, 1)])
+		case .kickbacks: LiftWeights([(.glutes, 1)])
+		case .romanainDeadlifts: LiftWeights([(.glutes, 1), (.hamstrings, 0.75), (.lowerBack, 0.5)])
+		case .goodMornings: LiftWeights([(.glutes, 1), (.lowerBack, 1)])
+		case .stepUps: LiftWeights([(.glutes, 1), (.hamstrings, 1), (.lowerBack, 0.5)])
 
 		// MARK: Legs
-		case .backSquat: LiftWeights([(.glutes, 0.5), (.quadriceps, 1), (.lowerBack, 0.25)])
-		case .hackSquat: LiftWeights([(.glutes, 0.75), (.quadriceps, 1)])
+		case .backSquat: LiftWeights([(.glutes, 0.75), (.hamstrings, 1), (.lowerBack, 0.5)])
+		case .hackSquat: LiftWeights([(.glutes, 1), (.quadriceps, 0.75), (.calves, 0.25)])
 		case .frontSquat: LiftWeights([(.glutes, 0.75), (.hamstrings, 0.75), (.quadriceps, 1), (.calves, 0.75), (.abs, 0.5), (.lowerBack, 0.25)])
 		case .hipAdduction: LiftWeights([(.glutes, 0.5), (.hamstrings, 0.5), (.quadriceps, 0.5)])
 		case .lateralLunge: LiftWeights([(.glutes, 1), (.quadriceps, 0.75), (.lowerBack, 0.5)])
@@ -486,7 +493,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .uprightRow: LiftWeights([(.trapezius, 0.75), (.forearms, 0.25), (.deltoid, 1)])
 		case .frontRaise: LiftWeights([(.trapezius, 0.5), (.deltoid, 1)])
 
-        case let .other(_, _, id): userGeneratedTypes.first(where: {$0.id == id})?.liftWeights ?? LiftWeights()
+		case let .other(_, _, id): userGeneratedTypes.first(where: {$0.id == id})?.liftWeights ?? LiftWeights()
 		}
 	}
 

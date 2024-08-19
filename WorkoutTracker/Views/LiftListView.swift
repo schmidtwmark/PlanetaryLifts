@@ -295,6 +295,17 @@ struct LiftListItem: View {
                 if !rendering {
                     let showMuscleGroups = cardState == .muscleGroups
                     Label(showMuscleGroups ? "Show Muscle Groups" : "Show Lift Info", systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle").labelStyle(.iconOnly)
+                } else {
+                    HStack {
+                        Text("Planetary Lifts")
+                            .foregroundStyle(textColor)
+                            .font(.caption)
+                        Image(uiImage: UIImage(named: "AppIcon") ?? UIImage())
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 16, height: 16)
+                            .clipShape(RoundedRectangle(cornerRadius: 4.0))
+                    }
                 }
             }.onTapGesture {
                 withAnimation {

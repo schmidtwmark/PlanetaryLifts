@@ -283,7 +283,7 @@ fn lift_weights_function(category_map: &CategoryMap) -> String {
         output += "\n"
     }
 
-    output += "\t\tcase let .other(_, _, id): userGeneratedTypes.first(where: {$0.id == id})?.customWeights ?? LiftWeights()\n";
+    output += "\t\tcase let .other(_, _, id): userGeneratedTypes.first(where: {$0.id == id})?.liftWeights ?? LiftWeights()\n";
     output += COMPUTED_PARAMETER_FOOTER;
     output
 }
