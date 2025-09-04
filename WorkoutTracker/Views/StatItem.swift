@@ -222,7 +222,6 @@ struct StatItem: View {
 
 
     var body: some View {
-        NavigationStack {
             List {
                 switch viewModel.data {
                 case .loading:
@@ -252,34 +251,18 @@ struct StatItem: View {
                     
                     Section("Progress") {
                         WeightProgressView(viewModel: $viewModel, selectedReps: $selectedRepCount)
+                        StatsLegend(
+                            chunkSize: 1,
+                            categories: loadedData.maxes.keys.sorted(by: <).map({repToString($0)}),
+                            selectedCategory: $selectedRepCount,
+                            stringMapping: {$0},
+                            colorMapping: {viewModel.colorByRepCount($0, palette)},
+                            legendPosition: $legendPosition)
                     }
                 }
-            }
-            .toolbar {
-                if case .loaded(let loadedData) = viewModel.data {
-                    ToolbarItem(placement: .bottomBar) {
-                            StatsLegend(
-                                chunkSize: 1,
-                                categories: loadedData.maxes.keys.sorted(by: <).map({repToString($0)}),
-                                selectedCategory: $selectedRepCount,
-                                stringMapping: {$0},
-                                colorMapping: {viewModel.colorByRepCount($0, palette)},
-                                legendPosition: $legendPosition)
-                    }
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Close")
-                    }
-                }
-            }
+        }
             .navigationTitle(type.string)
             .tint(type.category.getColor(for: palette))
-        }
         .task {
             viewModel.load()
         }

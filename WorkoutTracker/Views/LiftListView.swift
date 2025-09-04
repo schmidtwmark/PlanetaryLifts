@@ -337,6 +337,24 @@ struct LiftListItem: View {
                     Label("Edit Lift", systemImage: "pencil")
                 }
             }
+            if !lift.sets.isEmpty {
+                Button {
+                    if let lastSet = lift.sets.last {
+                        lift.sets.append(lastSet.clone())
+                        model.load()
+                    }
+                } label: {
+                    Label("Add Set", systemImage: "plus.circle")
+                }
+            }
+            if lift.sets.count > 1 {
+                Button {
+                    lift.sets.removeLast()
+                    model.load()
+                } label: {
+                    Label("Remove Set", systemImage: "minus.circle")
+                }
+            }
             Button {
                 let newLift = Lift(liftType: lift.type,
                                    sets: lift.sets,
@@ -548,7 +566,17 @@ struct LiftListView: View {
                         Spacer()
                     }
                     .sheet(item: $showStatsForType) { type in
-                        StatItem(type: type, modelContext: modelContext)
+                        NavigationStack {
+                            StatItem(type: type, modelContext: modelContext).toolbar {
+                                ToolbarItem(placement: .topBarTrailing) {
+                                    Button {
+                                        showStatsForType = nil
+                                    } label: {
+                                        Text("Close")
+                                    }
+                                }
+                            }
+                        }
                     }
                     .sheet(item: $editingLift) { lift in
                         AddLiftView(lift: lift, onSave: { _ in

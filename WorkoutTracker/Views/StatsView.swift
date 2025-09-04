@@ -396,7 +396,6 @@ struct StatsView: View {
     }
     
     @State var model: ViewModel
-    @State var showStatsForType: LiftType? = nil
     @State var selectedCard: String? = nil
     
     @State
@@ -484,20 +483,19 @@ struct StatsView: View {
                                             if types.count > 0 {
                                                 Divider().opacity(0.0)
                                                 ForEach(types, id: \.string) { liftType in
-                                                    HStack {
-                                                        Text("\(liftType.string)")
-                                                        Spacer()
-                                                        if let stats = model.loadedStats, let lifts = stats.liftsByType[liftType] {
-                                                            Text(Double(lifts.count).displayString(singleUnit: "lift"))
-                                                                .foregroundStyle(liftType.category.getColor(for: palette))
+                                                    NavigationLink(destination: StatItem(type: liftType, modelContext: model.modelContext)) {
+                                                        HStack {
+                                                            Text("\(liftType.string)")
+                                                            Spacer()
+                                                            if let stats = model.loadedStats, let lifts = stats.liftsByType[liftType] {
+                                                                Text(Double(lifts.count).displayString(singleUnit: "lift"))
+                                                                    .foregroundStyle(liftType.category.getColor(for: palette))
+                                                            }
                                                         }
+                                                        .contentShape(Rectangle())
+                                                        .padding(.horizontal, 15.0)
+                                                        .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
                                                     }
-                                                    .contentShape(Rectangle())
-                                                    .padding(.horizontal, 15.0)
-                                                    .padding(.vertical, LIST_ROW_VERTICAL_PADDING)
-                                                    .onTapGesture(perform: {
-                                                        showStatsForType = liftType
-                                                    })
                                                     Divider().padding(.leading).opacity(types.last == liftType ? 0.0 : 1.0)
                                                 }
                                             }
@@ -522,10 +520,6 @@ struct StatsView: View {
             #endif
             .navigationTitle("Stats")
             .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always))
-            .sheet(item: $showStatsForType) { type in
-                StatItem(type: type, modelContext: model.modelContext)
-                
-            }
         }
         .task {
             model.load()

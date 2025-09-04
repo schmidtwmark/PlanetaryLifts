@@ -1,4 +1,3 @@
-#![feature(error_in_core)]
 use convert_case::Casing;
 use core::error::Error;
 use reqwest::Client;
