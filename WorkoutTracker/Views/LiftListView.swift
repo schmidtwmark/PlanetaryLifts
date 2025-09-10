@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftData
 import SectionedQuery
 
-struct AnimatingCellHeight: AnimatableModifier {
+struct AnimatingCellHeight: @preconcurrency AnimatableModifier {
     var height: CGFloat = 0
 
     var animatableData: CGFloat {
@@ -250,7 +250,7 @@ struct LiftListItem: View {
     
     @ViewBuilder
     func card(rendering: Bool) -> some View {
-        VStack {
+        VStack(spacing: 10.0) {
             HStack {
                 Text(lift.type.string)
                     .font(.title)
@@ -286,7 +286,6 @@ struct LiftListItem: View {
                     
                 }
             }
-            Spacer(minLength: 10.0)
             HStack(alignment: .bottom) {
                 Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
                     .font(.caption)
