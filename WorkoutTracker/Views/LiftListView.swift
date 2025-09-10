@@ -330,66 +330,75 @@ struct LiftListItem: View {
         card(rendering: false)
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0, style: .continuous))
         .contextMenu(menuItems: {
-            if onLiftsScreen {
-                Button {
-                    editingLift = lift
-                } label: {
-                    Label("Edit Lift", systemImage: "pencil")
-                }
-            }
-            if !lift.sets.isEmpty {
-                Button {
-                    if let lastSet = lift.sets.last {
-                        lift.sets.append(lastSet.clone())
-                        model.load()
+            Section {
+                if onLiftsScreen {
+                    Button {
+                        editingLift = lift
+                    } label: {
+                        Label("Edit Lift", systemImage: "pencil")
                     }
-                } label: {
-                    Label("Add Set", systemImage: "plus.circle")
+                }
+                if !lift.sets.isEmpty {
+                    Button {
+                        if let lastSet = lift.sets.last {
+                            lift.sets.append(lastSet.clone())
+                            model.load()
+                        }
+                    } label: {
+                        Label("Add Set", systemImage: "plus.circle")
+                    }
+                }
+                if lift.sets.count > 1 {
+                    Button {
+                        lift.sets.removeLast()
+                        model.load()
+                    } label: {
+                        Label("Remove Set", systemImage: "minus.circle")
+                    }
                 }
             }
-            if lift.sets.count > 1 {
+            
+            Section {
                 Button {
-                    lift.sets.removeLast()
-                    model.load()
-                } label: {
-                    Label("Remove Set", systemImage: "minus.circle")
-                }
-            }
-            Button {
-                let newLift = Lift(liftType: lift.type,
-                                   sets: lift.sets,
-                                   timestamp: Date.now,
-                                   modifiers:
-                                    lift.modifiers,
-                                   notes: lift.notes,
-                                   weighted: lift.weighted)
-                
-                Task {
-                    modelContext.insert(newLift)
-                    model.load()
+                    let newLift = Lift(liftType: lift.type,
+                                       sets: lift.sets,
+                                       timestamp: Date.now,
+                                       modifiers:
+                                        lift.modifiers,
+                                       notes: lift.notes,
+                                       weighted: lift.weighted)
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + SCROLL_DELAY) {
-                        withAnimation {
-                            scrollViewProxy.scrollTo(Date.now.timeless())
-
+                    Task {
+                        modelContext.insert(newLift)
+                        model.load()
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + SCROLL_DELAY) {
+                            withAnimation {
+                                scrollViewProxy.scrollTo(Date.now.timeless())
+                                
+                            }
                         }
                     }
-                }
-                
-            } label: {
-                Label("Repeat Now", systemImage: "arrow.circlepath")
-            }
-            Button {
-                showStatsForType = lift.type
-            } label: {
-                Label("Stats", systemImage: "chart.dots.scatter")
-            }
-            ShareLink("Share", item: render(), preview: SharePreview(lift.type.string, image: render()))
-            if let delete = onDelete {
-                Button(role: .destructive) {
-                    delete(lift)
+                    
                 } label: {
-                    Label("Delete", systemImage: "trash")
+                    Label("Repeat Now", systemImage: "arrow.circlepath")
+                }
+                Button {
+                    showStatsForType = lift.type
+                } label: {
+                    Label("Stats", systemImage: "chart.dots.scatter")
+                }
+            }
+            
+            Section {
+                ShareLink("Share", item: render(), preview: SharePreview(lift.type.string, image: render()))
+                if let delete = onDelete {
+                    Button(role: .destructive) {
+                        delete(lift)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                            .tint(.red)
+                    }
                 }
             }
         })
@@ -427,6 +436,9 @@ struct LiftListView: View {
 
     @AppStorage(PALETTE) var palette : Palette = .main
     @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
+    @Namespace private var transition
+
+    
     
     
     func getTintColor() -> Color {
@@ -498,14 +510,28 @@ struct LiftListView: View {
             HStack {
                 Spacer()
                 Text("Press ")
-                Button {
-                    addingLift = true
-                } label: {
-                    Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                if #available(iOS 26, *) {
+                    
+                    Button {
+                        addingLift = true
+                    } label: {
+                        Label("Add Lift", systemImage: "plus").labelStyle(.iconOnly)
+                    }
+                    .buttonStyle(.glass)
+                    .clipShape(Capsule())
+                    .padding(10)
+                    .matchedTransitionSource(
+                        id: "add-lift", in: transition)
+                } else {
+                    Button {
+                        addingLift = true
+                    } label: {
+                        Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .clipShape(Capsule())
+                    .padding(10)
                 }
-                .buttonStyle(.borderedProminent)
-                .clipShape(Capsule())
-                .padding(10)
                 Text(" to create your first lift!")
                 Spacer()
             }
@@ -584,7 +610,7 @@ struct LiftListView: View {
                         })
                     }
                     .sheet(isPresented: $addingLift, content: {
-                        AddLiftView(liftType: model.getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList, onSave: { newLift in
+                        let addLiftView = AddLiftView(liftType: model.getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList, onSave: { newLift in
                             Task {
                                 model.load()
                                 
@@ -596,6 +622,13 @@ struct LiftListView: View {
                                 }
                             }
                         })
+                        
+                        if #available(iOS 26, *) {
+                            addLiftView
+                                .navigationTransition(.zoom(sourceID: "add-lift", in: transition))
+                        } else {
+                            addLiftView
+                        }
                     })
                     .padding([.horizontal], 20)
                 }
@@ -611,20 +644,34 @@ struct LiftListView: View {
                 ToolbarItemGroup(placement: .topBarLeading, content: {
                     filterButton
                 })
-                ToolbarItemGroup(placement: .topBarTrailing, content: {
 
-                    if let _ = model.loadedData {
-                        Button {
-                            addingLift = true
-                        } label: {
-                            Label("Add Lift", systemImage: "plus").labelStyle(.titleAndIcon)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .clipShape(Capsule())
-                        .padding(10)
+                if let data = model.loadedData, data.lifts.count > 0 {
+                    if #available(iOS 26, *) {
+                        ToolbarItem(placement: .topBarTrailing, content: {
+                            Button {
+                                addingLift = true
+                            } label: {
+                                Label("Add Lift", systemImage: "plus")
+                            }
+                        })
+                            .matchedTransitionSource(
+                                id: "add-lift", in: transition)
+                    } else {
+                        ToolbarItem(placement: .topBarTrailing, content: {
+                            Button {
+                                addingLift = true
+                            } label: {
+                                Label("Add Lift", systemImage: "plus")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .labelStyle(.titleAndIcon)
+                            .clipShape(Capsule())
+                            .padding(10)
+                        })
+                        
                     }
+                }
 
-                })
             }
 
             .task {

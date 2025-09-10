@@ -293,75 +293,77 @@ struct AddLiftView: View {
                 })
             }
             ForEach($liftSets, id: \.id) { $liftSet in
-                if case .weight(let weightEditingId) = editState.setEditMode, liftSet.id == weightEditingId {
-                    weightEditModeSelector(weightEditingId: weightEditingId)
-                }
-                HStack {
-                    if editState.setEditMode == .none || editState.setEditMode != .weight(liftSet.id) {
-                        NumberPicker(number: $liftSet.reps,
-                                     toString: {"\($0)"},
-                                     onIncrement: { return $0 + 1},
-                                     onDecrement: { return max(1, $0 - 1)},
-                                     type: .reps,
-                                     id: liftSet.id)
+                VStack(spacing: 16) {
+                    if case .weight(let weightEditingId) = editState.setEditMode, liftSet.id == weightEditingId {
+                        weightEditModeSelector(weightEditingId: weightEditingId)
                     }
-                    if isWeighted {
-                        if editState.setEditMode == .none || editState.setEditMode != .reps(liftSet.id) {
-                            if editState.setEditMode != .weight(liftSet.id) {
-                                Divider()
-                            }
-                            switch liftSet.weight.data {
-                            case .rawWeight(let rawWeight):
-                                NumberPicker(number: Binding(get: {
-                                    return rawWeight
-                                }, set: { liftSet.weight.data = .rawWeight($0)}),
-                                             toString: { _ in "\(liftSet.weight.roundedWeight.clean)"},
-                                             onIncrement: {return roundedIncrement($0)},
-                                             onDecrement: {return  roundedDecrement($0)},
-                                             type: .weight,
-                                             id: liftSet.id)
-                                
-                            case .plates(let plates):
-                                HStack {
-                                    Group {
-                                        if editState.setEditMode == .weight(liftSet.id) {
-                                            PlatesEditorView(plates: Binding(get: {
-                                                return plates
-                                            }, set: {
-                                                liftSet.weight.data = .plates($0)
-                                            }), removePlate: { removeId in
-                                                if case .plates(var editablePlates) = liftSet.weight.data {
-                                                    editablePlates.plates.removeAll(where: {$0.id == removeId})
-                                                    liftSet.weight.data = .plates(editablePlates)
-                                                }
-                                                
-                                            }, addPlate: { plateWeight in
-                                                if case .plates(var editablePlates) = liftSet.weight.data {
-                                                    editablePlates.plates.append(WeightPlates.Plate(weight: plateWeight))
-                                                    editablePlates.plates.sort(by: >)
-                                                    liftSet.weight.data = .plates(editablePlates)
-                                                }
-
-                                            },
-                                            accentColor: liftType.category.getColor(for: palette),
-                                            units: liftSet.weight.units)
-                                        } else {
-                                            Spacer()
-                                            Text(try! AttributedString(markdown: "\(liftSet.weight.shortDisplayString)"))
-                                                .onTapGesture {
-                                                    withAnimation {
-                                                        editState.setEditMode = .weight(liftSet.id)
+                    HStack {
+                        if editState.setEditMode == .none || editState.setEditMode != .weight(liftSet.id) {
+                            NumberPicker(number: $liftSet.reps,
+                                         toString: {"\($0)"},
+                                         onIncrement: { return $0 + 1},
+                                         onDecrement: { return max(1, $0 - 1)},
+                                         type: .reps,
+                                         id: liftSet.id)
+                        }
+                        if isWeighted {
+                            if editState.setEditMode == .none || editState.setEditMode != .reps(liftSet.id) {
+                                if editState.setEditMode != .weight(liftSet.id) {
+                                    Divider()
+                                }
+                                switch liftSet.weight.data {
+                                case .rawWeight(let rawWeight):
+                                    NumberPicker(number: Binding(get: {
+                                        return rawWeight
+                                    }, set: { liftSet.weight.data = .rawWeight($0)}),
+                                                 toString: { _ in "\(liftSet.weight.roundedWeight.clean)"},
+                                                 onIncrement: {return roundedIncrement($0)},
+                                                 onDecrement: {return  roundedDecrement($0)},
+                                                 type: .weight,
+                                                 id: liftSet.id)
+                                    
+                                case .plates(let plates):
+                                    HStack {
+                                        Group {
+                                            if editState.setEditMode == .weight(liftSet.id) {
+                                                PlatesEditorView(plates: Binding(get: {
+                                                    return plates
+                                                }, set: {
+                                                    liftSet.weight.data = .plates($0)
+                                                }), removePlate: { removeId in
+                                                    if case .plates(var editablePlates) = liftSet.weight.data {
+                                                        editablePlates.plates.removeAll(where: {$0.id == removeId})
+                                                        liftSet.weight.data = .plates(editablePlates)
                                                     }
-                                                }
-                                            Spacer()
+                                                    
+                                                }, addPlate: { plateWeight in
+                                                    if case .plates(var editablePlates) = liftSet.weight.data {
+                                                        editablePlates.plates.append(WeightPlates.Plate(weight: plateWeight))
+                                                        editablePlates.plates.sort(by: >)
+                                                        liftSet.weight.data = .plates(editablePlates)
+                                                    }
+                                                    
+                                                },
+                                                                 accentColor: liftType.category.getColor(for: palette),
+                                                                 units: liftSet.weight.units)
+                                            } else {
+                                                Spacer()
+                                                Text(try! AttributedString(markdown: "\(liftSet.weight.shortDisplayString)"))
+                                                    .onTapGesture {
+                                                        withAnimation {
+                                                            editState.setEditMode = .weight(liftSet.id)
+                                                        }
+                                                    }
+                                                Spacer()
+                                            }
                                         }
                                     }
+                                    .alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
+                                        return 0
+                                    }
+                                    
+                                    
                                 }
-                                .alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
-                                    return 0
-                                }
-
-                                
                             }
                         }
                     }
