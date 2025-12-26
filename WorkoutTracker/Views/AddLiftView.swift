@@ -168,8 +168,10 @@ struct AddLiftView: View {
     @AppStorage(PALETTE) var palette: Palette = .main
     @AppStorage(UNREAD_LIFTS) var unreadLifts: Int = 0
     
+    @Query var userGeneratedTypes: [UserGeneratedLiftType]
+
     var mostRecentLift: Lift? {
-        lifts.first(where: {$0.type == liftType})
+        lifts.first(where: {$0.type == liftType && !$0.sets.isEmpty})
     }
     
     var mostRecentSet: LiftSet? {
@@ -201,7 +203,7 @@ struct AddLiftView: View {
     @ViewBuilder
     var modifiersSection: some View {
         Section("Modifiers") {
-            ForEach(liftType.modifiers, id: \.rawValue) { modifier in
+            ForEach(liftType.getModifiers(userGeneratedTypes), id: \.rawValue) { modifier in
                 Label(modifier.rawValue, systemImage: modifiers.contains(modifier) ? "checkmark.circle" : "circle").onTapGesture(perform: {
                     withAnimation {
                         if modifiers.contains(modifier) {
@@ -432,7 +434,7 @@ struct AddLiftView: View {
                        AddLiftMuscleGroupView(lift: liftFromEdits())
                     }
                     setSection
-                    if liftType.modifiers.count > 0 {
+                    if liftType.getModifiers(userGeneratedTypes).count > 0 {
                         modifiersSection
                     }
                     Section("Workout Notes") {

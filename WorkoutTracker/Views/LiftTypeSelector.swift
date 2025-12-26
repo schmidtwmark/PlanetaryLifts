@@ -179,6 +179,7 @@ struct CreateNewTypeView : View {
     @State var name: String
     @State var category: LiftCategory
     @State var selector: NewLiftTypeMuscleGroupSelector
+    @State var modifiers: Set<LiftModifier>
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) var dismiss
     @AppStorage(PALETTE) var palette: Palette = .main
@@ -201,9 +202,10 @@ struct CreateNewTypeView : View {
     
     init() {
         mode = .add
-        name = "Custom Type"
+        name = ""
         category = .other
         selector = NewLiftTypeMuscleGroupSelector(weights: LiftWeights())
+        modifiers = []
     }
     
     init(type: UserGeneratedLiftType) {
@@ -211,13 +213,14 @@ struct CreateNewTypeView : View {
         name = type.name
         category = type.category
         selector = NewLiftTypeMuscleGroupSelector(weights: type.liftWeights)
+        modifiers = type.allowedModifiers
     }
     
     
     var body: some View {
         
         List {
-            Section {
+            Section("Basic Info"){
                 TextField("Type Name", text: $name)
                 Picker("Category", selection: $category) {
                     ForEach(LiftCategory.allCases, id: \.rawValue) { category in
@@ -226,7 +229,21 @@ struct CreateNewTypeView : View {
                 }
             }.disabled(mode.isEditing)
             
-            Section {
+            Section("Allowed Modifications"){
+                ForEach(LiftModifier.allCases, id: \.rawValue) { modifier in
+                    Label(modifier.rawValue, systemImage: modifiers.contains(modifier) ? "checkmark.circle" : "circle").onTapGesture(perform: {
+                        withAnimation {
+                            if modifiers.contains(modifier) {
+                                modifiers.remove(modifier)
+                            } else {
+                                modifiers.insert(modifier)
+                            }
+                        }
+                    })
+                }
+            }
+            
+            Section("Muscle Groups"){
                 HStack {
                     MuscleGroupFrontView(selector: $selector)
                     MuscleGroupBackView(selector: $selector)
@@ -247,38 +264,30 @@ struct CreateNewTypeView : View {
                         }
                     }
                 }
-            } footer: {
-                HStack {
-                    Spacer()
-                    Button {
-                        switch mode {
-                        case .add:
-                            let type = UserGeneratedLiftType(name: name, category: category, weights: selector.weights.sortedGroups)
-                            modelContext.insert(type)
-                        case .edit(let type):
-                            
-                            // Canot update name or category
-//                            break
-                            type.weights = selector.weights.sortedGroups.map({UserGeneratedLiftType.LiftWeight(muscleGroup: $0.0, weight: $0.1)})
-                        }
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Image(systemName: "square.and.arrow.down")
-                            Text("Save")
-                        }
-                    }
-                    .font(.headline)
-                    .padding(15)
-                    .background(Color(UIColor.secondarySystemGroupedBackground))
-                    .clipShape(Capsule())
-                    Spacer()
-                }
-                .disabled(name == "")
-                .padding()
-                .navigationTitle("New Lift Type")
             }
-        }.tint(category.getColor(for: palette))
+        }
+        .toolbar {
+            
+            Button {
+                switch mode {
+                case .add:
+                    let type = UserGeneratedLiftType(name: name, category: category, weights: selector.weights.sortedGroups, allowedModifiers: modifiers)
+                    modelContext.insert(type)
+                case .edit(let type):
+                    
+                    // Canot update name or category
+//                            break
+                    type.weights = selector.weights.sortedGroups.map({UserGeneratedLiftType.LiftWeight(muscleGroup: $0.0, weight: $0.1)})
+                    type.allowedModifiers = modifiers
+                }
+                dismiss()
+            } label: {
+                Label("Save", systemImage: "square.and.arrow.down")
+            }
+            .disabled(name == "")
+        }
+        .navigationTitle("New Lift Type")
+        .tint(category.getColor(for: palette))
     }
 }
 

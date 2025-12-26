@@ -362,7 +362,7 @@ enum LiftType: Hashable, Codable, Sendable {
 		}
 	}
 
-	var modifiers: [LiftModifier] {
+	func getModifiers(_ userGeneratedTypes: [UserGeneratedLiftType]) -> [LiftModifier] {
 		return switch self {
 		// MARK: Arms
 		case .bicepCurl: [.incline, .oneArm, .reverse, .barbell, .dumbbell, .cable]
@@ -418,6 +418,8 @@ enum LiftType: Hashable, Codable, Sendable {
 		case .facePull: [.cable]
 		case .uprightRow: [.narrowGrip, .wideGrip, .oneArm, .barbell, .dumbbell, .cable]
 		case .frontRaise: [.oneArm, .dumbbell, .cable]
+            
+        case let .other(_, _, id): userGeneratedTypes.first(where: {$0.id == id})?.allowedModifiers.sorted(by: {$0.rawValue < $1.rawValue}) ?? []
 
 		default: []
 		}
