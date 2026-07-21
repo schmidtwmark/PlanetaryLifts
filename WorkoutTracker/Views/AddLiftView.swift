@@ -128,7 +128,7 @@ struct AddLiftView: View {
     }
     
     // Add
-    init(liftType: LiftType, updateUnreadLifts: Bool = false, onSave: @escaping (Lift) -> ()) {
+    init(liftType: LiftType, updateUnreadLifts: Bool = false, insertOnSave: Bool = true, onSave: @escaping (Lift) -> ()) {
         self.mode = .add
         self.liftType = liftType
         self.timestamp = Date()
@@ -137,6 +137,7 @@ struct AddLiftView: View {
         self.modifiers = Set()
         self.notes = ""
         self.updateUnreadLifts = updateUnreadLifts
+        self.insertOnSave = insertOnSave
         self.onSave = onSave
     }
     
@@ -156,6 +157,8 @@ struct AddLiftView: View {
     @State var modifiers: Set<LiftModifier>
     @State var notes: String
     var updateUnreadLifts = false
+    // False when building a lift for a group template rather than the log
+    var insertOnSave = true
     var onSave: (Lift) -> ()
     
     @Environment(\.modelContext) private var modelContext
@@ -183,6 +186,14 @@ struct AddLiftView: View {
         case .add: "Add Lift"
         case .edit: "Edit Lift"
         }
+    }
+
+    // The persisted lift being edited, excluded from the recent-lift chips
+    var editedLift: Lift? {
+        if case .edit(let lift) = mode {
+            return lift
+        }
+        return nil
     }
     
     var enableSave: Bool {
@@ -255,6 +266,36 @@ struct AddLiftView: View {
             DatePicker(selection: $timestamp, label: {
                 Text("Time")
             })
+            if isWeighted {
+                let maxChips = computeMaxChips(liftType: liftType, lifts: lifts, units: weightUnits)
+                let recentChips = computeRecentChips(liftType: liftType, lifts: lifts, units: weightUnits, excluding: editedLift)
+                if !maxChips.isEmpty {
+                    SetChipsRow(label: maxChips.count == 1 ? "Max" : "Maxes", chips: maxChips, accent: liftType.category.getColor(for: palette), onSelect: { chip in
+                        guard let first = chip.sets.first else {
+                            return
+                        }
+                        withAnimation {
+                            if liftSets.isEmpty {
+                                liftSets.append(first.clone())
+                            } else {
+                                liftSets = liftSets.map({
+                                    var copy = $0
+                                    copy.reps = first.reps
+                                    copy.weight = first.weight.clone()
+                                    return copy
+                                })
+                            }
+                        }
+                    })
+                }
+                if !recentChips.isEmpty {
+                    SetChipsRow(label: "Recent", chips: recentChips, accent: liftType.category.getColor(for: palette), onSelect: { chip in
+                        withAnimation {
+                            liftSets = chip.sets.map({ $0.clone() })
+                        }
+                    })
+                }
+            }
         }
     }
     
@@ -425,116 +466,144 @@ struct AddLiftView: View {
     
     
     
+    func save() {
+        withAnimation {
+            if editState.setEditMode == .none {
+                switch mode {
+                case .add:
+                    let lift = liftFromEdits()
+                    if insertOnSave {
+                        modelContext.insert(lift)
+                    }
+                    onSave(lift)
+                    break
+
+                case .edit(let lift):
+                    print("Updating lift \(lift)")
+                    lift.type = liftType
+                    lift.sets = liftSets
+                    lift.timestamp = timestamp
+                    lift.modifiers = modifiers
+                    lift.notes = notes
+                    lift.weighted = isWeighted
+                    print("Updated lift \(lift)")
+                    onSave(lift)
+                    break
+                }
+                if updateUnreadLifts {
+                    unreadLifts += 1
+                }
+                dismiss()
+            } else {
+                editState.setEditMode = .none
+            }
+        }
+    }
+
+    func updateAllSets(editingSet: LiftSet) {
+        withAnimation {
+            liftSets = liftSets.map({
+                var copy = $0
+                switch editState.setEditMode {
+                case .none:
+                    break
+                case .reps(_):
+                    copy.reps = editingSet.reps
+                case .weight(_):
+                    copy.weight = editingSet.weight.clone()
+
+                }
+                return copy
+
+            })
+            editState.setEditMode = .none
+        }
+    }
+
+    // Floats over the bottom of the list instead of sitting on a margin
+    @ViewBuilder
+    var saveBar: some View {
+        HStack {
+            let saveButton = Button {
+                save()
+            } label: {
+                HStack {
+                    Text(editState.setEditMode == .none ? "Save" : "Save Set")
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity)
+            }
+            .disabled(!enableSave)
+
+            if #available(iOS 26, *) {
+                saveButton.buttonStyle(.glassProminent)
+            } else {
+                saveButton.buttonStyle(.borderedProminent)
+            }
+
+            if let editingId = editState.setEditMode.editingId,
+                let editingSet = liftSets.first(where: {$0.id == editingId}), showUpdateAllSetsButton(editingSet: editingSet) {
+                let updateAllSetsButton = Button {
+                    updateAllSets(editingSet: editingSet)
+                } label: {
+                    HStack {
+                        Text("Update All Sets")
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity)
+                }
+
+                if #available(iOS 26, *) {
+                    updateAllSetsButton.buttonStyle(.glass)
+                } else {
+                    updateAllSetsButton
+                }
+            }
+        }
+        .padding(.horizontal, 20.0)
+        .padding(.bottom, UIApplication.shared.bottomSafeAreaInset <= 20.0 ? 20.0 : 8.0)
+        // Sit lower into the safe area so the bar's bottom margin matches its
+        // side margins, lining it up with the screen corners
+        .offset(y: max(0.0, UIApplication.shared.bottomSafeAreaInset - 12.0))
+    }
+
     var body: some View {
         NavigationView {
-            VStack {
-                List {
-                    mainSection
-                    if showMuscleGroups {
-                       AddLiftMuscleGroupView(lift: liftFromEdits())
-                    }
-                    setSection
-                    if liftType.getModifiers(userGeneratedTypes).count > 0 {
-                        modifiersSection
-                    }
-                    Section("Workout Notes") {
-                        TextEditor(text: $notes).frame(minHeight: 100)
+            List {
+                mainSection
+                if showMuscleGroups {
+                   AddLiftMuscleGroupView(lift: liftFromEdits())
+                }
+                setSection
+                if liftType.getModifiers(userGeneratedTypes).count > 0 {
+                    modifiersSection
+                }
+                Section("Workout Notes") {
+                    TextEditor(text: $notes).frame(minHeight: 100)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("Cancel")
                     }
                 }
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Text("Cancel")
-                        }
-                    }
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            withAnimation {
-                                showMuscleGroups.toggle()
-                            }
-                        } label: {
-                            Label("Show/Hide Muscle Groups", systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle").labelStyle(.iconOnly)
-                        }
-                    }
-                }
-                .environmentObject(editState)
-                .navigationTitle(navigationTitle)
-                Spacer()
-                HStack {
+                ToolbarItem(placement: .topBarLeading) {
                     Button {
                         withAnimation {
-                            if editState.setEditMode == .none {
-                                switch mode {
-                                case .add:
-                                    let lift = liftFromEdits()
-                                    modelContext.insert(lift)
-                                    onSave(lift)
-                                    break
-                                    
-                                case .edit(let lift):
-                                    print("Updating lift \(lift)")
-                                    lift.type = liftType
-                                    lift.sets = liftSets
-                                    lift.timestamp = timestamp
-                                    lift.modifiers = modifiers
-                                    lift.notes = notes
-                                    lift.weighted = isWeighted
-                                    print("Updated lift \(lift)")
-                                    onSave(lift)
-                                    break
-                                }
-                                if updateUnreadLifts {
-                                    unreadLifts += 1
-                                }
-                                dismiss()
-                            } else {
-                                editState.setEditMode = .none
-                            }
+                            showMuscleGroups.toggle()
                         }
                     } label: {
-                        HStack {
-                            Text(editState.setEditMode == .none ? "Save" : "Save Set")
-                        }
-                        .padding(10)
-                        .frame(maxWidth: .infinity)
-                        .fontWeight(.heavy)
-                    }
-                    .disabled(!enableSave)
-                    .buttonStyle(.borderedProminent)
-                    if let editingId = editState.setEditMode.editingId,
-                        let editingSet = liftSets.first(where: {$0.id == editingId}), showUpdateAllSetsButton(editingSet: editingSet) {
-                        Button {
-                            withAnimation {
-                                liftSets = liftSets.map({
-                                    var copy = $0
-                                    switch editState.setEditMode {
-                                    case .none:
-                                        break
-                                    case .reps(_):
-                                        copy.reps = editingSet.reps
-                                    case .weight(_):
-                                        copy.weight = editingSet.weight.clone()
-                                        
-                                    }
-                                    return copy
-
-                                })
-                                editState.setEditMode = .none
-                            }
-
-                        } label: {
-                            HStack {
-                                Text("Update All Sets")
-                            }
-                            .padding(10)
-                            .frame(maxWidth: .infinity)
-                        }
+                        Label("Show/Hide Muscle Groups", systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle").labelStyle(.iconOnly)
                     }
                 }
-                .padding(.horizontal, 20.0)
-                .padding(.bottom, UIApplication.shared.bottomSafeAreaInset <= 20.0 ? 20.0 : 0.0)
+            }
+            .environmentObject(editState)
+            .navigationTitle(navigationTitle)
+            .safeAreaInset(edge: .bottom) {
+                saveBar
             }
             .tint(liftType.category.getColor(for: palette))
             .background(Color(uiColor: UIColor.systemGroupedBackground))

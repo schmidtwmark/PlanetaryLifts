@@ -14,6 +14,7 @@ struct WorkoutTrackerApp: App {
         if let cloudContainer = try? ModelContainer(
             for: Lift.self,
             UserGeneratedLiftType.self,
+            LiftGroup.self,
             configurations: .init(
                 "iCloud.planetary-lifts.container"
             )
@@ -22,7 +23,8 @@ struct WorkoutTrackerApp: App {
         }
         // If failed to get cloud container, just make a local container
         return try! ModelContainer(for: Lift.self,
-                                   UserGeneratedLiftType.self)
+                                   UserGeneratedLiftType.self,
+                                   LiftGroup.self)
     }()
 
     var body: some Scene {

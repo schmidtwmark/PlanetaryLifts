@@ -22,6 +22,7 @@ extension Bundle {
 
 struct SettingsView: View {
     @Query var userGeneratedTypes : [UserGeneratedLiftType]
+    @Query(sort: \LiftGroup.createdAt) var liftGroups: [LiftGroup]
     @Environment(\.modelContext) private var modelContext
     
     var categorizedUserGeneratedTypes : [LiftCategory: [UserGeneratedLiftType]] {
@@ -38,6 +39,7 @@ struct SettingsView: View {
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
     @State var importSheetPresented = false
     @State var exportSheetPresented = false
+    @State var createdGroup: LiftGroup? = nil
     
     var body: some View {
         NavigationStack {
@@ -56,6 +58,14 @@ struct SettingsView: View {
                         for lift in lifts {
                             let newSets = lift.sets.map({$0.convert(to: new)})
                             lift.sets = newSets
+                        }
+                        let groups = try! modelContext.fetch(FetchDescriptor<LiftGroup>())
+                        for group in groups {
+                            group.lifts = group.lifts.map({
+                                var copy = $0
+                                copy.sets = copy.sets.map({$0.convert(to: new)})
+                                return copy
+                            })
                         }
                     })
                 }
@@ -97,6 +107,39 @@ struct SettingsView: View {
                     }
                 }
                 
+                Section {
+                    ForEach(liftGroups) { group in
+                        NavigationLink(destination: {
+                            LiftGroupEditView(group: group)
+                        }, label: {
+                            HStack {
+                                Text(group.name.isEmpty ? "Untitled Group" : group.name)
+                                Spacer()
+                                Text(group.lifts.count == 1 ? "1 lift" : "\(group.lifts.count) lifts").fontWeight(.light)
+                            }
+                        })
+                    }.onDelete(perform: { indexSet in
+                        for index in indexSet {
+                            modelContext.delete(liftGroups[index])
+                        }
+                    })
+                } header: {
+                    HStack {
+                        Text("Lift Groups")
+                        Spacer()
+                        Button {
+                            let group = LiftGroup(name: "New Group", lifts: [])
+                            modelContext.insert(group)
+                            createdGroup = group
+                        } label: {
+                            Label("Add Lift Group", systemImage: "plus")
+                                .labelStyle(.titleAndIcon)
+                                .font(.subheadline)
+                                .textCase(nil)
+                        }
+                    }
+                }
+
                 Section("Backup and Restore") {
                     Button {
                         importSheetPresented = true
@@ -134,6 +177,11 @@ struct SettingsView: View {
 
             }
             .navigationTitle("Settings")
+            .navigationDestination(isPresented: Binding(get: { createdGroup != nil }, set: { if !$0 { createdGroup = nil } })) {
+                if let group = createdGroup {
+                    LiftGroupEditView(group: group)
+                }
+            }
             .sheet(isPresented: $importSheetPresented, content: {
                 ImportSheet()
             })
@@ -147,7 +195,7 @@ struct SettingsView: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, LiftGroup.self, configurations: config)
     
     
     for type in [LiftType.benchPress, LiftType.backSquat, LiftType.frontSquat] {
@@ -166,6 +214,10 @@ struct SettingsView: View {
     
     container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type", category: .arms))
     container.mainContext.insert(UserGeneratedLiftType(name: "User Generated Type 2", category: .legs))
+
+    let groupLift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline])
+    groupLift.addSet(10, weight: 100.0, units: .pounds)
+    container.mainContext.insert(LiftGroup(name: "Push Day", lifts: [groupLift]))
     return
         SettingsView().modelContainer(container)
 }

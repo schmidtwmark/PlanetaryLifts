@@ -12,7 +12,7 @@ struct StepperButtonStyle: ButtonStyle {
     
     func makeBody(configuration: Self.Configuration) -> some View {
         configuration.label
-            .frame(width: frame.width, height: frame.width)
+            .frame(width: frame.width, height: frame.height)
             .foregroundColor(Color(uiColor: UIColor.label))
             .background(Color(uiColor: UIColor.secondarySystemFill))
             .cornerRadius(10.0)

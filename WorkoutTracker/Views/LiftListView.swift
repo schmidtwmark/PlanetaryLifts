@@ -18,7 +18,7 @@ struct AnimatingCellHeight: @preconcurrency AnimatableModifier {
     }
 
     func body(content: Content) -> some View {
-        content.frame(height: height)
+        content.frame(height: height, alignment: .top)
     }
 }
 
@@ -27,10 +27,20 @@ struct LiftSetView: View {
     var liftSet: LiftSet
     var lift: Lift
     var rendering: Bool
-    
+    // When false, tapping reps/weight does nothing (read-only display)
+    var interactive: Bool = true
+    // Refreshes the enclosing list after the full editor saves an in-place edit
+    var onFullEditSave: (() -> ())? = nil
+
     @State var expanded: Bool = false
+    @State var editingReps: Bool = false
+    @State var editingWeight: Bool = false
     @AppStorage(PALETTE) var palette: Palette = .main
-    
+
+    var accentColor: Color {
+        lift.type.category.getColor(for: palette)
+    }
+
     var platesToShow: WeightPlates? {
         if case let .plates(plates) = liftSet.weight.data, expanded || rendering {
             plates
@@ -38,75 +48,130 @@ struct LiftSetView: View {
             nil
         }
     }
-    
+
     var body: some View {
-        
+
         VStack {
             HStack(alignment: .center)
              {
                 Text(liftSet.reps == 1 ? "**1** rep" : "**\(liftSet.reps)** reps")
+                     .onTapGesture {
+                         if interactive && !rendering {
+                             editingReps = true
+                         }
+                     }
+                     .sheet(isPresented: $editingReps) {
+                         SetEditSheet(lift: lift, setId: liftSet.id, mode: .reps, accentColor: accentColor, onFullEditSave: { onFullEditSave?() })
+                     }
                 Spacer()
                  if lift.weighted {
                      Text(try! AttributedString(markdown: "\(liftSet.weight.displayString)"))
+                         .onTapGesture {
+                             if interactive && !rendering {
+                                 editingWeight = true
+                             }
+                         }
+                         .sheet(isPresented: $editingWeight) {
+                             SetEditSheet(lift: lift, setId: liftSet.id, mode: .weight, accentColor: accentColor, onFullEditSave: { onFullEditSave?() })
+                         }
                      if case .plates(_) = liftSet.weight.data, !rendering {
-                         Image(systemName: "chevron.down").rotationEffect(Angle(degrees: expanded ? 0.0 : -90.0))
+                         Image(systemName: expanded ? "dumbbell.fill" : "dumbbell")
                              .imageScale(.small)
+                             .frame(width: 26.0)
+                             .contentShape(Rectangle())
+                             .onTapGesture {
+                                 withAnimation {
+                                     expanded.toggle()
+                                 }
+                             }
                      }
                  }
             }
+            .frame(height: 40.0)
             if let plates = platesToShow {
                 PlatesView(plates: plates, removePlate: {_ in }, rendering: rendering, accentColor: .white, units: liftSet.weight.units)
             }
         }
         .modifier(AnimatingCellHeight(height: platesToShow != nil ? 150 : 40))
-        .onTapGesture {
-            if case .plates(_) = liftSet.weight.data {
-                withAnimation {
-                    expanded.toggle()
-                }
-            }
-        }
     }
 }
 
 struct SetsView: View {
-    
+
     @Environment(\.colorScheme) var colorScheme
     var lift: Lift
     @AppStorage(PALETTE) var palette: Palette = .main
     var rendering: Bool
-    
-    
+    // When false, sets are display-only (no expand, edit, or swipe)
+    var interactive: Bool = true
+    // Owned by the enclosing card so it can place the collapse control
+    @Binding var expanded: Bool
+    var onFullEditSave: (() -> ())? = nil
+
+    var blockColor: Color {
+        lift.type.category.getColor(for: palette).background(scheme: colorScheme)
+    }
+
+    @ViewBuilder
+    func chip(_ liftSet: LiftSet) -> some View {
+        LiftSetView(liftSet: liftSet, lift: lift, rendering: rendering, interactive: interactive, onFullEditSave: onFullEditSave)
+            .padding()
+            .background(blockColor)
+            .clipShape(RoundedRectangle(cornerRadius: 10.0))
+    }
+
     var body: some View {
         if lift.sets.isEmpty {
             EmptyView()
-        } else {
-            HStack
-             {
-                if lift.allSetsSame() {
-                    Text("\(lift.sets.count)x").font(.title)
-                    LiftSetView(liftSet: lift.sets.first!, lift: lift, rendering: rendering)
-                        .font(.title3)
-                        .padding()
-                        .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
-                        .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                } else {
-                    VStack {
-                        ForEach(lift.sets) { liftSet in
-                            LiftSetView(liftSet: liftSet, lift: lift, rendering: rendering)
-                            if liftSet.id != lift.sets.last?.id {
-                                Divider()
+        } else if lift.allSetsSame() && !expanded {
+            HStack {
+                Text("\(lift.sets.count)x").font(.title)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if interactive && !rendering {
+                            withAnimation {
+                                expanded = true
                             }
                         }
                     }
+                chip(lift.sets.first!)
                     .font(.title3)
-                    .padding()
-                    .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
-                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
+            }
+        } else {
+            VStack(spacing: 8.0) {
+                ForEach(lift.sets) { liftSet in
+                    SwipeToDeleteRow(enabled: interactive && !rendering && lift.sets.count > 1, onDelete: {
+                        lift.sets.removeAll(where: {$0.id == liftSet.id})
+                    }) {
+                        chip(liftSet)
+                    }
                 }
             }
+            .font(.title3)
         }
-        
+    }
+}
+
+// A chevron shown by a card to collapse its expanded, all-identical sets.
+struct CollapseSetsButton: View {
+    var lift: Lift
+    @Binding var expanded: Bool
+
+    var visible: Bool {
+        lift.allSetsSame() && expanded
+    }
+
+    var body: some View {
+        if visible {
+            Button {
+                withAnimation {
+                    expanded = false
+                }
+            } label: {
+                Image(systemName: "chevron.up")
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 
@@ -190,7 +255,141 @@ struct LiftMuscleGroupView : View {
         selector = LiftListItemMuscleGroupSelector(lift: lift)
         self.lift = lift
     }
-    
+
+}
+
+enum LiftCardState {
+    case liftInfo
+    case muscleGroups
+}
+
+// The shared lift card used by the main list and the lift group editor.
+struct LiftCardView: View {
+    var lift: Lift
+    var rendering: Bool = false
+    var interactive: Bool = true
+    // Templates (group lifts) have no meaningful time, so it's hidden there
+    var showTimestamp: Bool = true
+    @Binding var cardState: LiftCardState
+    @Binding var setsExpanded: Bool
+    var onAddSet: (() -> ())? = nil
+    // Refreshes the enclosing list after an in-place full edit saves
+    var onFullEditSave: (() -> ())? = nil
+
+    @AppStorage(PALETTE) var palette: Palette = .main
+    @Environment(\.colorScheme) private var colorScheme
+
+    var textColor: Color {
+        switch colorScheme {
+        case .light:
+            Color.black
+        case .dark:
+            Color.white
+        @unknown default:
+            Color.white
+        }
+    }
+
+    var accentBackground: Color {
+        lift.type.category.getColor(for: palette).background(scheme: colorScheme)
+    }
+
+    @ViewBuilder
+    var footer: some View {
+        ZStack {
+            HStack(alignment: .bottom) {
+                if showTimestamp {
+                    Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(textColor)
+                }
+                Spacer()
+                if !rendering {
+                    Button {
+                        withAnimation {
+                            cardState = cardState == .muscleGroups ? .liftInfo : .muscleGroups
+                        }
+                    } label: {
+                        let showMuscleGroups = cardState == .muscleGroups
+                        Label(showMuscleGroups ? "Show Muscle Groups" : "Show Lift Info",
+                              systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle")
+                            .labelStyle(.iconOnly)
+                            .foregroundStyle(textColor)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    HStack {
+                        Text("Planetary Lifts")
+                            .foregroundStyle(textColor)
+                            .font(.caption)
+                        Image(uiImage: UIImage(named: "AppIcon") ?? UIImage())
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 16, height: 16)
+                            .clipShape(RoundedRectangle(cornerRadius: 4.0))
+                    }
+                }
+            }
+            if !rendering && cardState == .liftInfo {
+                CollapseSetsButton(lift: lift, expanded: $setsExpanded)
+                    .foregroundStyle(textColor)
+            }
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 10.0) {
+            HStack {
+                Text(lift.type.string)
+                    .font(.title)
+                    .foregroundStyle(textColor)
+                Spacer()
+                if !rendering, interactive, cardState == .liftInfo, let onAddSet {
+                    Button {
+                        onAddSet()
+                    } label: {
+                        Label("Add Set", systemImage: "plus.circle")
+                            .labelStyle(.iconOnly)
+                            .font(.title2)
+                            .foregroundStyle(textColor)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            if cardState == .muscleGroups, !rendering {
+                LiftMuscleGroupView(lift: lift)
+            } else {
+                if lift.modifiers.count > 0 {
+                    HStack {
+                        ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
+                            Text(modifier.rawValue)
+                                .padding(10)
+                                .background(accentBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                                .foregroundStyle(textColor)
+                        }
+                        Spacer()
+                    }
+                }
+                SetsView(lift: lift, rendering: rendering, interactive: interactive, expanded: $setsExpanded, onFullEditSave: onFullEditSave)
+                    .foregroundStyle(textColor)
+                if !lift.notes.isEmpty {
+                    HStack {
+                        Text(lift.notes)
+                            .foregroundStyle(textColor)
+                            .padding(10)
+                        Spacer()
+                    }
+                    .background(accentBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
+                }
+            }
+            footer
+        }
+        .padding()
+        .background(lift.type.category.getColor(for: palette))
+        .clipShape(RoundedRectangle(cornerRadius: 24.0, style: rendering ? .circular : .continuous))
+    }
 }
 
 
@@ -200,18 +399,16 @@ struct LiftListItem: View {
     @Binding var showStatsForType: LiftType?
     @Binding var model: ListViewModel
     @AppStorage(PALETTE) var palette: Palette = .main
-    
-    enum CardState {
-        case liftInfo
-        case muscleGroups
-    }
-    @State var cardState : CardState = .liftInfo
-    
+    @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
+
+    @State var cardState : LiftCardState = .liftInfo
+    @State var setsExpanded : Bool = false
+
     var onLiftsScreen: Bool
-    
+
     var scrollViewProxy: ScrollViewProxy
     var onDelete: ((Lift) -> ())?
-    
+
     // init on lift screen
     init(lift: Lift, editingLift: Binding<Lift?>, showStatsForType: Binding<LiftType?>, model: Binding<ListViewModel>, scrollViewProxy: ScrollViewProxy, onDelete: @escaping (Lift) -> ()) {
         onLiftsScreen = true
@@ -225,108 +422,38 @@ struct LiftListItem: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
-    
-    var textColor: Color {
-        switch colorScheme {
-        case .light:
-            Color.black
-        case .dark:
-            Color.white
-        @unknown default:
-            Color.white
-        }
-    }
-    
-    @MainActor 
+
+    @MainActor
     func render() -> Image {
         let RENDER_WIDTH = 400.0
-        let renderer = ImageRenderer(content: card(rendering: true))
+        let renderer = ImageRenderer(content:
+            LiftCardView(lift: lift,
+                         rendering: true,
+                         cardState: .constant(.liftInfo),
+                         setsExpanded: .constant(false))
+        )
         renderer.scale = 3.0
         renderer.proposedSize = .init(width: RENDER_WIDTH, height: nil)
         return Image(uiImage: renderer.uiImage!)
     }
-    
-    
-    
-    @ViewBuilder
-    func card(rendering: Bool) -> some View {
-        VStack(spacing: 10.0) {
-            HStack {
-                Text(lift.type.string)
-                    .font(.title)
-                    .foregroundStyle(textColor)
-                Spacer()
-            }
-            if case .muscleGroups = cardState, !rendering {
-                LiftMuscleGroupView(lift: lift)
-            } else {
-                if lift.modifiers.count > 0 {
-                    HStack {
-                        ForEach(lift.modifiers.sorted(by: {$0.rawValue < $1.rawValue}), id: \.rawValue) { modifier in
-                            Text(modifier.rawValue)
-                                .padding(10)
-                                .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
-                                .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                                .foregroundStyle(textColor)
-                        }
-                        Spacer()
-                    }
-                }
-                SetsView(lift: lift, rendering: rendering)
-                    .foregroundStyle(textColor)
-                if !lift.notes.isEmpty {
-                    HStack {
-                        Text(lift.notes)
-                            .foregroundStyle(textColor)
-                            .padding(10)
-                        Spacer()
-                    }
-                    .background(lift.type.category.getColor(for: palette).background(scheme: colorScheme))
-                    .clipShape(RoundedRectangle(cornerRadius: 10.0))
-                    
-                }
-            }
-            HStack(alignment: .bottom) {
-                Text("\(lift.timestamp.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(textColor)
-                Spacer()
-                if !rendering {
-                    let showMuscleGroups = cardState == .muscleGroups
-                    Label(showMuscleGroups ? "Show Muscle Groups" : "Show Lift Info", systemImage: showMuscleGroups ? "figure.child.circle.fill" : "figure.child.circle").labelStyle(.iconOnly)
-                } else {
-                    HStack {
-                        Text("Planetary Lifts")
-                            .foregroundStyle(textColor)
-                            .font(.caption)
-                        Image(uiImage: UIImage(named: "AppIcon") ?? UIImage())
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 16, height: 16)
-                            .clipShape(RoundedRectangle(cornerRadius: 4.0))
-                    }
-                }
-            }.onTapGesture {
-                withAnimation {
-                    cardState = switch cardState {
-                    case .liftInfo:
-                            .muscleGroups
-                    case .muscleGroups:
-                            .liftInfo
-                    }
-                }
-                
-            }
 
+    func addSet() {
+        withAnimation {
+            if let last = lift.sets.last {
+                lift.sets.append(last.clone())
+            } else {
+                lift.sets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
+            }
+            model.load()
         }
-        .padding()
-        .background(lift.type.category.getColor(for: palette))
-        .clipShape(RoundedRectangle(cornerRadius: 24.0, style: rendering ? .circular : .continuous))
-        .buttonStyle(.plain)
     }
-    
+
     var body: some View {
-        card(rendering: false)
+        LiftCardView(lift: lift,
+                     cardState: $cardState,
+                     setsExpanded: $setsExpanded,
+                     onAddSet: addSet,
+                     onFullEditSave: { model.load() })
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 24.0, style: .continuous))
         .contextMenu(menuItems: {
             Section {
@@ -430,6 +557,15 @@ struct LiftListView: View {
     @State var editingLift: Lift? = nil
     @State var addingLift: Bool = false
     @State var showStatsForType: LiftType? = nil
+    @Query(sort: \LiftGroup.createdAt) var liftGroups: [LiftGroup]
+    @State var pendingSaveGroup: PendingSaveGroup? = nil
+    @State var pendingGroup: LiftGroup? = nil
+
+    struct PendingSaveGroup: Identifiable {
+        let id = UUID()
+        var date: TimelessDate
+        var lifts: [Lift]
+    }
     @State var selectedTab: TabType = .liftList
     @State var previousTab: TabType = .liftList
 
@@ -459,6 +595,21 @@ struct LiftListView: View {
             return passesSearch && passesFilter
         })
 
+    }
+
+    // Inserts the group's lifts as new lifts for today, spacing timestamps
+    // one second apart so they keep the group's order in the list
+    func addGroup(_ group: LiftGroup, proxy: ScrollViewProxy) {
+        let now = Date.now
+        for (index, savedLift) in group.lifts.enumerated() {
+            modelContext.insert(savedLift.makeLift(timestamp: now.addingTimeInterval(TimeInterval(-index))))
+        }
+        model.load()
+        DispatchQueue.main.asyncAfter(deadline: .now() + SCROLL_DELAY) {
+            withAnimation {
+                proxy.scrollTo(now.timeless(), anchor: .top)
+            }
+        }
     }
 
     var filterImageName: String {
@@ -551,6 +702,14 @@ struct LiftListView: View {
                         .fontWeight(.bold)
                         .foregroundStyle(filteredLifts.first!.type.category.getColor(for: palette))
                     Spacer()
+                    Button {
+                        pendingSaveGroup = PendingSaveGroup(date: date, lifts: filteredLifts)
+                    } label: {
+                        Label("Save Group", systemImage: "bookmark")
+                            .labelStyle(.iconOnly)
+                            .font(.subheadline)
+                    }
+                    .tint(filteredLifts.first!.type.category.getColor(for: palette))
                 }.padding([.horizontal], 20)
 
                 ForEach(filteredLifts) {lift in
@@ -629,6 +788,12 @@ struct LiftListView: View {
                             addLiftView
                         }
                     })
+                    .onChange(of: pendingGroup?.persistentModelID) { _, newValue in
+                        if newValue != nil, let group = pendingGroup {
+                            addGroup(group, proxy: proxy)
+                            pendingGroup = nil
+                        }
+                    }
                     .padding([.horizontal], 20)
                 }
             }
@@ -639,10 +804,31 @@ struct LiftListView: View {
             }
             .background(Color(uiColor: UIColor.systemGroupedBackground))
             .navigationTitle("Lifts")
+            .sheet(item: $pendingSaveGroup) { pending in
+                SaveLiftGroupSheet(defaultName: pending.date.format(), sourceLifts: pending.lifts, onSave: { name, lifts in
+                    modelContext.insert(LiftGroup(name: name, lifts: lifts))
+                })
+            }
             .toolbar() {
                 ToolbarItemGroup(placement: .topBarLeading, content: {
                     filterButton
                 })
+
+                if !liftGroups.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing, content: {
+                        Menu {
+                            ForEach(liftGroups) { group in
+                                Button {
+                                    pendingGroup = group
+                                } label: {
+                                    Text(group.name)
+                                }
+                            }
+                        } label: {
+                            Label("Add Group", systemImage: "plus.square.on.square")
+                        }
+                    })
+                }
 
                 if let data = model.loadedData, data.lifts.count > 0 {
                     if #available(iOS 26, *) {
@@ -718,7 +904,7 @@ struct LiftListView: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, LiftGroup.self, configurations: config)
     
     let lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip], notes: "Notes notes notes notes notes notes notes")
     container.mainContext.insert(lift)
@@ -745,7 +931,7 @@ struct LiftListView: View {
 }
 #Preview("Empty") {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, LiftGroup.self, configurations: config)
     
     return ContentView()
         .modelContainer(container)
@@ -753,7 +939,7 @@ struct LiftListView: View {
 
 #Preview("Custom Type") {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, LiftGroup.self, configurations: config)
     
     let userType = UserGeneratedLiftType(name: "Custom Type", category: .other, weights: [(.abs, 1.0)])
     
@@ -777,7 +963,7 @@ struct LiftListView: View {
 
 #Preview("Screenshots") {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, configurations: config)
+    let container = try! ModelContainer(for: Lift.self, UserGeneratedLiftType.self, LiftGroup.self, configurations: config)
     
     var lift = Lift(liftType: .benchPress, timestamp: Date.now, modifiers: [.incline, .narrowGrip], notes: "Notes notes notes notes notes notes notes")
 //    container.mainContext.insert(lift)

@@ -30,6 +30,9 @@
 		ED8707392C383B6D0010DFA8 /* UserGeneratedLiftType.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED8707382C383B6D0010DFA8 /* UserGeneratedLiftType.swift */; };
 		ED87073B2C383C970010DFA8 /* ViewConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED87073A2C383C970010DFA8 /* ViewConstants.swift */; };
 		ED87073D2C383D8A0010DFA8 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED87073C2C383D890010DFA8 /* Extensions.swift */; };
+		ED87073F2E2A00010010DFA8 /* LiftGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED87073E2E2A00000010DFA8 /* LiftGroup.swift */; };
+		ED8707412E2A00030010DFA8 /* LiftGroupViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED8707402E2A00020010DFA8 /* LiftGroupViews.swift */; };
+		ED8707432E2A00050010DFA8 /* SetEditPopovers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED8707422E2A00040010DFA8 /* SetEditPopovers.swift */; };
 		ED8C374B2C2FAABE00834F1D /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = ED8C374A2C2FAABE00834F1D /* Collections */; };
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
@@ -69,6 +72,9 @@
 		ED8707382C383B6D0010DFA8 /* UserGeneratedLiftType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserGeneratedLiftType.swift; sourceTree = "<group>"; };
 		ED87073A2C383C970010DFA8 /* ViewConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewConstants.swift; sourceTree = "<group>"; };
 		ED87073C2C383D890010DFA8 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		ED87073E2E2A00000010DFA8 /* LiftGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftGroup.swift; sourceTree = "<group>"; };
+		ED8707402E2A00020010DFA8 /* LiftGroupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftGroupViews.swift; sourceTree = "<group>"; };
+		ED8707422E2A00040010DFA8 /* SetEditPopovers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetEditPopovers.swift; sourceTree = "<group>"; };
 		EDA682F02B90E9F4002015CA /* WorkoutTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTrackerApp.swift; sourceTree = "<group>"; };
 		EDA682F52B90E9F4002015CA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -121,6 +127,8 @@
 				ED320A392B950AF5003A6628 /* LiftTypeSelector.swift */,
 				ED87072A2C3358810010DFA8 /* ImportExportView.swift */,
 				ED50D4D02B97CCDB00BD3F77 /* StickerGeneratorView.swift */,
+				ED8707402E2A00020010DFA8 /* LiftGroupViews.swift */,
+				ED8707422E2A00040010DFA8 /* SetEditPopovers.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -147,6 +155,7 @@
 				ED8707342C383AB90010DFA8 /* LiftWeights.swift */,
 				EDA6830B2B91469D002015CA /* Lift.swift */,
 				ED8707382C383B6D0010DFA8 /* UserGeneratedLiftType.swift */,
+				ED87073E2E2A00000010DFA8 /* LiftGroup.swift */,
 				ED6E7EDF2C28C0460092134D /* MuscleGroups.swift */,
 				ED69CBE82C387FFF00DBBDCF /* WeightUnits.swift */,
 				ED2B81A72C4C5A7F00455872 /* ListViewModel.swift */,
@@ -307,6 +316,9 @@
 				EDA6830A2B913492002015CA /* SettingsView.swift in Sources */,
 				ED2B81A82C4C5A7F00455872 /* ListViewModel.swift in Sources */,
 				ED8707392C383B6D0010DFA8 /* UserGeneratedLiftType.swift in Sources */,
+				ED87073F2E2A00010010DFA8 /* LiftGroup.swift in Sources */,
+				ED8707412E2A00030010DFA8 /* LiftGroupViews.swift in Sources */,
+				ED8707432E2A00050010DFA8 /* SetEditPopovers.swift in Sources */,
 				ED749DC12BF5769200A3AA3E /* StatBlock.swift in Sources */,
 				ED6E7EE42C2AEC260092134D /* MuscleShapes.swift in Sources */,
 				ED6E7EE22C28C4210092134D /* MuscleGroupView.swift in Sources */,
@@ -453,7 +465,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WorkoutTracker/WorkoutTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracker/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -471,7 +483,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2025.12.0;
+				MARKETING_VERSION = 2026.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.PlanetaryLifts;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -487,7 +499,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WorkoutTracker/WorkoutTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracker/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -505,7 +517,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2025.12.0;
+				MARKETING_VERSION = 2026.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.PlanetaryLifts;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
