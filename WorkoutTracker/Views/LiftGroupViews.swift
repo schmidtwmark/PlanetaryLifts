@@ -18,16 +18,13 @@ struct GroupLiftCard: View {
 
     @AppStorage(PALETTE) var palette: Palette = .main
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
+    @Query private var allLifts: [Lift]
     @State private var cardState: LiftCardState = .liftInfo
     @State private var setsExpanded: Bool = false
 
     func addSet() {
         withAnimation {
-            if let last = lift.sets.last {
-                lift.sets.append(last.clone())
-            } else {
-                lift.sets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
-            }
+            lift.addNextSet(history: allLifts, units: weightUnits)
         }
     }
 
@@ -52,6 +49,7 @@ struct GroupLiftsList: View {
 
     @Environment(\.modelContext) private var modelContext
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
+    @Query private var allLifts: [Lift]
     @State private var editingLift: Lift? = nil
     @State private var addingLift: Bool = false
     @State private var showStatsForType: LiftType? = nil
@@ -78,11 +76,7 @@ struct GroupLiftsList: View {
 
     func addSet(to lift: Lift) {
         withAnimation {
-            if let last = lift.sets.last {
-                lift.sets.append(last.clone())
-            } else {
-                lift.sets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
-            }
+            lift.addNextSet(history: allLifts, units: weightUnits)
         }
     }
 

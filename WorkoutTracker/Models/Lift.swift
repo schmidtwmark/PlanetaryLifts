@@ -45,6 +45,26 @@ final class Lift {
             sets.append(liftSet.clone())
         }
     }
+
+    // Matches the Add Set behavior on the edit lift screen: clone the last
+    // set, else pull from the most recent lift of the same type, else default
+    func addNextSet(history: [Lift], units: WeightUnits) {
+        if let last = sets.last {
+            sets.append(last.clone())
+            return
+        }
+        let mostRecent = history
+            .filter({ $0.type == type && !$0.sets.isEmpty })
+            .max(by: { $0.timestamp < $1.timestamp })
+        if let mostRecent = mostRecent, let recentSet = mostRecent.sets.first {
+            if weighted && !mostRecent.weighted {
+                weighted = false
+            }
+            sets.append(recentSet.clone())
+            return
+        }
+        sets.append(LiftSet(reps: 10, weight: 50, units: units))
+    }
     
     func allSetsSame() -> Bool {
         if let first = sets.first {

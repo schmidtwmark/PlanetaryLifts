@@ -439,11 +439,7 @@ struct LiftListItem: View {
 
     func addSet() {
         withAnimation {
-            if let last = lift.sets.last {
-                lift.sets.append(last.clone())
-            } else {
-                lift.sets.append(LiftSet(reps: 10, weight: 50, units: weightUnits))
-            }
+            lift.addNextSet(history: model.loadedData?.lifts ?? [], units: weightUnits)
             model.load()
         }
     }
@@ -464,15 +460,10 @@ struct LiftListItem: View {
                         Label("Edit Lift", systemImage: "pencil")
                     }
                 }
-                if !lift.sets.isEmpty {
-                    Button {
-                        if let lastSet = lift.sets.last {
-                            lift.sets.append(lastSet.clone())
-                            model.load()
-                        }
-                    } label: {
-                        Label("Add Set", systemImage: "plus.circle")
-                    }
+                Button {
+                    addSet()
+                } label: {
+                    Label("Add Set", systemImage: "plus.circle")
                 }
                 if lift.sets.count > 1 {
                     Button {
