@@ -478,7 +478,7 @@ struct LiftListItem: View {
             Section {
                 Button {
                     let newLift = Lift(liftType: lift.type,
-                                       sets: lift.sets,
+                                       sets: lift.sets.map({$0.clone()}),
                                        timestamp: Date.now,
                                        modifiers:
                                         lift.modifiers,
@@ -488,11 +488,11 @@ struct LiftListItem: View {
                     Task {
                         modelContext.insert(newLift)
                         model.load()
-                        
+
                         DispatchQueue.main.asyncAfter(deadline: .now() + SCROLL_DELAY) {
                             withAnimation {
-                                scrollViewProxy.scrollTo(Date.now.timeless())
-                                
+                                scrollViewProxy.scrollTo(Date.now.timeless(), anchor: .top)
+
                             }
                         }
                     }
@@ -715,7 +715,15 @@ struct LiftListView: View {
                     })
                 }
                 Spacer(minLength: 40.0)
-            }                    
+            }
+            .frame(maxWidth: 500.0)
+            .padding([.horizontal], 20.0)
+            // Full-width scroll targets: iOS 27's scrollTo writes the
+            // target's x-position into the horizontal scroll offset of a
+            // vertical scroll view. With the section spanning the whole
+            // content width its x is always 0, so the copied offset is a
+            // no-op instead of shifting the list left.
+            .frame(maxWidth: .infinity)
             .id(date)
         }
     }
@@ -726,20 +734,15 @@ struct LiftListView: View {
         NavigationStack {
             ScrollView {
                 ScrollViewReader { proxy in
-                    HStack {
-                        Spacer()
-                        LazyVStack {
-                            EmptyView().id(TOP_OF_LIST)
-                            if let data = model.loadedData {
-                                ForEach(data.liftsByDate, id: \.0) { section in
-                                    liftSection(section: section, proxy: proxy)
-                                }
+                    LazyVStack {
+                        EmptyView().id(TOP_OF_LIST)
+                        if let data = model.loadedData {
+                            ForEach(data.liftsByDate, id: \.0) { section in
+                                liftSection(section: section, proxy: proxy)
                             }
                         }
-                        .frame(maxWidth: 500.0)
-                        .scrollTargetLayout()
-                        Spacer()
                     }
+                    .scrollTargetLayout()
                     .sheet(item: $showStatsForType) { type in
                         NavigationStack {
                             StatItem(type: type, modelContext: modelContext).toolbar {
@@ -762,10 +765,10 @@ struct LiftListView: View {
                         let addLiftView = AddLiftView(liftType: model.getMostRecentLiftType() ?? .benchPress, updateUnreadLifts: selectedTab != .liftList, onSave: { newLift in
                             Task {
                                 model.load()
-                                
+
                                 DispatchQueue.main.asyncAfter(deadline: .now() + SCROLL_DELAY) {
                                     withAnimation {
-                                        proxy.scrollTo(Date.now.timeless())
+                                        proxy.scrollTo(Date.now.timeless(), anchor: .top)
 
                                     }
                                 }
@@ -785,7 +788,6 @@ struct LiftListView: View {
                             pendingGroup = nil
                         }
                     }
-                    .padding([.horizontal], 20)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -862,7 +864,7 @@ struct LiftListView: View {
 
         }
     }
-    
+
 
     var body: some View {
         TabView(selection: $selectedTab) {

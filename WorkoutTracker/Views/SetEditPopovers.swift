@@ -272,14 +272,18 @@ struct SheetUpdateButtons: View {
 }
 
 // Reveals a trailing delete button when the content is dragged left, with the
-// rubber-band overscroll and full-swipe-to-delete of a normal list row.
+// rubber-band overscroll and full-swipe-to-delete of a normal list row. The
+// in-flight drag lives in @GestureState, which SwiftUI resets even when the
+// gesture is cancelled (e.g. a tap that opens a sheet mid-drag), so the row
+// can never get stuck partially shifted.
 struct SwipeToDeleteRow<Content: View>: View {
     var enabled: Bool
     var onDelete: () -> ()
     @ViewBuilder var content: Content
 
-    @State private var offset: CGFloat = 0
-    @State private var startOffset: CGFloat = 0
+    // The only persistent positions: 0 (closed) or -deleteWidth (revealed)
+    @State private var settledOffset: CGFloat = 0
+    @GestureState private var dragTranslation: CGFloat = 0
     @State private var rowWidth: CGFloat = 0
     private let deleteWidth: CGFloat = 72.0
 
@@ -290,6 +294,19 @@ struct SwipeToDeleteRow<Content: View>: View {
         return (1 - (1 / (distance * c / dim + 1))) * dim
     }
 
+    private func clamped(_ raw: CGFloat) -> CGFloat {
+        if raw < -deleteWidth {
+            return -deleteWidth - rubberBand(-deleteWidth - raw, dimension: rowWidth)
+        } else if raw > 0 {
+            return rubberBand(raw, dimension: rowWidth)
+        }
+        return raw
+    }
+
+    private var offset: CGFloat {
+        clamped(settledOffset + dragTranslation)
+    }
+
     var body: some View {
         if !enabled {
             content
@@ -297,6 +314,7 @@ struct SwipeToDeleteRow<Content: View>: View {
             ZStack(alignment: .trailing) {
                 Button(role: .destructive) {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        settledOffset = 0
                         onDelete()
                     }
                 } label: {
@@ -312,6 +330,19 @@ struct SwipeToDeleteRow<Content: View>: View {
                 .opacity(offset < 0 ? 1 : 0)
 
                 content
+                    .overlay {
+                        // Tapping a row with the delete revealed closes it,
+                        // like a standard list row
+                        if settledOffset < 0 {
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        settledOffset = 0
+                                    }
+                                }
+                        }
+                    }
                     .offset(x: offset)
                     .background(
                         GeometryReader { proxy in
@@ -322,31 +353,26 @@ struct SwipeToDeleteRow<Content: View>: View {
                     )
                     .gesture(
                         DragGesture(minimumDistance: 16)
-                            .onChanged { value in
+                            .updating($dragTranslation) { value, state, _ in
                                 guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                                let raw = startOffset + value.translation.width
-                                if raw < -deleteWidth {
-                                    offset = -deleteWidth - rubberBand(-deleteWidth - raw, dimension: rowWidth)
-                                } else if raw > 0 {
-                                    offset = rubberBand(raw, dimension: rowWidth)
-                                } else {
-                                    offset = raw
-                                }
+                                state = value.translation.width
                             }
-                            .onEnded { _ in
-                                let fullSwipe = rowWidth > 0 && -offset > rowWidth * 0.5
-                                if fullSwipe {
+                            .onEnded { value in
+                                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                                let end = clamped(settledOffset + value.translation.width)
+                                if rowWidth > 0 && -end > rowWidth * 0.5 {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        settledOffset = 0
                                         onDelete()
                                     }
                                     return
                                 }
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    offset = offset < -deleteWidth / 2 ? -deleteWidth : 0
-                                    startOffset = offset
+                                    settledOffset = end < -deleteWidth / 2 ? -deleteWidth : 0
                                 }
                             }
                     )
+                    .animation(.spring(response: 0.35, dampingFraction: 0.8), value: dragTranslation == 0)
             }
         }
     }
