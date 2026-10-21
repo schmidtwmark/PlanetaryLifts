@@ -29,9 +29,9 @@
       }
     },
     {
-      "identity" : "swiftdata-sectionedquery?source=post_page-----b1e23c733f26--------------------------------",
+      "identity" : "swiftdata-sectionedquery",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/beechtom/swiftdata-sectionedquery?source=post_page-----b1e23c733f26--------------------------------",
+      "location" : "https://github.com/beechtom/swiftdata-sectionedquery",
       "state" : {
         "revision" : "af2451407fe4f3cf06ff52318cd81a1d26df52bd",
         "version" : "1.2.0"
