@@ -127,6 +127,13 @@ final class Lift {
             lift.timestamp > oneWeekAgo
         }
     }
+
+    static func recent(days: Int) -> Predicate<Lift> {
+        let cutoff = Date().addingTimeInterval(-1 * 60 * 60 * 24 * Double(days))
+        return #Predicate<Lift> { lift in
+            lift.timestamp > cutoff
+        }
+    }
     
     // If this is a user generated type, we need to get the muscle groups from there
     func getLiftWeights(_ userGeneratedTypes: [UserGeneratedLiftType]) -> LiftWeights {

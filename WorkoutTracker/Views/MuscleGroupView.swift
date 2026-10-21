@@ -92,32 +92,12 @@ class MuscleGroupState : MuscleGroupSelector {
     // - Normalize
     struct MuscleGroupStatsData {
         var normalizedWeight: LiftWeights
-        var suggestedLifts : [LiftSuggestion]
         var lastWeekLifts: [Lift]
         var recentLiftTypes: OrderedSet<LiftType>
     }
     
-    struct LiftSuggestion : Comparable, Identifiable {
-        static func < (lhs: MuscleGroupState.LiftSuggestion, rhs: MuscleGroupState.LiftSuggestion) -> Bool {
-            if lhs.score == rhs.score {
-                return lhs.type < rhs.type
-            } else {
-                return lhs.score < rhs.score
-            }
-        }
-        
-        var id: String {
-            type.id
-        }
-        
-        var score: Double
-        var type: LiftType
-    }
-    
-    
+    @MainActor
     func load() {
-        
-        
         do {
             let typesDescriptor = FetchDescriptor<UserGeneratedLiftType>()
             let userGeneratedTypes = try modelContext.fetch(typesDescriptor)
@@ -126,47 +106,30 @@ class MuscleGroupState : MuscleGroupSelector {
             let liftsDescriptor = FetchDescriptor<Lift>(predicate: Lift.lastWeek(), sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
             let lifts = try modelContext.fetch(liftsDescriptor)
             
-            let scores = lifts.reduce(into: LiftWeights(), { scores, lift in
-                let weights = lift.getLiftWeights(userGeneratedTypes)
-                for (group, weight) in weights.map {
-                    let totalReps = Double(lift.sets.reduce(0, {sum, liftSet in sum + liftSet.reps}))
-                    let score = weight * totalReps * lift.recencyFactor
-                    scores.add(group, score: score)
-                }
-            })
-            let normalized = scores.normalizeByMax()
-
-            let allTypes = LiftType.allCases + userGeneratedTypes.map({userType in .other(name: userType.name, category: userType.category, id: userType.id)})
-            
-            var suggestionHeap = allTypes.reduce(into: Heap<LiftSuggestion>(), { heap, type in
-                let score = LiftWeights.suggestionScore(userWeights: normalized, type: type, userGeneratedLiftTypes: userGeneratedTypes)
-                
-                if heap.count < 10 {
-                    heap.insert(LiftSuggestion(score: score, type: type))
-                } else if let min = heap.min, min.score < score {
-                    let _ = heap.popMin()
-                    heap.insert(LiftSuggestion(score: score, type: type))
-                }
-            })
-            
-            var suggestions: [LiftSuggestion] = []
-            while !suggestionHeap.isEmpty {
-                if let max = suggestionHeap.popMax() {
-                  suggestions.append(max)
-                }
-            }
+            let normalized = MuscleGroupState.saturation(lifts: lifts, userGeneratedTypes: userGeneratedTypes)
             
             let recentLiftTypes = lifts.map({$0.type}).reduce(into: OrderedSet<LiftType>(), { result, liftType in
                 result.append(liftType)
             })
 
-            stats = .loaded(MuscleGroupStatsData(normalizedWeight: normalized, suggestedLifts: suggestions, lastWeekLifts: lifts, recentLiftTypes: recentLiftTypes))
-            
+            stats = .loaded(MuscleGroupStatsData(normalizedWeight: normalized, lastWeekLifts: lifts, recentLiftTypes: recentLiftTypes))
         } catch {
             print("Fetch failed ")
         }
     }
-    
+
+    static func saturation(lifts: [Lift], userGeneratedTypes: [UserGeneratedLiftType]) -> LiftWeights {
+        let scores = lifts.reduce(into: LiftWeights(), { scores, lift in
+            let weights = lift.getLiftWeights(userGeneratedTypes)
+            for (group, weight) in weights.map {
+                let totalReps = Double(lift.sets.reduce(0, {sum, liftSet in sum + liftSet.reps}))
+                let score = weight * totalReps * lift.recencyFactor
+                scores.add(group, score: score)
+            }
+        })
+        return scores.normalizeByMax()
+    }
+
 }
 
 struct MuscleGroupFrontView<Selector: MuscleGroupSelector>: View {
@@ -239,6 +202,7 @@ struct MuscleGroupView: View {
     @State var showInfoSheet = false
     @Query var userGeneratedTypes: [UserGeneratedLiftType]
     @Environment(\.modelContext) var modelContext
+    @Environment(SuggestionStore.self) var suggestionStore: SuggestionStore?
     
     @State var tintColor: Color = .init(hex: .init("06F3FF", radix: 16)!)
     @State var showImpactForLift: Lift? = nil
@@ -269,18 +233,28 @@ struct MuscleGroupView: View {
             Text("SUGGESTED LIFTS")
                 .font(.subheadline)
                 .foregroundStyle(.gray)
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .trailing) {
+                    SuggestionsRefreshButton()
+                        .font(.subheadline)
+                        .padding(.trailing, 8.0)
+                }
             ScrollView(.vertical) {
-                if case .loaded(let stats) = muscleGroupState.stats {
-                    ForEach(stats.suggestedLifts) { suggestion in
+                switch suggestionStore?.status {
+                case .ready(let result):
+                    ForEach(result.suggestions) { suggestion in
                         Button {
-                            print("Tapped suggestion \(suggestion.type)")
                             showAddLift = suggestion.type
-                            
                         } label: {
                             HStack {
-                                Text(suggestion.type.string)
+                                VStack(alignment: .leading, spacing: 2.0) {
+                                    Text(suggestion.type.string)
+                                    Text(suggestion.reason)
+                                        .font(.caption)
+                                        .opacity(0.85)
+                                        .multilineTextAlignment(.leading)
+                                }
                                 Spacer()
-                                Text(suggestion.score.clean).font(.body)
                             }
                             .font(.title3)
                             .padding()
@@ -288,9 +262,21 @@ struct MuscleGroupView: View {
                         }
                         .tint(suggestion.type.category.getColor(for: palette))
                         .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.roundedRectangle(radius: 10.0))
                     }
-                } else {
-                    ProgressView()
+                    Label(result.summary, systemImage: result.model == .privateCloudCompute ? "cloud" : "sparkles")
+                        .font(.caption)
+                        .foregroundStyle(.gray)
+                        .multilineTextAlignment(.leading)
+                        .padding(.top, 4.0)
+                case .loading:
+                    SuggestionsLoadingView()
+                        .padding(.top, 40.0)
+                case .some(let status):
+                    SuggestionsMessageView(status: status, retry: { suggestionStore?.refresh(modelContext: modelContext) })
+                        .padding(.top, 40.0)
+                case nil:
+                    EmptyView()
                 }
             }
             .safeAreaPadding(.vertical)
@@ -436,9 +422,11 @@ struct MuscleGroupView: View {
                             .id("muscles")
                             .frame(width: cardWidth, height: cardWidth * 1.3)
                             
-                            suggestedLifts()
-                                .id("suggestions")
-                                .frame(width: cardWidth, height: cardWidth * 1.3)
+                            if LiftSuggestionEngine.isSupported {
+                                suggestedLifts()
+                                    .id("suggestions")
+                                    .frame(width: cardWidth, height: cardWidth * 1.3)
+                            }
                         }
                         .scrollTargetLayout()
                     }

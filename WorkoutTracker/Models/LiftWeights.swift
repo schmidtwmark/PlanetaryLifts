@@ -65,17 +65,5 @@ struct LiftWeights : Codable, Equatable, Hashable {
     func dotProduct(_ other: LiftWeights) -> Double {
         return MuscleGroup.allCases.reduce(0.0, { sum, group in sum + self.getWeight(group) * other.getWeight(group)})
     }
-    
-    static func suggestionScore(userWeights: LiftWeights, type: LiftType, userGeneratedLiftTypes: [UserGeneratedLiftType]) -> Double {
-        let weightsForType = type.getLiftWeights(userGeneratedLiftTypes).normalizeByMagnitude()
-        let weights = MuscleGroup.allCases.map({ group in
-            let userWeight = userWeights.getWeight(group)
-            let typeWeight = weightsForType.getWeight(group)
-            let delta = typeWeight - userWeight
-            return (group, delta)
-        })
-        return weights.reduce(0, { sum, item in
-            sum + max(0, item.1)
-        })
-    }
+
 }

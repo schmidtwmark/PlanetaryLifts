@@ -19,6 +19,7 @@ struct LiftTypeSelector: View {
     @State var recentsToShow = SECTION_COUNT_INITIAL_VALUE
 
     @Environment(\.dismiss) var dismiss
+    @Environment(SuggestionStore.self) var suggestionStore: SuggestionStore?
 
     @Query var userGeneratedTypes : [UserGeneratedLiftType]
     var modelContext: ModelContext
@@ -47,9 +48,16 @@ struct LiftTypeSelector: View {
     }
     
     @ViewBuilder
-    func liftTypeRow(liftType: LiftType, deleteAllowed: Bool) -> some View {
+    func liftTypeRow(liftType: LiftType, deleteAllowed: Bool, caption: String? = nil) -> some View {
         HStack {
-            Text(liftType.string)
+            VStack(alignment: .leading, spacing: 2.0) {
+                Text(liftType.string)
+                if let caption = caption {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Spacer()
             if liftType == selectedLiftType {
                 Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
@@ -107,18 +115,34 @@ struct LiftTypeSelector: View {
                     })
                         
                 }
-                if stats.suggestedLifts.count > 0 {
+            }
+            if searchText == "", let status = suggestionStore?.status {
+                switch status {
+                case .ready(let result):
                     Section(content: {
-                        ForEach(stats.suggestedLifts.prefix(suggestionsToShow)) { suggestion in
-                            liftTypeRow(liftType: suggestion.type, deleteAllowed: false)
+                        ForEach(result.suggestions.prefix(suggestionsToShow)) { suggestion in
+                            liftTypeRow(liftType: suggestion.type, deleteAllowed: false, caption: suggestion.reason)
                         }
                     }, header: {
                         HStack {
                             Text("Suggestions")
                             Spacer()
-                            ShowMoreButton(displayCount: $suggestionsToShow, itemCount: stats.suggestedLifts.count)
+                            ShowMoreButton(displayCount: $suggestionsToShow, itemCount: result.suggestions.count)
+                            SuggestionsRefreshButton()
                         }
+                    }, footer: {
+                        Label(result.summary, systemImage: result.model == .privateCloudCompute ? "cloud" : "sparkles")
                     })
+                case .loading:
+                    Section("Suggestions") {
+                        SuggestionsLoadingView()
+                    }
+                case .unsupported:
+                    EmptyView()
+                default:
+                    Section("Suggestions") {
+                        SuggestionsMessageView(status: status, retry: { suggestionStore?.refresh(modelContext: modelContext) })
+                    }
                 }
             }
             ForEach(filteredCategories.sorted(by: <), id: \.rawValue) { category in

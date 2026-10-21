@@ -37,6 +37,7 @@ struct SettingsView: View {
     }
     
     @AppStorage(WEIGHT_UNITS) var weightUnits: WeightUnits = .pounds
+    @AppStorage(SUGGESTION_MODEL) var suggestionModel: SuggestionModel = .onDevice
     @State var importSheetPresented = false
     @State var exportSheetPresented = false
     @State var createdGroup: LiftGroup? = nil
@@ -66,6 +67,26 @@ struct SettingsView: View {
                                 copy.sets = copy.sets.map({$0.convert(to: new)})
                                 return copy
                             })
+                        }
+                    })
+                }
+                if #available(iOS 27.0, *), let modelName = LiftSuggestionEngine.onDeviceModelName {
+                    Section(content: {
+                        if LiftSuggestionEngine.isPrivateCloudComputeBuilt {
+                            Picker(selection: $suggestionModel, content: {
+                                ForEach(SuggestionModel.allCases, id: \.self) { model in
+                                    Text(model.displayName).tag(model)
+                                }
+                            }, label: {
+                                Label("Model", systemImage: "sparkles")
+                            })
+                        }
+                        LabeledContent("On-Device Model", value: modelName)
+                    }, header: {
+                        Text("Lift Suggestions")
+                    }, footer: {
+                        if LiftSuggestionEngine.isPrivateCloudComputeBuilt {
+                            Text("Private Cloud Compute uses a larger model on Apple's servers and can consider more of your history. Your lift history is sent to Apple to generate suggestions. When it's unavailable, suggestions are generated on device.")
                         }
                     })
                 }

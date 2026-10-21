@@ -34,6 +34,7 @@
 		ED8707412E2A00030010DFA8 /* LiftGroupViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED8707402E2A00020010DFA8 /* LiftGroupViews.swift */; };
 		ED8707432E2A00050010DFA8 /* SetEditPopovers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED8707422E2A00040010DFA8 /* SetEditPopovers.swift */; };
 		ED8C374B2C2FAABE00834F1D /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = ED8C374A2C2FAABE00834F1D /* Collections */; };
+		EDA15E012E64B10000A15E01 /* LiftSuggestionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA15E002E64B10000A15E01 /* LiftSuggestionEngine.swift */; };
 		EDA682F42B90E9F4002015CA /* WorkoutTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */; };
 		EDA682F62B90E9F4002015CA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDA682F52B90E9F4002015CA /* ContentView.swift */; };
 		EDA682FA2B90E9F5002015CA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EDA682F92B90E9F5002015CA /* Assets.xcassets */; };
@@ -75,6 +76,7 @@
 		ED87073E2E2A00000010DFA8 /* LiftGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftGroup.swift; sourceTree = "<group>"; };
 		ED8707402E2A00020010DFA8 /* LiftGroupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftGroupViews.swift; sourceTree = "<group>"; };
 		ED8707422E2A00040010DFA8 /* SetEditPopovers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetEditPopovers.swift; sourceTree = "<group>"; };
+		EDA15E002E64B10000A15E01 /* LiftSuggestionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftSuggestionEngine.swift; sourceTree = "<group>"; };
 		EDA682F02B90E9F4002015CA /* WorkoutTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EDA682F32B90E9F4002015CA /* WorkoutTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTrackerApp.swift; sourceTree = "<group>"; };
 		EDA682F52B90E9F4002015CA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -153,6 +155,7 @@
 				ED8707322C383AB20010DFA8 /* LiftCategory.swift */,
 				ED8707362C383B1E0010DFA8 /* LiftModifier.swift */,
 				ED8707342C383AB90010DFA8 /* LiftWeights.swift */,
+				EDA15E002E64B10000A15E01 /* LiftSuggestionEngine.swift */,
 				EDA6830B2B91469D002015CA /* Lift.swift */,
 				ED8707382C383B6D0010DFA8 /* UserGeneratedLiftType.swift */,
 				ED87073E2E2A00000010DFA8 /* LiftGroup.swift */,
@@ -292,6 +295,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EDA15E012E64B10000A15E01 /* LiftSuggestionEngine.swift in Sources */,
 				ED8707372C383B1E0010DFA8 /* LiftModifier.swift in Sources */,
 				ED76D7C42BBF9F9500C46300 /* NumberPicker.swift in Sources */,
 				ED87072B2C3358810010DFA8 /* ImportExportView.swift in Sources */,
@@ -465,7 +469,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WorkoutTracker/WorkoutTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 27;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracker/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -476,16 +480,16 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2026.8.0;
+				MARKETING_VERSION = 2026.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.PlanetaryLifts;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) PRIVATE_CLOUD_COMPUTE";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -499,7 +503,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WorkoutTracker/WorkoutTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 27;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracker/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -510,16 +514,16 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2026.8.0;
+				MARKETING_VERSION = 2026.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.PlanetaryLifts;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) PRIVATE_CLOUD_COMPUTE";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -576,7 +580,7 @@
 		};
 		EDFE3FAF2C2271350035F065 /* XCRemoteSwiftPackageReference "swiftdata-sectionedquery" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/beechtom/swiftdata-sectionedquery?source=post_page-----b1e23c733f26--------------------------------";
+			repositoryURL = "https://github.com/beechtom/swiftdata-sectionedquery";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 1.2.0;
